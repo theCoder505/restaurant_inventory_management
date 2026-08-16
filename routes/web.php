@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\PublicController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 // Public Restaurant Landing Page
 Route::get('/', [PublicController::class, 'index'])->name('home');
