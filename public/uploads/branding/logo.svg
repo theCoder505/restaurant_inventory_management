@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 80" width="300" height="80">
+  <rect width="50" height="50" x="15" y="15" rx="14" fill="url(#logoGrad)" />
+  <defs>
+    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#ea580c" />
+    </linearGradient>
+  </defs>
+  <path d="M30 50 L30 30 M35 28 L35 50 M40 30 L40 50 M45 28 L45 50 M50 30 L50 50" stroke="#0f172a" stroke-width="3" stroke-linecap="round" fill="none" />
+  <text x="80" y="45" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="22" fill="#f59e0b">Le Gourmet</text>
+  <text x="80" y="62" font-family="system-ui, -apple-system, sans-serif" font-weight="600" font-size="12" fill="#94a3b8" letter-spacing="2">BISTRO &amp; RESTAURANT</text>
+</svg>

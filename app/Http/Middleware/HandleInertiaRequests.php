@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AppSetting;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -39,11 +40,15 @@ class HandleInertiaRequests extends Middleware
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
 
         return array_merge(parent::share($request), [
-            ...parent::share($request),
             'name' => config('app.name'),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $request->user(),
+            ],
+            'branding' => [
+                'brand_name' => AppSetting::getByKey('brand_name', 'Le Gourmet Bistro'),
+                'brand_logo' => AppSetting::getByKey('brand_logo', '/uploads/branding/logo.svg'),
+                'brand_icon' => AppSetting::getByKey('brand_icon', '/uploads/branding/icon.svg'),
             ],
         ]);
     }
