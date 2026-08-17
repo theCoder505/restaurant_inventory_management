@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\ExpenseController;
@@ -22,6 +23,12 @@ Route::get('/', [PublicController::class, 'index'])->name('home');
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Category Management
+    Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
+    Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
+    Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
+    Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
     // Inventory & Purchase Management
     Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
@@ -50,6 +57,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
     // Financial Reports & P&L
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::post('/reports/send-daily-summary', [ReportController::class, 'triggerDailyEmail'])->name('reports.send-daily-summary');
     Route::post('/reports/trigger-daily-email', [ReportController::class, 'triggerDailyEmail'])->name('reports.trigger-daily-email');
     Route::get('/reports/export-csv', [ReportController::class, 'exportCsv'])->name('reports.export-csv');
 
@@ -70,10 +78,13 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     // HR & Employees
     Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
     Route::post('/employees', [EmployeeController::class, 'storeEmployee'])->name('employees.store');
+    Route::post('/employees/salary', [EmployeeController::class, 'generateSalary'])->name('employees.salary');
+    Route::post('/employees/generate-salary', [EmployeeController::class, 'generateSalary'])->name('employees.generate-salary');
+    Route::put('/employees/salary/{salary}', [EmployeeController::class, 'updateSalary'])->name('employees.salary.update');
+    Route::delete('/employees/salary/{salary}', [EmployeeController::class, 'destroySalary'])->name('employees.salary.destroy');
+    Route::post('/employees/attendance', [EmployeeController::class, 'logAttendance'])->name('employees.attendance');
     Route::put('/employees/{employee}', [EmployeeController::class, 'updateEmployee'])->name('employees.update');
     Route::delete('/employees/{employee}', [EmployeeController::class, 'destroyEmployee'])->name('employees.destroy');
-    Route::post('/employees/salary', [EmployeeController::class, 'generateSalary'])->name('employees.salary');
-    Route::post('/employees/attendance', [EmployeeController::class, 'logAttendance'])->name('employees.attendance');
 
     // Audit Logs
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');

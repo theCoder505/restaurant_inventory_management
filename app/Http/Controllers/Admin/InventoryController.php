@@ -107,17 +107,24 @@ class InventoryController extends Controller
         $validated = $request->validate([
             'type' => 'required|in:in,out,wastage,return,adjustment',
             'quantity' => 'required|numeric|gt:0',
-            'unit' => 'required|string',
+            'unit' => 'nullable|string',
             'notes' => 'nullable|string',
         ]);
 
+        $unit = $validated['unit'] ?? $item->unit;
+
         // Convert quantity to item base unit if different
-        $convertedQty = UnitConverterService::convert($validated['quantity'], $validated['unit'], $item->unit);
+        $convertedQty = UnitConverterService::convert((float)$validated['quantity'], $unit, $item->unit);
 
         if (in_array($validated['type'], ['in', 'return'])) {
             $item->increment('current_stock', $convertedQty);
         } else {
             $item->decrement('current_stock', $convertedQty);
+        }
+
+        if (!empty($validated['notes'])) {
+            $item->notes = $validated['notes'];
+            $item->save();
         }
 
         InventoryMovement::create([
@@ -155,7 +162,7 @@ class InventoryController extends Controller
 
         $callback = function () use ($items) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, ['ID', 'Item Name', 'SKU', 'Category', 'Current Stock', 'Unit', 'Min Threshold', 'Cost Per Unit', 'Expiry Date']);
+            fputcsv($file, ['ID', 'Item Name', 'SKU', 'Category', 'Current Stock', 'Unit', 'Min Threshold', 'Cost Per Unit', 'Expiry Date', 'Notes']);
 
             foreach ($items as $item) {
                 fputcsv($file, [
@@ -168,6 +175,7 @@ class InventoryController extends Controller
                     $item->min_stock_threshold,
                     $item->cost_per_unit,
                     $item->expiry_date ? $item->expiry_date->format('Y-m-d') : '',
+                    $item->notes ?? '',
                 ]);
             }
             fclose($file);

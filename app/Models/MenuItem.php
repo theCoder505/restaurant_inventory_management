@@ -14,7 +14,6 @@ class MenuItem extends Model
         'category_id',
         'description',
         'price',
-        'cost_price',
         'image_path',
         'is_available',
         'is_featured',
@@ -22,7 +21,6 @@ class MenuItem extends Model
 
     protected $casts = [
         'price' => 'float',
-        'cost_price' => 'float',
         'is_available' => 'boolean',
         'is_featured' => 'boolean',
     ];
@@ -40,11 +38,5 @@ class MenuItem extends Model
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
-    }
-
-    public function getProfitMarginAttribute(): float
-    {
-        if ($this->price <= 0) return 0;
-        return round((($this->price - $this->cost_price) / $this->price) * 100, 1);
     }
 }

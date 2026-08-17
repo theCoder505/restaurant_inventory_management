@@ -16,7 +16,6 @@ interface MenuItem {
     category_id: number;
     description?: string;
     price: number;
-    cost_price: number;
     image_path?: string;
     is_available: boolean;
 }

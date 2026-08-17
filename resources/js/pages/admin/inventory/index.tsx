@@ -56,6 +56,7 @@ export default function InventoryIndex({ items, categories, currency, filters }:
     const adjustForm = useForm({
         type: 'in',
         quantity: 1,
+        unit: '',
         notes: '',
     });
 
@@ -86,7 +87,18 @@ export default function InventoryIndex({ items, categories, currency, filters }:
 
     const openCreateModal = () => {
         setEditingItem(null);
-        itemForm.reset();
+        itemForm.setData({
+            name: '',
+            sku: '',
+            category_id: categories[0]?.id || '',
+            unit: 'kg',
+            current_stock: 0,
+            min_stock_threshold: 5,
+            cost_per_unit: 0,
+            expiry_date: '',
+            notes: '',
+        });
+        itemForm.clearErrors();
         setShowModal(true);
     };
 
@@ -136,7 +148,13 @@ export default function InventoryIndex({ items, categories, currency, filters }:
 
     const openAdjustModal = (item: InventoryItem) => {
         setAdjustingItem(item);
-        adjustForm.reset();
+        adjustForm.setData({
+            type: 'in',
+            quantity: 1,
+            unit: item.unit,
+            notes: '',
+        });
+        adjustForm.clearErrors();
     };
 
     const submitStockAdjustment = (e: React.FormEvent) => {
@@ -233,6 +251,7 @@ export default function InventoryIndex({ items, categories, currency, filters }:
                                     <th className="p-3.5 text-right">Min Threshold</th>
                                     <th className="p-3.5 text-right">Cost / Unit</th>
                                     <th className="p-3.5">Expiry Date</th>
+                                    <th className="p-3.5">Notes</th>
                                     <th className="p-3.5 text-center">Adjust Stock</th>
                                     <th className="p-3.5 text-right">Actions</th>
                                 </tr>
@@ -240,13 +259,14 @@ export default function InventoryIndex({ items, categories, currency, filters }:
                             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                                 {items.data.length === 0 ? (
                                     <tr>
-                                        <td colSpan={8} className="py-8 text-center text-slate-500">
+                                        <td colSpan={9} className="py-8 text-center text-slate-500">
                                             No inventory items found.
                                         </td>
                                     </tr>
                                 ) : (
                                     items.data.map((item) => {
                                         const isLow = item.current_stock <= item.min_stock_threshold;
+                                        const displayNote = item.notes || item.movements?.[0]?.notes || '-';
                                         return (
                                             <tr key={item.id} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
                                                 <td className="p-3.5">
@@ -276,6 +296,9 @@ export default function InventoryIndex({ items, categories, currency, filters }:
                                                     ) : (
                                                         <span className="text-slate-400">-</span>
                                                     )}
+                                                </td>
+                                                <td className="p-3.5 max-w-[150px] truncate text-slate-500" title={displayNote !== '-' ? displayNote : ''}>
+                                                    {displayNote}
                                                 </td>
                                                 <td className="p-3.5 text-center">
                                                     <button
@@ -423,6 +446,17 @@ export default function InventoryIndex({ items, categories, currency, filters }:
                                     </div>
                                 </div>
 
+                                <div>
+                                    <label className="mb-1 block font-medium text-slate-600 dark:text-slate-400">Notes / Details (Optional)</label>
+                                    <textarea
+                                        rows={2}
+                                        placeholder="Additional notes about this item..."
+                                        value={itemForm.data.notes}
+                                        onChange={(e) => itemForm.setData('notes', e.target.value)}
+                                        className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                    />
+                                </div>
+
                                 <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4 dark:border-slate-800">
                                     <button
                                         type="button"
@@ -469,20 +503,44 @@ export default function InventoryIndex({ items, categories, currency, filters }:
                                         <option value="wastage">Wastage / Spoiled</option>
                                         <option value="return">Vendor Return</option>
                                     </select>
+                                    {adjustForm.errors.type && (
+                                        <p className="mt-1 text-xs text-rose-500">{adjustForm.errors.type}</p>
+                                    )}
                                 </div>
 
-                                <div>
-                                    <label className="mb-1 block font-medium text-slate-600 dark:text-slate-400">
-                                        Quantity ({adjustingItem.unit}) *
-                                    </label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        required
-                                        value={adjustForm.data.quantity}
-                                        onChange={(e) => adjustForm.setData('quantity', parseFloat(e.target.value) || 0)}
-                                        className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 font-bold text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
-                                    />
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="mb-1 block font-medium text-slate-600 dark:text-slate-400">
+                                            Quantity *
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            required
+                                            value={adjustForm.data.quantity}
+                                            onChange={(e) => adjustForm.setData('quantity', parseFloat(e.target.value) || 0)}
+                                            className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 font-bold text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                        />
+                                        {adjustForm.errors.quantity && (
+                                            <p className="mt-1 text-xs text-rose-500">{adjustForm.errors.quantity}</p>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <label className="mb-1 block font-medium text-slate-600 dark:text-slate-400">
+                                            Unit *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={adjustForm.data.unit}
+                                            onChange={(e) => adjustForm.setData('unit', e.target.value)}
+                                            className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                        />
+                                        {adjustForm.errors.unit && (
+                                            <p className="mt-1 text-xs text-rose-500">{adjustForm.errors.unit}</p>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div>
@@ -493,6 +551,9 @@ export default function InventoryIndex({ items, categories, currency, filters }:
                                         onChange={(e) => adjustForm.setData('notes', e.target.value)}
                                         className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
                                     />
+                                    {adjustForm.errors.notes && (
+                                        <p className="mt-1 text-xs text-rose-500">{adjustForm.errors.notes}</p>
+                                    )}
                                 </div>
 
                                 <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4 dark:border-slate-800">

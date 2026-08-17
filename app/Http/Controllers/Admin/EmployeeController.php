@@ -31,9 +31,9 @@ class EmployeeController extends Controller
             });
         }
 
-        $employees = $query->orderBy('name')->get();
+        $employees = $query->orderByDesc('id')->get();
         $currency = AppSetting::getByKey('default_currency', '৳');
-        $allSalaries = Salary::with('employee')->orderByDesc('month_year')->orderByDesc('id')->get();
+        $allSalaries = Salary::with('employee')->orderByDesc('updated_at')->orderByDesc('id')->get();
 
         return Inertia::render('admin/employees/index', [
             'employees' => $employees,
@@ -101,7 +101,7 @@ class EmployeeController extends Controller
             'base_salary' => 'required|numeric|min:0',
             'bonus' => 'nullable|numeric|min:0',
             'deduction' => 'nullable|numeric|min:0',
-            'payment_status' => 'required|in:paid,unpaid',
+            'payment_status' => 'nullable|in:paid,unpaid',
             'payment_date' => 'nullable|date',
             'notes' => 'nullable|string',
         ]);
@@ -120,7 +120,7 @@ class EmployeeController extends Controller
                 'bonus' => $bonus,
                 'deduction' => $deduction,
                 'net_pay' => $netPay,
-                'payment_status' => $validated['payment_status'],
+                'payment_status' => $validated['payment_status'] ?? 'paid',
                 'payment_date' => $validated['payment_date'] ?? now()->format('Y-m-d'),
                 'notes' => $validated['notes'] ?? null,
             ]
@@ -130,6 +130,52 @@ class EmployeeController extends Controller
         AuditLogService::log("Generated salary for {$emp?->name} ({$validated['month_year']}) net pay: {$netPay}", "employees");
 
         return redirect()->back()->with('success', 'Salary record generated.');
+    }
+
+    public function updateSalary(Request $request, Salary $salary)
+    {
+        $validated = $request->validate([
+            'employee_id' => 'required|exists:employees,id',
+            'month_year' => 'required|string|regex:/^\d{4}-\d{2}$/',
+            'base_salary' => 'required|numeric|min:0',
+            'bonus' => 'nullable|numeric|min:0',
+            'deduction' => 'nullable|numeric|min:0',
+            'payment_status' => 'nullable|in:paid,unpaid',
+            'payment_date' => 'nullable|date',
+            'notes' => 'nullable|string',
+        ]);
+
+        $bonus = (float)($validated['bonus'] ?? 0);
+        $deduction = (float)($validated['deduction'] ?? 0);
+        $netPay = max(0, $validated['base_salary'] + $bonus - $deduction);
+
+        $salary->update([
+            'employee_id' => $validated['employee_id'],
+            'month_year' => $validated['month_year'],
+            'base_salary' => $validated['base_salary'],
+            'bonus' => $bonus,
+            'deduction' => $deduction,
+            'net_pay' => $netPay,
+            'payment_status' => $validated['payment_status'] ?? 'paid',
+            'payment_date' => $validated['payment_date'] ?? now()->format('Y-m-d'),
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        $emp = Employee::find($validated['employee_id']);
+        AuditLogService::log("Updated salary voucher for {$emp?->name} ({$validated['month_year']}) net pay: {$netPay}", "employees");
+
+        return redirect()->back()->with('success', 'Salary voucher updated successfully.');
+    }
+
+    public function destroySalary(Salary $salary)
+    {
+        $empName = $salary->employee?->name ?? 'Staff';
+        $month = $salary->month_year;
+        $salary->delete();
+
+        AuditLogService::log("Deleted salary voucher for {$empName} ({$month})", "employees");
+
+        return redirect()->back()->with('success', 'Salary voucher deleted successfully.');
     }
 
     public function logAttendance(Request $request)

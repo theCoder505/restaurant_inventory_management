@@ -9,7 +9,6 @@ use App\Models\InventoryItem;
 use App\Models\MenuItem;
 use App\Models\Recipe;
 use App\Services\AuditLogService;
-use App\Services\UnitConverterService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -96,8 +95,6 @@ class MenuController extends Controller
 
         $menuItem->update($validated);
 
-        $this->recalculateDishCost($menuItem);
-
         AuditLogService::log("Updated menu item: {$menuItem->name}", "menu");
 
         return redirect()->back()->with('success', 'Menu dish updated successfully.');
@@ -136,11 +133,9 @@ class MenuController extends Controller
             }
         }
 
-        $this->recalculateDishCost($menuItem);
-
         AuditLogService::log("Updated recipe ingredients for {$menuItem->name}", "menu");
 
-        return redirect()->back()->with('success', 'Recipe updated and dish cost recalculated.');
+        return redirect()->back()->with('success', 'Recipe updated successfully.');
     }
 
     public function destroy(MenuItem $menuItem)
@@ -151,25 +146,5 @@ class MenuController extends Controller
         AuditLogService::log("Deleted menu item: {$name}", "menu");
 
         return redirect()->back()->with('success', 'Menu dish deleted.');
-    }
-
-    /**
-     * Recalculate dish cost based on linked raw ingredients & current ingredient cost_per_unit
-     */
-    private function recalculateDishCost(MenuItem $menuItem): void
-    {
-        $totalCost = 0;
-        $recipes = $menuItem->recipes()->with('inventoryItem')->get();
-
-        foreach ($recipes as $recipe) {
-            if ($recipe->inventoryItem) {
-                $convertedQty = UnitConverterService::convert($recipe->quantity, $recipe->unit, $recipe->inventoryItem->unit);
-                $ingredientCost = $convertedQty * $recipe->inventoryItem->cost_per_unit;
-                $totalCost += $ingredientCost;
-            }
-        }
-
-        $menuItem->cost_price = round($totalCost, 2);
-        $menuItem->save();
     }
 }

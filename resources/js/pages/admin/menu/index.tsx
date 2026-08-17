@@ -31,8 +31,6 @@ interface MenuItem {
     category_id: number;
     description?: string;
     price: number;
-    cost_price: number;
-    profit_margin?: number;
     image_path?: string;
     is_available: boolean;
     is_featured: boolean;
@@ -222,23 +220,23 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
         recipeForm.post(`/admin/menu/${recipeDish.id}/recipe`, {
             onSuccess: () => {
                 setRecipeDish(null);
-                showToast(`Recipe saved & dish cost calculated for "${recipeDish.name}"`, 'success');
+                showToast(`Recipe saved for "${recipeDish.name}"`, 'success');
             },
         });
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Menu & Recipe Costing Management" />
+            <Head title="Menu & Recipes Management" />
 
             <div className="flex min-h-screen flex-col gap-6 bg-slate-50 p-4 text-slate-900 transition-colors md:p-6 dark:bg-slate-950 dark:text-slate-100">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-                            <UtensilsCrossed className="h-6 w-6 text-amber-500" /> Menu Catalog & Recipe Costing
+                            <UtensilsCrossed className="h-6 w-6 text-amber-500" /> Menu Catalog & Recipes
                         </h1>
                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            Dish pricing, image management, ingredient recipe builder, and dynamic profit margin calculations
+                            Dish pricing, image management, and ingredient recipe builder
                         </p>
                     </div>
 
@@ -258,8 +256,6 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                                 <tr>
                                     <th className="p-3.5">Dish Name & Category</th>
                                     <th className="p-3.5 text-right">Selling Price</th>
-                                    <th className="p-3.5 text-right">Ingredient Cost</th>
-                                    <th className="p-3.5 text-right">Profit Margin %</th>
                                     <th className="p-3.5 text-center">In-Stock Toggle</th>
                                     <th className="p-3.5 text-center">Recipe Ingredients</th>
                                     <th className="p-3.5 text-right">Actions</th>
@@ -268,13 +264,12 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                                 {menuItems.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} className="py-8 text-center text-slate-500">
+                                        <td colSpan={5} className="py-8 text-center text-slate-500">
                                             No menu items created yet.
                                         </td>
                                     </tr>
                                 ) : (
                                     menuItems.map((dish) => {
-                                        const margin = dish.price > 0 ? roundOne(((dish.price - dish.cost_price) / dish.price) * 100) : 0;
                                         return (
                                             <tr key={dish.id} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
                                                 <td className="p-3.5">
@@ -305,16 +300,6 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                                                 </td>
                                                 <td className="p-3.5 text-right font-extrabold text-slate-900 dark:text-slate-100">
                                                     {formatCurrency(dish.price, currency)}
-                                                </td>
-                                                <td className="p-3.5 text-right font-semibold text-rose-500">
-                                                    {formatCurrency(dish.cost_price, currency)}
-                                                </td>
-                                                <td className="p-3.5 text-right">
-                                                    <span
-                                                        className={`font-bold ${margin >= 40 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}
-                                                    >
-                                                        {margin}%
-                                                    </span>
                                                 </td>
                                                 <td className="p-3.5 text-center">
                                                     <button
@@ -524,8 +509,7 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                         <div className="max-h-[90vh] w-full max-w-xl space-y-4 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
                             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Recipe Builder for "{recipeDish.name}"</h3>
                             <p className="text-xs text-slate-500 dark:text-slate-400">
-                                Link raw ingredients & quantities. Dish cost price will be recalculated live based on current ingredient purchase
-                                prices.
+                                Link raw ingredients & quantities for this menu dish.
                             </p>
 
                             <form onSubmit={submitRecipe} className="space-y-4 text-xs">
@@ -612,7 +596,7 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                                         disabled={recipeForm.processing}
                                         className="rounded-xl bg-amber-500 px-5 py-2 font-bold text-slate-950 hover:bg-amber-400"
                                     >
-                                        Save & Calculate Dish Cost
+                                        Save Recipe
                                     </button>
                                 </div>
                             </form>
@@ -622,8 +606,4 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
             </div>
         </AppLayout>
     );
-}
-
-function roundOne(val: number) {
-    return Math.round(val * 10) / 10;
 }

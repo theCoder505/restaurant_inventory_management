@@ -89,7 +89,7 @@ class ReportController extends Controller
             ->get()
             ->map(function ($item) {
                 $menuItem = MenuItem::where('name', $item->name)->first();
-                $unitCost = $menuItem ? (float)$menuItem->cost_price : 0;
+                $unitCost = 0;
                 $totalCost = $unitCost * (int)$item->qty;
                 $profit = (float)$item->revenue - $totalCost;
 

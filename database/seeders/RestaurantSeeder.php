@@ -128,7 +128,6 @@ class RestaurantSeeder extends Seeder
             'category_id' => $menuCategories['Main Course']->id,
             'description' => 'Grilled seasoned chicken patty, lettuce, tomato, house sauce on brioche bun.',
             'price' => 12.50,
-            'cost_price' => 2.80,
             'is_available' => true,
             'is_featured' => true,
         ]);
@@ -140,7 +139,6 @@ class RestaurantSeeder extends Seeder
             'category_id' => $menuCategories['Main Course']->id,
             'description' => 'Wood-fired crust, San Marzano tomato sauce, fresh mozzarella & basil.',
             'price' => 14.00,
-            'cost_price' => 3.20,
             'is_available' => true,
             'is_featured' => true,
         ]);
@@ -153,7 +151,6 @@ class RestaurantSeeder extends Seeder
             'category_id' => $menuCategories['Main Course']->id,
             'description' => 'Two ground beef patties, melted mozzarella cheese, pickles & special glaze.',
             'price' => 15.50,
-            'cost_price' => 4.10,
             'is_available' => true,
             'is_featured' => true,
         ]);
@@ -165,7 +162,6 @@ class RestaurantSeeder extends Seeder
             'category_id' => $menuCategories['Beverages']->id,
             'description' => 'Rich, aromatic double shot of 100% Arabica roast beans.',
             'price' => 4.50,
-            'cost_price' => 0.40,
             'is_available' => true,
             'is_featured' => false,
         ]);

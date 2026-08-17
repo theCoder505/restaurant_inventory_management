@@ -7,6 +7,7 @@ import { Link } from '@inertiajs/react';
 import {
     Boxes,
     DollarSign,
+    FolderTree,
     Globe,
     History,
     LayoutDashboard,
@@ -28,14 +29,15 @@ const mainNavItems: NavItem[] = [
         icon: LayoutDashboard,
     },
     {
-        title: 'POS Billing',
-        url: '/admin/sales',
-        icon: ShoppingCart,
+        title: 'Categories',
+        url: '/admin/categories',
+        icon: FolderTree,
+        hasDash: true,
     },
     {
-        title: 'Sales Log',
-        url: '/admin/sales/log',
-        icon: Receipt,
+        title: 'Suppliers / Vendors',
+        url: '/admin/suppliers',
+        icon: Truck,
     },
     {
         title: 'Inventory & Stock',
@@ -48,14 +50,31 @@ const mainNavItems: NavItem[] = [
         icon: ShoppingBag,
     },
     {
-        title: 'Menu & Recipes',
-        url: '/admin/menu',
-        icon: UtensilsCrossed,
+        title: 'HR & Salaries',
+        url: '/admin/employees',
+        icon: Users,
     },
     {
         title: 'Expense Tracking',
         url: '/admin/expenses',
         icon: DollarSign,
+        hasDash: true,
+    },
+    {
+        title: 'Menu & Recipes',
+        url: '/admin/menu',
+        icon: UtensilsCrossed,
+    },
+    {
+        title: 'POS Billing',
+        url: '/admin/sales',
+        icon: ShoppingCart,
+    },
+    {
+        title: 'Sales Log',
+        url: '/admin/sales/log',
+        icon: Receipt,
+        hasDash: true,
     },
     {
         title: 'P&L Reports',
@@ -63,19 +82,10 @@ const mainNavItems: NavItem[] = [
         icon: TrendingUp,
     },
     {
-        title: 'Suppliers / Vendors',
-        url: '/admin/suppliers',
-        icon: Truck,
-    },
-    {
-        title: 'HR & Salaries',
-        url: '/admin/employees',
-        icon: Users,
-    },
-    {
         title: 'Audit Logs',
         url: '/admin/audit-logs',
         icon: History,
+        hasDash: true,
     },
     {
         title: 'App Settings',
@@ -114,7 +124,9 @@ export function AppSidebar() {
             <SidebarFooter className="border-t border-slate-200/80 bg-white dark:border-slate-800/80 dark:bg-slate-900">
                 <NavMain items={secondaryNavItems} />
                 <div className="flex items-center justify-between px-3 py-1.5">
-                    <span className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase group-data-[collapsible=icon]:hidden dark:text-slate-400">Theme Appearance</span>
+                    <span className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase group-data-[collapsible=icon]:hidden dark:text-slate-400">
+                        Theme Appearance
+                    </span>
                     <AppearanceToggleDropdown />
                 </div>
                 <NavUser />
