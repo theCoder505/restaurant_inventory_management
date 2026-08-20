@@ -13,7 +13,8 @@ class CategoryController extends Controller
 {
     public function index(): Response
     {
-        $categories = Category::withCount(['inventoryItems', 'menuItems', 'expenses'])
+        $categories = Category::withCount(['menuItems', 'expenses'])
+            ->whereIn('type', ['menu', 'expense'])
             ->orderBy('type')
             ->orderBy('name')
             ->get();
@@ -27,7 +28,7 @@ class CategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'required|in:inventory,menu,expense',
+            'type' => 'required|in:menu,expense',
             'description' => 'nullable|string|max:1000',
         ]);
 
@@ -42,7 +43,7 @@ class CategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'required|in:inventory,menu,expense',
+            'type' => 'required|in:menu,expense',
             'description' => 'nullable|string|max:1000',
         ]);
 
@@ -55,7 +56,7 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
-        if ($category->inventoryItems()->exists() || $category->menuItems()->exists() || $category->expenses()->exists()) {
+        if ($category->menuItems()->exists() || $category->expenses()->exists()) {
             return redirect()->back()->with('error', 'Cannot delete category because active items or expenses are associated with it.');
         }
 

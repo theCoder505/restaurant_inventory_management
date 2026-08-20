@@ -19,7 +19,7 @@ interface SettingsData {
     logo_url?: string;
     default_currency: string;
     tax_percentage: string;
-    low_stock_threshold_default: string;
+    expiry_warning_threshold: string;
     google_maps_embed: string;
     social_facebook: string;
     social_instagram: string;
@@ -58,7 +58,7 @@ export default function SettingsIndex({ settings }: Props) {
         logo_url: settings.logo_url || '',
         default_currency: settings.default_currency || '৳',
         tax_percentage: settings.tax_percentage || '5.0',
-        low_stock_threshold_default: settings.low_stock_threshold_default || '5',
+        expiry_warning_threshold: settings.expiry_warning_threshold || '80',
         google_maps_embed: settings.google_maps_embed || '',
         social_facebook: settings.social_facebook || '#',
         social_instagram: settings.social_instagram || '#',
@@ -303,14 +303,20 @@ export default function SettingsIndex({ settings }: Props) {
                             </div>
 
                             <div>
-                                <label className="mb-1 block font-medium text-slate-600 dark:text-slate-400">Default Low Stock Threshold</label>
+                                <label className="mb-1 block font-medium text-slate-600 dark:text-slate-400">
+                                    Expiry / Stock Usage Warning Threshold (%) *
+                                </label>
                                 <input
                                     type="number"
+                                    step="1"
+                                    min="1"
+                                    max="100"
                                     required
-                                    value={form.data.low_stock_threshold_default}
-                                    onChange={(e) => form.setData('low_stock_threshold_default', e.target.value)}
-                                    className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                    value={form.data.expiry_warning_threshold}
+                                    onChange={(e) => form.setData('expiry_warning_threshold', e.target.value)}
+                                    className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 font-bold text-amber-600 dark:border-slate-800 dark:bg-slate-950 dark:text-amber-400"
                                 />
+                                <p className="mt-1 text-[10px] text-slate-400">Triggers Expiry Warning when item used amount reaches this % of total Qty (e.g. 80%)</p>
                             </div>
                         </div>
 

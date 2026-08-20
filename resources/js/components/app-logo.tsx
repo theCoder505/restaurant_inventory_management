@@ -2,9 +2,9 @@ import { usePage } from '@inertiajs/react';
 import AppLogoIcon from './app-logo-icon';
 
 export default function AppLogo() {
-    const { branding } = usePage<{ branding?: { brand_name?: string; brand_logo?: string } }>().props;
+    const { name, branding } = usePage<{ name?: string; branding?: { brand_name?: string; brand_logo?: string } }>().props;
 
-    const brandName = branding?.brand_name || 'Le Gourmet Bistro';
+    const brandName = branding?.brand_name || name || 'Restaurant';
 
     return (
         <div className="flex items-center gap-2.5">

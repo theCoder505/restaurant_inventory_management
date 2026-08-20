@@ -1,6 +1,6 @@
 import '../css/app.css';
 
-import { createInertiaApp } from '@inertiajs/react';
+import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { route as routeFn } from 'ziggy-js';
@@ -8,16 +8,37 @@ import { initializeTheme } from './hooks/use-appearance';
 
 declare global {
     const route: typeof routeFn;
+    interface Window {
+        __APP_BRAND_NAME?: string;
+    }
 }
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+// Global active brand name fallback
+window.__APP_BRAND_NAME = 'Restaurant';
+
+// Listen to all Inertia page transitions and settings saves to update title instantly
+router.on('navigate', (event) => {
+    const pageProps = event.detail.page.props as any;
+    const dynamicBrandName = pageProps?.name || pageProps?.branding?.brand_name;
+    if (dynamicBrandName) {
+        window.__APP_BRAND_NAME = dynamicBrandName;
+    }
+});
 
 createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
+    title: (title) => {
+        const brandName = window.__APP_BRAND_NAME || 'Restaurant';
+        return title ? `${title} - ${brandName}` : brandName;
+    },
     resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx')),
     setup({ el, App, props }) {
-        const root = createRoot(el);
+        const initialProps = props.initialPage.props as any;
+        const initialBrandName = initialProps?.name || initialProps?.branding?.brand_name;
+        if (initialBrandName) {
+            window.__APP_BRAND_NAME = initialBrandName;
+        }
 
+        const root = createRoot(el);
         root.render(<App {...props} />);
     },
     progress: {
@@ -25,5 +46,5 @@ createInertiaApp({
     },
 });
 
-// This will set light / dark mode on load...
+// Initialize light / dark mode on load...
 initializeTheme();

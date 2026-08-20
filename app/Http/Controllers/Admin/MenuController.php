@@ -28,7 +28,7 @@ class MenuController extends Controller
             $query->where('category_id', $request->category_id);
         }
 
-        $menuItems = $query->orderBy('name')->get();
+        $menuItems = $query->orderBy('name')->paginate(15)->withQueryString();
         $categories = Category::where('type', 'menu')->orderBy('name')->get();
         $inventoryItems = InventoryItem::orderBy('name')->get();
         $currency = AppSetting::getByKey('default_currency', '৳');

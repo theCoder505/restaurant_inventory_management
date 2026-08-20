@@ -1,8 +1,9 @@
 import AppLayout from '@/layouts/app-layout';
+import Pagination from '@/components/pagination';
 import { showConfirm, showToast } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { Edit, Plus, Trash2, Truck } from 'lucide-react';
+import { Edit, Plus, Search, Trash2, Truck } from 'lucide-react';
 import { useState } from 'react';
 
 interface Supplier {
@@ -20,6 +21,8 @@ interface Props {
     suppliers: {
         data: Supplier[];
         links: any[];
+        from?: number;
+        to?: number;
         total: number;
     };
     currency: string;
@@ -36,6 +39,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function SuppliersIndex({ suppliers, currency, filters }: Props) {
     const [showModal, setShowModal] = useState(false);
     const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+
+    // Search filter state
+    const [search, setSearch] = useState(filters.search || '');
 
     const form = useForm({
         name: '',
@@ -93,11 +99,21 @@ export default function SuppliersIndex({ suppliers, currency, filters }: Props) 
         }
     };
 
+    const applySearch = () => {
+        router.get('/admin/suppliers', { search }, { preserveState: true });
+    };
+
+    const resetSearch = () => {
+        setSearch('');
+        router.get('/admin/suppliers', {}, { preserveState: true });
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Supplier Directory & Vendor History" />
 
             <div className="flex min-h-screen flex-col gap-6 bg-slate-50 p-4 text-slate-900 transition-colors md:p-6 dark:bg-slate-950 dark:text-slate-100">
+                {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
@@ -114,6 +130,35 @@ export default function SuppliersIndex({ suppliers, currency, filters }: Props) 
                     >
                         <Plus className="h-4 w-4" /> Add New Supplier
                     </button>
+                </div>
+
+                {/* Search Bar */}
+                <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-xs shadow-sm sm:flex-row sm:items-center dark:border-slate-800 dark:bg-slate-900">
+                    <div className="relative flex-1">
+                        <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="Search suppliers by name, contact person, or phone..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && applySearch()}
+                            className="w-full rounded-xl border border-slate-300 bg-slate-100 py-2 pr-3 pl-10 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                        />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={resetSearch}
+                            className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 font-semibold text-slate-700 hover:bg-slate-200 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300"
+                        >
+                            Reset
+                        </button>
+                        <button
+                            onClick={applySearch}
+                            className="rounded-xl bg-amber-500 px-4 py-2 font-bold text-slate-950 hover:bg-amber-400"
+                        >
+                            Search
+                        </button>
+                    </div>
                 </div>
 
                 {/* Supplier Table */}
@@ -134,7 +179,7 @@ export default function SuppliersIndex({ suppliers, currency, filters }: Props) 
                                 {suppliers.data.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="py-8 text-center text-slate-500">
-                                            No suppliers registered yet.
+                                            No suppliers found.
                                         </td>
                                     </tr>
                                 ) : (
@@ -172,6 +217,9 @@ export default function SuppliersIndex({ suppliers, currency, filters }: Props) 
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Pagination Controls */}
+                    <Pagination links={suppliers.links} from={suppliers.from} to={suppliers.to} total={suppliers.total} />
                 </div>
 
                 {/* Create / Edit Supplier Modal */}

@@ -5,7 +5,6 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import {
-    Boxes,
     DollarSign,
     FolderTree,
     Globe,
@@ -40,11 +39,6 @@ const mainNavItems: NavItem[] = [
         icon: Truck,
     },
     {
-        title: 'Inventory & Stock',
-        url: '/admin/inventory',
-        icon: Boxes,
-    },
-    {
         title: 'Purchases & POs',
         url: '/admin/purchases',
         icon: ShoppingBag,
@@ -55,7 +49,7 @@ const mainNavItems: NavItem[] = [
         icon: Users,
     },
     {
-        title: 'Expense Tracking',
+        title: 'Bills & Expenses',
         url: '/admin/expenses',
         icon: DollarSign,
         hasDash: true,

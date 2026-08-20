@@ -1,8 +1,9 @@
 import AppLayout from '@/layouts/app-layout';
+import Pagination from '@/components/pagination';
 import { formatCurrency, formatDateTime } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { Calendar, Eye, Printer, Receipt } from 'lucide-react';
+import { Eye, Filter, Printer, Receipt, Search } from 'lucide-react';
 import { useState } from 'react';
 
 interface OrderItem {
@@ -34,12 +35,20 @@ interface Props {
     orders: {
         data: Order[];
         links: any[];
+        from?: number;
+        to?: number;
         total: number;
     };
+    totalSalesAmount: number;
     currency: string;
     filters: {
-        date?: string;
+        search?: string;
+        order_type?: string;
         payment_method?: string;
+        from_date?: string;
+        to_date?: string;
+        date?: string;
+        all_time?: string;
     };
 }
 
@@ -48,13 +57,75 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Sales Log', href: '/admin/sales/log' },
 ];
 
-export default function SalesLog({ orders, currency, filters }: Props) {
-    const [selectedDate, setSelectedDate] = useState(filters.date || '');
-    const [selectedPayment, setSelectedPayment] = useState(filters.payment_method || '');
+export default function SalesLog({ orders, totalSalesAmount = 0, currency, filters }: Props) {
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const [search, setSearch] = useState(filters.search || '');
+    const [fromDate, setFromDate] = useState(filters.from_date ?? todayStr);
+    const [toDate, setToDate] = useState(filters.to_date ?? todayStr);
+    const [paymentMethod, setPaymentMethod] = useState(filters.payment_method || '');
+    const [orderType, setOrderType] = useState(filters.order_type || '');
+    const [activePreset, setActivePreset] = useState<'today' | 'week' | 'month' | 'year' | 'custom' | 'all'>(
+        filters.all_time ? 'all' : 'today'
+    );
+
     const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
 
-    const handleFilter = () => {
-        router.get('/admin/sales/log', { date: selectedDate, payment_method: selectedPayment }, { preserveState: true });
+    // Date range preset helpers
+    const setPresetRange = (preset: 'today' | 'week' | 'month' | 'year' | 'all') => {
+        setActivePreset(preset);
+
+        if (preset === 'today') {
+            setFromDate(todayStr);
+            setToDate(todayStr);
+            applyFilters({ from_date: todayStr, to_date: todayStr, all_time: undefined });
+        } else if (preset === 'week') {
+            const now = new Date();
+            const day = now.getDay();
+            const diffToMon = now.getDate() - day + (day === 0 ? -6 : 1);
+            const startOfWeek = new Date(now.setDate(diffToMon)).toISOString().split('T')[0];
+            setFromDate(startOfWeek);
+            setToDate(todayStr);
+            applyFilters({ from_date: startOfWeek, to_date: todayStr, all_time: undefined });
+        } else if (preset === 'month') {
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+            setFromDate(startOfMonth);
+            setToDate(todayStr);
+            applyFilters({ from_date: startOfMonth, to_date: todayStr, all_time: undefined });
+        } else if (preset === 'year') {
+            const now = new Date();
+            const startOfYear = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
+            setFromDate(startOfYear);
+            setToDate(todayStr);
+            applyFilters({ from_date: startOfYear, to_date: todayStr, all_time: undefined });
+        } else if (preset === 'all') {
+            setFromDate('');
+            setToDate('');
+            applyFilters({ from_date: '', to_date: '', all_time: '1' });
+        }
+    };
+
+    const applyFilters = (overrideParams?: any) => {
+        const params = {
+            search,
+            from_date: fromDate,
+            to_date: toDate,
+            payment_method: paymentMethod,
+            order_type: orderType,
+            ...overrideParams,
+        };
+        router.get('/admin/sales/log', params, { preserveState: true });
+    };
+
+    const resetFilters = () => {
+        setSearch('');
+        setFromDate(todayStr);
+        setToDate(todayStr);
+        setPaymentMethod('');
+        setOrderType('');
+        setActivePreset('today');
+        router.get('/admin/sales/log', { from_date: todayStr, to_date: todayStr }, { preserveState: true });
     };
 
     const printReceipt = () => window.print();
@@ -64,6 +135,7 @@ export default function SalesLog({ orders, currency, filters }: Props) {
             <Head title="Sales Orders Log" />
 
             <div className="flex min-h-screen flex-col gap-6 bg-slate-50 p-4 text-slate-900 transition-colors md:p-6 dark:bg-slate-950 dark:text-slate-100">
+                {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
@@ -75,38 +147,151 @@ export default function SalesLog({ orders, currency, filters }: Props) {
                     </div>
                 </div>
 
-                {/* Filter Bar */}
-                <div className="flex flex-col items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-xs shadow-sm md:flex-row dark:border-slate-800 dark:bg-slate-900">
-                    <div className="flex w-full flex-1 items-center gap-3">
-                        <div className="relative flex-1">
-                            <Calendar className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                {/* Filter and Search Bar */}
+                <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 text-xs shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    {/* Date Preset Buttons */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-bold text-slate-700 dark:text-slate-300">Quick Range:</span>
+                        <button
+                            onClick={() => setPresetRange('today')}
+                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${
+                                activePreset === 'today'
+                                    ? 'bg-amber-500 text-slate-950 shadow-sm'
+                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                            }`}
+                        >
+                            Today
+                        </button>
+                        <button
+                            onClick={() => setPresetRange('week')}
+                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${
+                                activePreset === 'week'
+                                    ? 'bg-amber-500 text-slate-950 shadow-sm'
+                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                            }`}
+                        >
+                            This Week
+                        </button>
+                        <button
+                            onClick={() => setPresetRange('month')}
+                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${
+                                activePreset === 'month'
+                                    ? 'bg-amber-500 text-slate-950 shadow-sm'
+                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                            }`}
+                        >
+                            This Month
+                        </button>
+                        <button
+                            onClick={() => setPresetRange('year')}
+                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${
+                                activePreset === 'year'
+                                    ? 'bg-amber-500 text-slate-950 shadow-sm'
+                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                            }`}
+                        >
+                            This Year
+                        </button>
+                        <button
+                            onClick={() => setPresetRange('all')}
+                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${
+                                activePreset === 'all'
+                                    ? 'bg-amber-500 text-slate-950 shadow-sm'
+                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                            }`}
+                        >
+                            All Time
+                        </button>
+                    </div>
+
+                    {/* Inputs Grid Row */}
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                        <div>
+                            <label className="mb-0.5 block text-[10px] text-slate-500">Search</label>
+                            <div className="relative">
+                                <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search with order"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                                    className="w-full rounded-xl border border-slate-300 bg-slate-100 py-1.5 pr-3 pl-10 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="mb-0.5 block text-[10px] text-slate-500">From Date</label>
                             <input
                                 type="date"
-                                value={selectedDate}
-                                onChange={(e) => setSelectedDate(e.target.value)}
-                                className="w-full rounded-xl border border-slate-300 bg-slate-100 py-2 pr-3 pl-9 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                value={fromDate}
+                                onChange={(e) => {
+                                    setFromDate(e.target.value);
+                                    setActivePreset('custom');
+                                }}
+                                className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
                             />
                         </div>
 
-                        <select
-                            value={selectedPayment}
-                            onChange={(e) => setSelectedPayment(e.target.value)}
-                            className="rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
-                        >
-                            <option value="">All Payment Methods</option>
-                            <option value="cash">Cash</option>
-                            <option value="card">Card</option>
-                            <option value="bkash">bKash</option>
-                            <option value="nagad">Nagad</option>
-                        </select>
+                        <div>
+                            <label className="mb-0.5 block text-[10px] text-slate-500">To Date</label>
+                            <input
+                                type="date"
+                                value={toDate}
+                                onChange={(e) => {
+                                    setToDate(e.target.value);
+                                    setActivePreset('custom');
+                                }}
+                                className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="mb-0.5 block text-[10px] text-slate-500">Payment Method</label>
+                            <select
+                                value={paymentMethod}
+                                onChange={(e) => setPaymentMethod(e.target.value)}
+                                className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                            >
+                                <option value="">All Payment Methods</option>
+                                <option value="cash">Cash</option>
+                                <option value="card">Card</option>
+                                <option value="bkash">bKash</option>
+                                <option value="nagad">Nagad</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="mb-0.5 block text-[10px] text-slate-500">Order Type</label>
+                            <select
+                                value={orderType}
+                                onChange={(e) => setOrderType(e.target.value)}
+                                className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                            >
+                                <option value="">All Order Types</option>
+                                <option value="dine_in">Dine In</option>
+                                <option value="takeaway">Takeaway</option>
+                                <option value="delivery">Delivery</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <button
-                        onClick={handleFilter}
-                        className="w-full rounded-xl bg-slate-200 px-4 py-2 text-xs font-semibold text-slate-800 transition-all hover:bg-slate-300 md:w-auto dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                    >
-                        Apply Filters
-                    </button>
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                        <button
+                            onClick={resetFilters}
+                            className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-200 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300"
+                        >
+                            Reset Filters
+                        </button>
+                        <button
+                            onClick={() => applyFilters()}
+                            className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-1.5 font-bold text-slate-950 hover:bg-amber-400"
+                        >
+                            <Filter className="h-3.5 w-3.5" /> Search
+                        </button>
+                    </div>
                 </div>
 
                 {/* Sales Log Table */}
@@ -127,7 +312,7 @@ export default function SalesLog({ orders, currency, filters }: Props) {
                                 {orders.data.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="py-8 text-center text-slate-500">
-                                            No sales order records found.
+                                            No sales order records found matching your date range or filters.
                                         </td>
                                     </tr>
                                 ) : (
@@ -155,8 +340,22 @@ export default function SalesLog({ orders, currency, filters }: Props) {
                                     ))
                                 )}
                             </tbody>
+                            <tfoot className="border-t-2 border-slate-200 bg-amber-50/50 dark:border-slate-800 dark:bg-amber-950/20">
+                                <tr>
+                                    <td colSpan={4} className="p-3.5 text-right text-xs font-bold text-slate-700 dark:text-slate-300">
+                                        Total Sales Revenue (Filtered Search Range):
+                                    </td>
+                                    <td className="p-3.5 text-right text-sm font-black text-amber-600 dark:text-amber-400">
+                                        {formatCurrency(totalSalesAmount, currency)}
+                                    </td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
+
+                    {/* Pagination Controls */}
+                    <Pagination links={orders.links} from={orders.from} to={orders.to} total={orders.total} />
                 </div>
 
                 {/* Receipt Preview Modal */}

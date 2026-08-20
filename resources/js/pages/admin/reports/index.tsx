@@ -2,7 +2,20 @@ import AppLayout from '@/layouts/app-layout';
 import { formatCurrency, showToast } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { ArrowDownRight, ArrowUpRight, Calendar, Download, Mail, PieChart as PieChartIcon, TrendingUp } from 'lucide-react';
+import {
+    ArrowDownRight,
+    ArrowUpRight,
+    Calendar,
+    ChevronLeft,
+    ChevronRight,
+    Download,
+    Mail,
+    PieChart as PieChartIcon,
+    Search,
+    TrendingDown,
+    TrendingUp,
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface SummaryData {
@@ -16,6 +29,24 @@ interface SummaryData {
     netProfit: number;
     netMarginPercent: number;
     orderCount: number;
+}
+
+interface ProfitPeriod {
+    sales: number;
+    purchases: number;
+    expenses: number;
+    salaries: number;
+    totalCosts: number;
+    netProfit: number;
+    isProfit: boolean;
+}
+
+interface ProfitBreakdown {
+    daily: ProfitPeriod;
+    weekly: ProfitPeriod;
+    monthly: ProfitPeriod;
+    yearly: ProfitPeriod;
+    all_time: ProfitPeriod;
 }
 
 interface ExpensePieItem {
@@ -37,6 +68,7 @@ interface Props {
     startDate: string;
     endDate: string;
     summary: SummaryData;
+    profitBreakdown?: ProfitBreakdown;
     expenseDistribution: ExpensePieItem[];
     dishInsights: DishInsight[];
 }
@@ -65,6 +97,7 @@ export default function ReportsIndex({
         netMarginPercent: 0,
         orderCount: 0,
     },
+    profitBreakdown,
     expenseDistribution = [],
     dishInsights = [],
 }: Props) {
@@ -73,6 +106,38 @@ export default function ReportsIndex({
         start_date: startDate || '',
         end_date: endDate || '',
     });
+
+    // Frontend Dish Insights Pagination & Search
+    const [dishSearch, setDishSearch] = useState('');
+    const [dishPage, setDishPage] = useState(1);
+    const [dishPerPage, setDishPerPage] = useState(10);
+
+    const filteredDishes = useMemo(() => {
+        if (!dishSearch.trim()) return dishInsights;
+        const term = dishSearch.toLowerCase();
+        return dishInsights.filter((d) => d.name.toLowerCase().includes(term));
+    }, [dishInsights, dishSearch]);
+
+    // Calculate totals across ALL filtered dish insights
+    const dishTotals = useMemo(() => {
+        return filteredDishes.reduce(
+            (acc, curr) => {
+                acc.totalQty += curr.qty;
+                acc.totalRevenue += curr.revenue;
+                acc.totalCost += curr.cost;
+                acc.totalProfit += curr.profit;
+                return acc;
+            },
+            { totalQty: 0, totalRevenue: 0, totalCost: 0, totalProfit: 0 },
+        );
+    }, [filteredDishes]);
+
+    const totalDishPages = Math.max(1, Math.ceil(filteredDishes.length / dishPerPage));
+
+    const paginatedDishes = useMemo(() => {
+        const start = (dishPage - 1) * dishPerPage;
+        return filteredDishes.slice(start, start + dishPerPage);
+    }, [filteredDishes, dishPage, dishPerPage]);
 
     const handleFilterSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -92,6 +157,14 @@ export default function ReportsIndex({
     const handleExportCSV = () => {
         window.location.href = `/admin/reports/export-csv?period=${filterForm.data.period}&start_date=${filterForm.data.start_date}&end_date=${filterForm.data.end_date}`;
     };
+
+    const profitCards = [
+        { key: 'daily', title: 'Daily Profit / Loss', subtitle: 'Today', data: profitBreakdown?.daily },
+        { key: 'weekly', title: 'Weekly Profit / Loss', subtitle: 'This Week', data: profitBreakdown?.weekly },
+        { key: 'monthly', title: 'Monthly Profit / Loss', subtitle: 'This Month', data: profitBreakdown?.monthly },
+        { key: 'yearly', title: 'Yearly Profit / Loss', subtitle: 'This Year', data: profitBreakdown?.yearly },
+        { key: 'all_time', title: 'All Time Profit / Loss', subtitle: 'Cumulative', data: profitBreakdown?.all_time },
+    ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -121,6 +194,69 @@ export default function ReportsIndex({
                         >
                             <Download className="h-4 w-4" /> Export CSV Report
                         </button>
+                    </div>
+                </div>
+
+                {/* Profit & Loss Calculation Overview Grid (Formula: Sales - (Purchases + Salaries + Bills)) */}
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <h2 className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
+                            <TrendingUp className="h-4 w-4 text-amber-500" /> Profit & Loss Breakdown [Formula: Sales &minus; (Purchases + Salaries + Bills)]
+                        </h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                        {profitCards.map((card) => {
+                            const p = card.data;
+                            if (!p) return null;
+                            const isProfit = p.isProfit;
+
+                            return (
+                                <div
+                                    key={card.key}
+                                    className={`relative overflow-hidden rounded-2xl border p-4 shadow-sm transition-all ${
+                                        isProfit
+                                            ? 'border-emerald-500/30 bg-emerald-50/50 dark:border-emerald-500/20 dark:bg-emerald-950/20'
+                                            : 'border-rose-500/30 bg-rose-50/50 dark:border-rose-500/20 dark:bg-rose-950/20'
+                                    }`}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">{card.title}</span>
+                                        <span
+                                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase ${
+                                                isProfit
+                                                    ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                                                    : 'bg-rose-500/20 text-rose-700 dark:text-rose-300'
+                                            }`}
+                                        >
+                                            {isProfit ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                                            {isProfit ? 'Profit' : 'Loss'}
+                                        </span>
+                                    </div>
+
+                                    <div className="mt-2.5">
+                                        <div
+                                            className={`text-xl font-black ${
+                                                isProfit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                                            }`}
+                                        >
+                                            {isProfit ? '+' : '-'}{formatCurrency(Math.abs(p.netProfit), currency)}
+                                        </div>
+
+                                        <div className="mt-2 space-y-0.5 border-t border-slate-200/60 pt-2 text-[10px] text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                                            <div className="flex justify-between">
+                                                <span>Sales:</span>
+                                                <span className="font-semibold text-slate-700 dark:text-slate-300">{formatCurrency(p.sales, currency)}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Costs (Pur+Sal+Exp):</span>
+                                                <span className="font-semibold text-slate-700 dark:text-slate-300">{formatCurrency(p.totalCosts, currency)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -262,11 +398,28 @@ export default function ReportsIndex({
 
                     {/* Dish Profitability Breakdown */}
                     <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2 dark:border-slate-800 dark:bg-slate-900">
-                        <div>
-                            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Dish Profitability & Recipe COGS Insights</h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                                Individual menu item selling price vs raw ingredient cost price
-                            </p>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Dish Profitability & Recipe COGS Insights</h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    Individual menu item selling price vs raw ingredient cost price
+                                </p>
+                            </div>
+
+                            {/* Search Filter for Dish Insights */}
+                            <div className="relative w-full sm:w-56">
+                                <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Filter dishes..."
+                                    value={dishSearch}
+                                    onChange={(e) => {
+                                        setDishSearch(e.target.value);
+                                        setDishPage(1);
+                                    }}
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-100 py-1.5 pr-3 pl-8 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                />
+                            </div>
                         </div>
 
                         <div className="overflow-x-auto">
@@ -281,14 +434,14 @@ export default function ReportsIndex({
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                                    {dishInsights.length === 0 ? (
+                                    {paginatedDishes.length === 0 ? (
                                         <tr>
                                             <td colSpan={5} className="py-6 text-center text-slate-500">
                                                 No dish sales insights available for selected period.
                                             </td>
                                         </tr>
                                     ) : (
-                                        dishInsights.map((dish, idx) => (
+                                        paginatedDishes.map((dish, idx) => (
                                             <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
                                                 <td className="p-3 font-bold text-slate-900 dark:text-slate-100">{dish.name}</td>
                                                 <td className="p-3 text-right text-slate-500 dark:text-slate-400">{dish.qty}</td>
@@ -303,8 +456,99 @@ export default function ReportsIndex({
                                         ))
                                     )}
                                 </tbody>
+                                <tfoot className="border-t-2 border-slate-200 bg-amber-50/50 text-xs font-bold dark:border-slate-800 dark:bg-amber-950/20">
+                                    <tr>
+                                        <td className="p-3 text-slate-900 dark:text-slate-100">Total ({filteredDishes.length} Items):</td>
+                                        <td className="p-3 text-right text-slate-700 dark:text-slate-300">{dishTotals.totalQty}</td>
+                                        <td className="p-3 text-right font-extrabold text-slate-900 dark:text-slate-100">
+                                            {formatCurrency(dishTotals.totalRevenue, currency)}
+                                        </td>
+                                        <td className="p-3 text-right font-extrabold text-rose-600 dark:text-rose-400">
+                                            {formatCurrency(dishTotals.totalCost, currency)}
+                                        </td>
+                                        <td
+                                            className={`p-3 text-right font-black ${
+                                                dishTotals.totalProfit >= 0
+                                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                                    : 'text-rose-600 dark:text-rose-400'
+                                            }`}
+                                        >
+                                            {formatCurrency(dishTotals.totalProfit, currency)}
+                                        </td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
+
+                        {/* Dish Insights Frontend Pagination Controls */}
+                        {filteredDishes.length > 0 && (
+                            <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 pt-3 sm:flex-row dark:border-slate-800">
+                                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                    <span>
+                                        Showing{' '}
+                                        <strong className="text-slate-900 dark:text-slate-100">
+                                            {(dishPage - 1) * dishPerPage + 1}
+                                        </strong>{' '}
+                                        to{' '}
+                                        <strong className="text-slate-900 dark:text-slate-100">
+                                            {Math.min(dishPage * dishPerPage, filteredDishes.length)}
+                                        </strong>{' '}
+                                        of <strong className="text-slate-900 dark:text-slate-100">{filteredDishes.length}</strong> items
+                                    </span>
+                                    <span className="mx-1 text-slate-300 dark:text-slate-700">|</span>
+                                    <label className="flex items-center gap-1">
+                                        <span>Per page:</span>
+                                        <select
+                                            value={dishPerPage}
+                                            onChange={(e) => {
+                                                setDishPerPage(Number(e.target.value));
+                                                setDishPage(1);
+                                            }}
+                                            className="rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
+                                        >
+                                            <option value={5}>5</option>
+                                            <option value={10}>10</option>
+                                            <option value={20}>20</option>
+                                            <option value={50}>50</option>
+                                        </select>
+                                    </label>
+                                </div>
+
+                                {totalDishPages > 1 && (
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={() => setDishPage((p) => Math.max(1, p - 1))}
+                                            disabled={dishPage === 1}
+                                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                                        >
+                                            <ChevronLeft className="h-3.5 w-3.5" /> Prev
+                                        </button>
+
+                                        {Array.from({ length: totalDishPages }, (_, i) => i + 1).map((page) => (
+                                            <button
+                                                key={page}
+                                                onClick={() => setDishPage(page)}
+                                                className={`rounded-lg px-2.5 py-0.5 text-xs font-bold ${
+                                                    dishPage === page
+                                                        ? 'bg-amber-500 text-slate-950'
+                                                        : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                                                }`}
+                                            >
+                                                {page}
+                                            </button>
+                                        ))}
+
+                                        <button
+                                            onClick={() => setDishPage((p) => Math.min(totalDishPages, p + 1))}
+                                            disabled={dishPage === totalDishPages}
+                                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                                        >
+                                            Next <ChevronRight className="h-3.5 w-3.5" />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

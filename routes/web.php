@@ -5,7 +5,6 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\ExpenseController;
-use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\PurchaseController;
 use App\Http\Controllers\Admin\ReportController;
@@ -30,19 +29,19 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
     Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
-    // Inventory & Purchase Management
-    Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
-    Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
-    Route::put('/inventory/{item}', [InventoryController::class, 'update'])->name('inventory.update');
-    Route::delete('/inventory/{item}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
-    Route::post('/inventory/{item}/adjust', [InventoryController::class, 'adjustStock'])->name('inventory.adjust');
-    Route::get('/inventory/export-csv', [InventoryController::class, 'exportCsv'])->name('inventory.export-csv');
+    // Inventory Redirect to Purchases
+    Route::get('/inventory', function () {
+        return redirect()->route('admin.purchases.index');
+    })->name('inventory.index');
 
-    // Purchases
+    // Purchases & PO Entry
     Route::get('/purchases', [PurchaseController::class, 'index'])->name('purchases.index');
     Route::post('/purchases', [PurchaseController::class, 'store'])->name('purchases.store');
-    Route::put('/purchases/{purchase}/status', [PurchaseController::class, 'updateStatus'])->name('purchases.update-status');
+    Route::put('/purchases/{purchase}', [PurchaseController::class, 'update'])->name('purchases.update');
     Route::delete('/purchases/{purchase}', [PurchaseController::class, 'destroy'])->name('purchases.destroy');
+
+    // Used Amount Management
+    Route::put('/purchases/items/{item}/used-amount', [PurchaseController::class, 'updateUsedAmount'])->name('purchases.items.update-used-amount');
 
     // Sales & POS Billing
     Route::get('/sales', [SalesController::class, 'index'])->name('sales.index');
@@ -61,13 +60,12 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::post('/reports/trigger-daily-email', [ReportController::class, 'triggerDailyEmail'])->name('reports.trigger-daily-email');
     Route::get('/reports/export-csv', [ReportController::class, 'exportCsv'])->name('reports.export-csv');
 
-    // Menu & Recipe Builder
+    // Menu & Dish Management
     Route::get('/menu', [MenuController::class, 'index'])->name('menu.index');
     Route::post('/menu', [MenuController::class, 'store'])->name('menu.store');
     Route::put('/menu/{menuItem}', [MenuController::class, 'update'])->name('menu.update');
     Route::delete('/menu/{menuItem}', [MenuController::class, 'destroy'])->name('menu.destroy');
     Route::post('/menu/{menuItem}/toggle-availability', [MenuController::class, 'toggleAvailability'])->name('menu.toggle-availability');
-    Route::post('/menu/{menuItem}/recipe', [MenuController::class, 'saveRecipe'])->name('menu.save-recipe');
 
     // Suppliers / Vendors
     Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');

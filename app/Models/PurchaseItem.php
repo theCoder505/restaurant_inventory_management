@@ -11,8 +11,10 @@ class PurchaseItem extends Model
 
     protected $fillable = [
         'purchase_id',
+        'ingredient_name',
         'inventory_item_id',
         'quantity',
+        'used_amount',
         'unit',
         'unit_price',
         'total_price',
@@ -21,6 +23,7 @@ class PurchaseItem extends Model
 
     protected $casts = [
         'quantity' => 'float',
+        'used_amount' => 'float',
         'unit_price' => 'float',
         'total_price' => 'float',
         'expiry_date' => 'date',

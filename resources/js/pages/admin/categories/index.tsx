@@ -3,7 +3,6 @@ import { showConfirm, showToast } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import {
-    Boxes,
     ChevronLeft,
     ChevronRight,
     DollarSign,
@@ -20,9 +19,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 interface Category {
     id: number;
     name: string;
-    type: 'inventory' | 'menu' | 'expense';
+    type: 'menu' | 'expense';
     description?: string;
-    inventory_items_count?: number;
     menu_items_count?: number;
     expenses_count?: number;
     created_at?: string;
@@ -46,7 +44,7 @@ export default function CategoriesIndex({ categories = [] }: Props) {
 
     // Filters and Pagination
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedType, setSelectedType] = useState<'all' | 'inventory' | 'menu' | 'expense'>('all');
+    const [selectedType, setSelectedType] = useState<'all' | 'menu' | 'expense'>('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
 
@@ -62,11 +60,11 @@ export default function CategoriesIndex({ categories = [] }: Props) {
     // Form setup
     const form = useForm<{
         name: string;
-        type: 'inventory' | 'menu' | 'expense';
+        type: 'menu' | 'expense';
         description: string;
     }>({
         name: '',
-        type: 'inventory',
+        type: 'menu',
         description: '',
     });
 
@@ -74,7 +72,7 @@ export default function CategoriesIndex({ categories = [] }: Props) {
         setEditingCategory(null);
         form.setData({
             name: '',
-            type: 'inventory',
+            type: 'menu',
             description: '',
         });
         form.clearErrors();
@@ -112,7 +110,7 @@ export default function CategoriesIndex({ categories = [] }: Props) {
     };
 
     const handleDelete = async (cat: Category) => {
-        const usageCount = (cat.inventory_items_count || 0) + (cat.menu_items_count || 0) + (cat.expenses_count || 0);
+        const usageCount = (cat.menu_items_count || 0) + (cat.expenses_count || 0);
         if (usageCount > 0) {
             showToast(`Cannot delete category with ${usageCount} associated items/expenses.`, 'error');
             return;
@@ -132,10 +130,9 @@ export default function CategoriesIndex({ categories = [] }: Props) {
 
     // Calculate Summary Stats
     const stats = useMemo(() => {
-        const inv = categories.filter((c) => c.type === 'inventory').length;
         const menu = categories.filter((c) => c.type === 'menu').length;
         const exp = categories.filter((c) => c.type === 'expense').length;
-        return { total: categories.length, inv, menu, exp };
+        return { total: categories.length, menu, exp };
     }, [categories]);
 
     // Filtering Logic
@@ -164,12 +161,6 @@ export default function CategoriesIndex({ categories = [] }: Props) {
 
     const getTypeBadge = (type: Category['type']) => {
         switch (type) {
-            case 'inventory':
-                return (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/60 dark:text-blue-400">
-                        <Boxes className="h-3 w-3" /> Inventory
-                    </span>
-                );
             case 'menu':
                 return (
                     <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/60 dark:text-emerald-400">
@@ -186,9 +177,6 @@ export default function CategoriesIndex({ categories = [] }: Props) {
     };
 
     const getUsageSummary = (cat: Category) => {
-        if (cat.type === 'inventory') {
-            return `${cat.inventory_items_count || 0} Inventory Items`;
-        }
         if (cat.type === 'menu') {
             return `${cat.menu_items_count || 0} Menu Items`;
         }
@@ -210,7 +198,7 @@ export default function CategoriesIndex({ categories = [] }: Props) {
                             <FolderTree className="h-7 w-7 text-amber-500" /> Category Management
                         </h1>
                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            Organize items across Inventory, Menu, and Expense modules
+                            Organize items across Menu and Expense modules
                         </p>
                     </div>
 
@@ -223,7 +211,7 @@ export default function CategoriesIndex({ categories = [] }: Props) {
                 </div>
 
                 {/* Summary Cards */}
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:gap-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 md:gap-4">
                     <button
                         onClick={() => {
                             setSelectedType('all');
@@ -244,24 +232,6 @@ export default function CategoriesIndex({ categories = [] }: Props) {
 
                     <button
                         onClick={() => {
-                            setSelectedType('inventory');
-                            setCurrentPage(1);
-                        }}
-                        className={`flex flex-col rounded-2xl border p-4 text-left transition-all ${
-                            selectedType === 'inventory'
-                                ? 'border-blue-500/50 bg-blue-500/10 shadow-sm dark:bg-blue-500/10'
-                                : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700'
-                        }`}
-                    >
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Inventory</span>
-                            <Boxes className="h-4 w-4 text-blue-500" />
-                        </div>
-                        <span className="mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.inv}</span>
-                    </button>
-
-                    <button
-                        onClick={() => {
                             setSelectedType('menu');
                             setCurrentPage(1);
                         }}
@@ -272,7 +242,7 @@ export default function CategoriesIndex({ categories = [] }: Props) {
                         }`}
                     >
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Menu & Recipes</span>
+                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Menu</span>
                             <UtensilsCrossed className="h-4 w-4 text-emerald-500" />
                         </div>
                         <span className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.menu}</span>
@@ -314,7 +284,7 @@ export default function CategoriesIndex({ categories = [] }: Props) {
                     </div>
 
                     <div className="flex items-center gap-2 overflow-x-auto">
-                        {(['all', 'inventory', 'menu', 'expense'] as const).map((type) => (
+                        {(['all', 'menu', 'expense'] as const).map((type) => (
                             <button
                                 key={type}
                                 onClick={() => {
@@ -485,7 +455,7 @@ export default function CategoriesIndex({ categories = [] }: Props) {
                                     <input
                                         type="text"
                                         required
-                                        placeholder="e.g. Seafood, Fast Food, Cleaning Supplies..."
+                                        placeholder="e.g. Seafood, Fast Food, Utilities..."
                                         value={form.data.name}
                                         onChange={(e) => form.setData('name', e.target.value)}
                                         className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 focus:border-amber-500 focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
@@ -500,7 +470,6 @@ export default function CategoriesIndex({ categories = [] }: Props) {
                                         onChange={(e) => form.setData('type', e.target.value as any)}
                                         className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 focus:border-amber-500 focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
                                     >
-                                        <option value="inventory">Inventory (Raw ingredients, stock, supplies)</option>
                                         <option value="menu">Menu (Food & drink categories on restaurant menu)</option>
                                         <option value="expense">Expense (Operational, utilities, rent, overheads)</option>
                                     </select>

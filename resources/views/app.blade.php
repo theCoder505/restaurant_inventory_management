@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title inertia>{{ config('app.name', 'Le Gourmet Bistro') }}</title>
+        <title inertia>{{ \App\Models\AppSetting::getByKey('brand_name', config('app.name', 'Restaurant')) }}</title>
 
         <link rel="icon" href="{{ \App\Models\AppSetting::getByKey('brand_icon', '/uploads/branding/icon.svg') }}" />
         <link rel="shortcut icon" href="{{ \App\Models\AppSetting::getByKey('brand_icon', '/uploads/branding/icon.svg') }}" />

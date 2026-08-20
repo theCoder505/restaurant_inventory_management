@@ -38,15 +38,16 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
+        $brandName = AppSetting::getByKey('brand_name', config('app.name', 'Restaurant'));
 
         return array_merge(parent::share($request), [
-            'name' => config('app.name'),
+            'name' => $brandName,
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $request->user(),
             ],
             'branding' => [
-                'brand_name' => AppSetting::getByKey('brand_name', 'Le Gourmet Bistro'),
+                'brand_name' => $brandName,
                 'brand_logo' => AppSetting::getByKey('brand_logo', '/uploads/branding/logo.svg'),
                 'brand_icon' => AppSetting::getByKey('brand_icon', '/uploads/branding/icon.svg'),
             ],

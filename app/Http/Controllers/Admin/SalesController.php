@@ -110,31 +110,6 @@ class SalesController extends Controller
                     'unit_price' => $itemData['unit_price'],
                     'total_price' => $itemData['total_price'],
                 ]);
-
-                // Auto-deduct inventory raw ingredients based on Recipe builder
-                foreach ($itemData['recipes'] as $recipe) {
-                    $invItem = InventoryItem::find($recipe->inventory_item_id);
-                    if ($invItem) {
-                        $neededQtyPerDish = $recipe->quantity;
-                        $totalNeededQty = $neededQtyPerDish * $itemData['quantity'];
-
-                        // Convert unit if recipe unit differs from stock unit
-                        $convertedQty = UnitConverterService::convert($totalNeededQty, $recipe->unit, $invItem->unit);
-
-                        $invItem->decrement('current_stock', $convertedQty);
-
-                        InventoryMovement::create([
-                            'inventory_item_id' => $invItem->id,
-                            'type' => 'sale_deduction',
-                            'quantity' => $convertedQty,
-                            'unit' => $invItem->unit,
-                            'cost_per_unit' => $invItem->cost_per_unit,
-                            'reference_type' => 'Order',
-                            'reference_id' => $newOrder->id,
-                            'notes' => "Sale {$orderNumber} - Dish: {$itemData['item_name']}",
-                        ]);
-                    }
-                }
             }
 
             AuditLogService::log("Created sale invoice {$orderNumber} total: {$totalAmount}", "sales");
@@ -170,17 +145,42 @@ class SalesController extends Controller
             $query->where('payment_method', $request->payment_method);
         }
 
-        if ($request->filled('date')) {
+        $fromDate = $request->input('from_date');
+        $toDate = $request->input('to_date');
+
+        // Default to Today if no date filters or search parameters are passed
+        if (!$request->has('from_date') && !$request->has('to_date') && !$request->has('date') && !$request->has('search') && !$request->has('all_time')) {
+            $fromDate = date('Y-m-d');
+            $toDate = date('Y-m-d');
+        }
+
+        if (!empty($fromDate)) {
+            $query->whereDate('created_at', '>=', $fromDate);
+        }
+
+        if (!empty($toDate)) {
+            $query->whereDate('created_at', '<=', $toDate);
+        }
+
+        if ($request->filled('date') && empty($fromDate) && empty($toDate)) {
             $query->whereDate('created_at', $request->date);
         }
 
-        $orders = $query->orderByDesc('created_at')->paginate(15)->withQueryString();
-        $currency = AppSetting::getByKey('default_currency', '$');
+        // Calculate total sales sum for the current filtered query
+        $totalSalesAmount = (float)$query->sum('total_amount');
+
+        $perPage = $request->input('per_page', 20);
+        $orders = $query->orderByDesc('created_at')->paginate($perPage)->withQueryString();
+        $currency = AppSetting::getByKey('default_currency', '৳');
 
         return Inertia::render('admin/sales/log', [
             'orders' => $orders,
+            'totalSalesAmount' => $totalSalesAmount,
             'currency' => $currency,
-            'filters' => $request->only(['search', 'order_type', 'payment_method', 'date']),
+            'filters' => array_merge([
+                'from_date' => $fromDate,
+                'to_date' => $toDate,
+            ], $request->only(['search', 'order_type', 'payment_method', 'date', 'all_time'])),
         ]);
     }
 }

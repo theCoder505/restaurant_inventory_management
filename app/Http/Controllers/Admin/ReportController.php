@@ -66,6 +66,16 @@ class ReportController extends Controller
         $grossMarginPercent = $totalSales > 0 ? round(($grossProfit / $totalSales) * 100, 1) : 0;
         $netMarginPercent = $totalSales > 0 ? round(($netProfit / $totalSales) * 100, 1) : 0;
 
+        // Profit Breakdown across 5 timeframes: Daily, Weekly, Monthly, Yearly, All Time
+        // Formula: Net Profit/Loss = Sales - (Purchases + Salaries + Bills/Expenses)
+        $profitBreakdown = [
+            'daily' => $this->calculateProfitForRange(now()->startOfDay(), now()->endOfDay()),
+            'weekly' => $this->calculateProfitForRange(now()->startOfWeek(), now()->endOfWeek()),
+            'monthly' => $this->calculateProfitForRange(now()->startOfMonth(), now()->endOfMonth()),
+            'yearly' => $this->calculateProfitForRange(now()->startOfYear(), now()->endOfYear()),
+            'all_time' => $this->calculateProfitForRange(null, null),
+        ];
+
         // Cost Breakdown by Expense Category
         $expenseDistribution = Expense::select('categories.name as name', DB::raw('SUM(expenses.amount) as value'))
             ->leftJoin('categories', 'expenses.category_id', '=', 'categories.id')
@@ -88,7 +98,6 @@ class ReportController extends Controller
             ->orderByDesc('qty')
             ->get()
             ->map(function ($item) {
-                $menuItem = MenuItem::where('name', $item->name)->first();
                 $unitCost = 0;
                 $totalCost = $unitCost * (int)$item->qty;
                 $profit = (float)$item->revenue - $totalCost;
@@ -121,9 +130,43 @@ class ReportController extends Controller
                 'netProfit' => $netProfit,
                 'netMarginPercent' => $netMarginPercent,
             ],
+            'profitBreakdown' => $profitBreakdown,
             'expenseDistribution' => $expenseDistribution,
             'dishInsights' => $dishInsights,
         ]);
+    }
+
+    private function calculateProfitForRange($startDate = null, $endDate = null): array
+    {
+        $salesQuery = Order::where('payment_status', 'paid');
+        $purchaseQuery = Purchase::query();
+        $expenseQuery = Expense::query();
+        $salaryQuery = Salary::where('payment_status', 'paid');
+
+        if ($startDate && $endDate) {
+            $salesQuery->whereBetween('created_at', [$startDate, $endDate]);
+            $purchaseQuery->whereBetween('purchase_date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')]);
+            $expenseQuery->whereBetween('expense_date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')]);
+            $salaryQuery->whereBetween('created_at', [$startDate, $endDate]);
+        }
+
+        $sales = (float)$salesQuery->sum('total_amount');
+        $purchases = (float)$purchaseQuery->sum('total_amount');
+        $expenses = (float)$expenseQuery->sum('amount');
+        $salaries = (float)$salaryQuery->sum('net_pay');
+
+        $totalCosts = $purchases + $expenses + $salaries;
+        $netProfit = $sales - $totalCosts;
+
+        return [
+            'sales' => $sales,
+            'purchases' => $purchases,
+            'expenses' => $expenses,
+            'salaries' => $salaries,
+            'totalCosts' => $totalCosts,
+            'netProfit' => $netProfit,
+            'isProfit' => $netProfit >= 0,
+        ];
     }
 
     public function triggerDailyEmail(Request $request)

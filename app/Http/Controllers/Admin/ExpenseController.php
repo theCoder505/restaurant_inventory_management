@@ -30,10 +30,18 @@ class ExpenseController extends Controller
             $query->where('category_id', $request->category_id);
         }
 
-        if ($request->filled('date')) {
-            $query->whereDate('expense_date', $request->date);
+        if ($request->filled('from_date')) {
+            $query->whereDate('expense_date', '>=', $request->from_date);
         }
 
+        if ($request->filled('to_date')) {
+            $query->whereDate('expense_date', '<=', $request->to_date);
+        }
+
+        // Calculate total cost sum across all matching records before pagination
+        $totalCost = (float) (clone $query)->sum('amount');
+
+        // Latest entry first
         $expenses = $query->orderByDesc('expense_date')->orderByDesc('id')->paginate(15)->withQueryString();
         $categories = Category::where('type', 'expense')->orderBy('name')->get();
         $currency = AppSetting::getByKey('default_currency', '৳');
@@ -44,8 +52,9 @@ class ExpenseController extends Controller
             'expenses' => $expenses,
             'categories' => $categories,
             'currency' => $currency,
-            'totalExpensesThisMonth' => (float)$totalExpensesThisMonth,
-            'filters' => $request->only(['search', 'category_id', 'date']),
+            'totalCost' => $totalCost,
+            'totalExpensesThisMonth' => (float) $totalExpensesThisMonth,
+            'filters' => $request->only(['search', 'category_id', 'from_date', 'to_date']),
         ]);
     }
 
