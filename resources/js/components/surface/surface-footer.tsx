@@ -1,6 +1,6 @@
 import { Link } from '@inertiajs/react';
-import { ArrowUp, ChevronUp, Facebook, Instagram, Twitter, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { ArrowUp, Facebook, Instagram, Twitter, X } from 'lucide-react';
+import { useState } from 'react';
 import { SurfaceSettings } from './surface-header';
 
 interface SurfaceFooterProps {
@@ -10,16 +10,6 @@ interface SurfaceFooterProps {
 export default function SurfaceFooter({ settings }: SurfaceFooterProps) {
     const [showTermsModal, setShowTermsModal] = useState(false);
     const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-    const [showFloatingActions, setShowFloatingActions] = useState(false);
-
-    useEffect(() => {
-        const handleScroll = () => {
-            setShowFloatingActions(window.scrollY > 300);
-        };
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        handleScroll();
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
 
     const scrollToTop = () => {
         window.scrollTo({
@@ -27,12 +17,6 @@ export default function SurfaceFooter({ settings }: SurfaceFooterProps) {
             behavior: 'smooth',
         });
     };
-
-    const targetPhone = settings.whatsapp_number || settings.phone || '+8801700000000';
-    const cleanPhone = targetPhone.replace(/[^0-9]/g, '');
-    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(
-        `Hello ${settings.brand_name}, I am contacting you from your website for inquiries & orders.`,
-    )}`;
 
     const brandLogoImage = settings.brand_logo || settings.logo_url;
 
@@ -48,6 +32,8 @@ export default function SurfaceFooter({ settings }: SurfaceFooterProps) {
                                 src={brandLogoImage}
                                 alt={settings.brand_name}
                                 className="h-8 sm:h-9 w-auto object-contain max-w-[150px]"
+                                loading="lazy"
+                                decoding="async"
                             />
                         ) : (
                             <span className="font-montserrat text-lg font-extrabold text-slate-900 dark:text-[#ffb59e]">
@@ -132,52 +118,6 @@ export default function SurfaceFooter({ settings }: SurfaceFooterProps) {
                 </div>
             </footer>
 
-            {/* Floating Actions Stack at Bottom-Right (Only Appears After Scroll) */}
-            {showFloatingActions && (
-                <div className="fixed bottom-6 right-6 z-40 flex flex-col items-center gap-3 animate-in fade-in zoom-in duration-200">
-                    {/* 1. Scroll to Top Floating Button */}
-                    <button
-                        onClick={scrollToTop}
-                        className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/90 text-white shadow-xl backdrop-blur-md border border-white/20 transition-all hover:bg-slate-800 hover:scale-110 active:scale-95 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
-                        title="Scroll to top"
-                        aria-label="Scroll to top"
-                    >
-                        <ChevronUp className="h-5 w-5" />
-                    </button>
-                    {/* 2. Floating Circular WhatsApp Logo Button (Only if enabled) */}
-                    {settings.enable_whatsapp !== false && (
-                        <a
-                            href={whatsappUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="relative flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] hover:bg-[#20ba59] text-white shadow-2xl shadow-emerald-500/40 transition-all hover:scale-110 active:scale-95 group border border-white/30"
-                            title={`Chat with ${settings.brand_name} on WhatsApp`}
-                            aria-label="Chat on WhatsApp"
-                        >
-                            {/* Official WhatsApp Vector Logo */}
-                            <svg
-                                className="h-6 w-6 fill-white"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                            >
-                                <path d="M17.472 14.382c-.301-.15-1.782-.879-2.058-.979-.276-.1-.477-.15-.678.15-.2.301-.778.979-.954 1.18-.176.2-.351.226-.652.075-.301-.15-1.272-.469-2.423-1.496-.895-.798-1.5-1.784-1.676-2.085-.176-.301-.019-.464.132-.614.136-.135.301-.351.451-.527.151-.175.2-.301.301-.501.101-.2.05-.376-.025-.527-.075-.15-.678-1.634-.929-2.239-.244-.589-.493-.509-.678-.519l-.578-.01c-.2 0-.527.075-.803.376-.276.301-1.054 1.03-1.054 2.511s1.079 2.912 1.23 3.113c.15.2 2.124 3.243 5.145 4.549.719.311 1.28.497 1.718.636.722.23 1.378.198 1.897.12.578-.088 1.782-.728 2.033-1.431.251-.703.251-1.305.176-1.431-.075-.126-.276-.201-.577-.351z" />
-                                <path
-                                    fillRule="evenodd"
-                                    clipRule="evenodd"
-                                    d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2.05 21.95l4.912-1.353A9.957 9.957 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.2a8.165 8.165 0 01-4.298-1.214l-.308-.188-2.916.804.81-2.842-.206-.328A8.163 8.163 0 013.8 12c0-4.529 3.671-8.2 8.2-8.2 4.529 0 8.2 3.671 8.2 8.2 0 4.529-3.671 8.2-8.2 8.2z"
-                                />
-                            </svg>
-
-                            {/* Live Pulsing Online Indicator */}
-                            <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border border-white"></span>
-                            </span>
-                        </a>
-                    )}
-                </div>
-            )}
 
             {/* Terms & Conditions Modal */}
             {showTermsModal && (

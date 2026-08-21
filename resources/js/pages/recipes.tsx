@@ -178,6 +178,8 @@ export default function RecipesPage({ settings, menuCategories, allDishes }: Pro
                                             src={getDishImage(dish, idx)}
                                             alt={dish.name}
                                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                            loading="lazy"
+                                            decoding="async"
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10"></div>
 

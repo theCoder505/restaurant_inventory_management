@@ -178,6 +178,8 @@ export default function RecipeDetail({ item, relatedItems, settings }: Props) {
                                 src={dishImage}
                                 alt={item.name}
                                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                loading="lazy"
+                                decoding="async"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div>
 
@@ -371,6 +373,8 @@ export default function RecipeDetail({ item, relatedItems, settings }: Props) {
                                                 src={dish.image_path || DEFAULT_RECIPE_IMAGE}
                                                 alt={dish.name}
                                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                loading="lazy"
+                                                decoding="async"
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10"></div>
                                             <div className="absolute top-4 right-4 z-20 rounded-full bg-orange-600 px-3 py-1 font-montserrat text-xs font-extrabold text-white shadow">

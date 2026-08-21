@@ -210,3 +210,187 @@
 button {
     cursor: pointer;
 }
+
+/* Restaurant Preloader & Culinary Keyframes */
+@keyframes steamRising {
+    0% {
+        transform: translateY(0) scaleX(0.8);
+        opacity: 0;
+    }
+    30% {
+        opacity: 0.7;
+    }
+    60% {
+        opacity: 0.4;
+    }
+    100% {
+        transform: translateY(-28px) scaleX(1.4);
+        opacity: 0;
+    }
+}
+
+.animate-steam-1 {
+    animation: steamRising 2.4s infinite ease-out;
+}
+
+.animate-steam-2 {
+    animation: steamRising 2.4s infinite 0.7s ease-out;
+}
+
+.animate-steam-3 {
+    animation: steamRising 2.4s infinite 1.4s ease-out;
+}
+
+@keyframes clocheBounce {
+    0%, 100% {
+        transform: translateY(0) rotate(0deg);
+    }
+    25% {
+        transform: translateY(-4px) rotate(-1.5deg);
+    }
+    75% {
+        transform: translateY(-2px) rotate(1.5deg);
+    }
+}
+
+.animate-cloche {
+    animation: clocheBounce 3s ease-in-out infinite;
+}
+
+@keyframes flameFlicker {
+    0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 12px rgba(249, 115, 22, 0.6));
+    }
+    50% {
+        transform: scale(1.08);
+        filter: drop-shadow(0 0 20px rgba(249, 115, 22, 0.9));
+    }
+}
+
+.animate-flame-glow {
+    animation: flameFlicker 1.8s ease-in-out infinite;
+}
+
+/* Image Lazy Loading Progressive Fade */
+.lazy-image-blur {
+    filter: blur(8px);
+    transition: filter 0.5s ease-out, opacity 0.5s ease-out;
+}
+
+.lazy-image-loaded {
+    filter: blur(0px);
+    opacity: 1;
+}
+
+/* Restaurant Noodle Liquid Blob Preloader Animations */
+@keyframes noodleBlobMorph {
+    0% {
+        border-radius: 48% 52% 58% 42% / 42% 58% 42% 58%;
+        transform: rotate(0deg) scale(1);
+    }
+    20% {
+        border-radius: 58% 42% 44% 56% / 54% 38% 62% 46%;
+        transform: rotate(72deg) scale(1.03);
+    }
+    40% {
+        border-radius: 42% 58% 62% 38% / 40% 64% 36% 60%;
+        transform: rotate(144deg) scale(0.97);
+    }
+    60% {
+        border-radius: 62% 38% 40% 60% / 58% 42% 58% 42%;
+        transform: rotate(216deg) scale(1.02);
+    }
+    80% {
+        border-radius: 38% 62% 54% 46% / 46% 56% 44% 54%;
+        transform: rotate(288deg) scale(0.98);
+    }
+    100% {
+        border-radius: 48% 52% 58% 42% / 42% 58% 42% 58%;
+        transform: rotate(360deg) scale(1);
+    }
+}
+
+@keyframes satelliteBlobMorph {
+    0%, 100% {
+        border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%;
+        transform: translate(0, 0) scale(1, 1);
+    }
+    25% {
+        border-radius: 42% 58% 45% 55% / 55% 45% 55% 45%;
+        transform: translate(5px, -10px) scale(0.92, 1.12);
+    }
+    50% {
+        border-radius: 60% 40% 58% 42% / 42% 58% 42% 58%;
+        transform: translate(-3px, 7px) scale(1.12, 0.88);
+    }
+    75% {
+        border-radius: 48% 52% 46% 54% / 54% 46% 54% 46%;
+        transform: translate(2px, -3px) scale(1.04, 0.96);
+    }
+}
+
+@keyframes forkTwirlLift {
+    0%, 100% {
+        transform: translateY(0) rotate(0deg);
+    }
+    30% {
+        transform: translateY(-8px) rotate(-3.5deg);
+    }
+    55% {
+        transform: translateY(-4px) rotate(1.5deg);
+    }
+    75% {
+        transform: translateY(2px) rotate(-1deg);
+    }
+}
+
+@keyframes noodleStrandStretch {
+    0%, 100% {
+        transform: scaleY(1);
+    }
+    30% {
+        transform: scaleY(1.24) translateY(-2px);
+    }
+    55% {
+        transform: scaleY(1.1) translateY(-1px);
+    }
+    75% {
+        transform: scaleY(0.96) translateY(1px);
+    }
+}
+
+@keyframes noodleCoilWobble {
+    0%, 100% {
+        transform: scale(1, 1);
+    }
+    30% {
+        transform: scale(1.03, 0.97) translateY(-1px);
+    }
+    60% {
+        transform: scale(0.98, 1.02) translateY(0.5px);
+    }
+}
+
+.animate-noodle-blob {
+    animation: noodleBlobMorph 8s ease-in-out infinite;
+}
+
+.animate-satellite-blob {
+    animation: satelliteBlobMorph 3.5s ease-in-out infinite;
+}
+
+.animate-fork-lift {
+    animation: forkTwirlLift 2.4s ease-in-out infinite;
+}
+
+.animate-noodle-strand {
+    animation: noodleStrandStretch 2.4s ease-in-out infinite;
+    transform-origin: 26px 74px;
+}
+
+.animate-noodle-coils {
+    animation: noodleCoilWobble 2.4s ease-in-out infinite;
+    transform-origin: center bottom;
+}
+

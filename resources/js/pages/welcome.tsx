@@ -339,6 +339,8 @@ export default function Welcome({ settings, menuCategories, featuredItems, revie
                                 src={atmosphereImage}
                                 alt="Moody late-night restaurant and lounge ambiance"
                                 className="h-full w-full object-cover opacity-95 transition-all duration-700 group-hover:scale-105"
+                                loading="lazy"
+                                decoding="async"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
                             <div className="absolute bottom-5 left-5 right-5 p-4 rounded-xl bg-black/60 backdrop-blur-md border border-white/15 text-white">
@@ -440,6 +442,8 @@ export default function Welcome({ settings, menuCategories, featuredItems, revie
                                                 src={getDishImage(dish, idx)}
                                                 alt={dish.name}
                                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                loading="lazy"
+                                                decoding="async"
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10"></div>
 
@@ -538,6 +542,8 @@ export default function Welcome({ settings, menuCategories, featuredItems, revie
                                         src={getDishImage(dish, idx + 3)}
                                         alt={dish.name}
                                         className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                        loading="lazy"
+                                        decoding="async"
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-transparent"></div>
 
@@ -844,6 +850,8 @@ export default function Welcome({ settings, menuCategories, featuredItems, revie
                         src={vipLoungeImage}
                         alt="Luxury restaurant VIP dining lounge"
                         className="h-full w-full object-cover filter brightness-40"
+                        loading="lazy"
+                        decoding="async"
                     />
                     <div className="absolute inset-0 bg-black/80"></div>
                 </div>
@@ -1017,7 +1025,9 @@ export default function Welcome({ settings, menuCategories, featuredItems, revie
                         >
                             {settings.google_maps_embed ? (
                                 <div
-                                    dangerouslySetInnerHTML={{ __html: settings.google_maps_embed }}
+                                    dangerouslySetInnerHTML={{
+                                        __html: settings.google_maps_embed.replace(/<iframe/i, '<iframe loading="lazy"'),
+                                    }}
                                     className="w-full h-full flex-1 min-h-[420px]"
                                 />
                             ) : (
@@ -1046,7 +1056,13 @@ export default function Welcome({ settings, menuCategories, featuredItems, revie
             {/* Final Order CTA Section */}
             <section className="py-24 sm:py-28 relative overflow-hidden bg-slate-900 text-center">
                 <div className="absolute inset-0 z-0 opacity-25">
-                    <img src={heroBgImage} alt="Artisan burger textures" className="w-full h-full object-cover" />
+                    <img
+                        src={heroBgImage}
+                        alt="Artisan burger textures"
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                    />
                     <div className="absolute inset-0 bg-black/80"></div>
                 </div>
 
