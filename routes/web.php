@@ -15,8 +15,11 @@ use App\Http\Controllers\PublicController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-// Public Restaurant Landing Page
+// Public Restaurant Landing Page & Recipe Details
 Route::get('/', [PublicController::class, 'index'])->name('home');
+Route::get('/recipi/{menuItem}/{slug?}', [PublicController::class, 'recipeDetail'])->name('recipe.detail');
+Route::get('/recipe/{menuItem}/{slug?}', [PublicController::class, 'recipeDetail']);
+Route::get('/recipes/{menuItem}/{slug?}', [PublicController::class, 'recipeDetail']);
 
 // Authenticated Admin Panel
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
