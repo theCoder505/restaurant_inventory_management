@@ -10,13 +10,14 @@ interface SurfaceFooterProps {
 export default function SurfaceFooter({ settings }: SurfaceFooterProps) {
     const [showTermsModal, setShowTermsModal] = useState(false);
     const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-    const [showFloatingScrollTop, setShowFloatingScrollTop] = useState(false);
+    const [showFloatingActions, setShowFloatingActions] = useState(false);
 
     useEffect(() => {
         const handleScroll = () => {
-            setShowFloatingScrollTop(window.scrollY > 350);
+            setShowFloatingActions(window.scrollY > 300);
         };
-        window.addEventListener('scroll', handleScroll);
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        handleScroll();
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
@@ -26,6 +27,12 @@ export default function SurfaceFooter({ settings }: SurfaceFooterProps) {
             behavior: 'smooth',
         });
     };
+
+    const targetPhone = settings.whatsapp_number || settings.phone || '+8801700000000';
+    const cleanPhone = targetPhone.replace(/[^0-9]/g, '');
+    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(
+        `Hello ${settings.brand_name}, I am contacting you from your website for inquiries & orders.`,
+    )}`;
 
     const brandLogoImage = settings.brand_logo || settings.logo_url;
 
@@ -111,7 +118,7 @@ export default function SurfaceFooter({ settings }: SurfaceFooterProps) {
                         </div>
                     </div>
 
-                    {/* Right: Scroll to Top Button */}
+                    {/* Right: Scroll to Top Button in Footer */}
                     <div>
                         <button
                             onClick={scrollToTop}
@@ -125,16 +132,44 @@ export default function SurfaceFooter({ settings }: SurfaceFooterProps) {
                 </div>
             </footer>
 
-            {/* Floating Quick Scroll to Top Action Indicator */}
-            {showFloatingScrollTop && (
-                <button
-                    onClick={scrollToTop}
-                    className="fixed bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 text-white shadow-xl shadow-orange-500/35 transition-all hover:scale-110 hover:brightness-110 active:scale-95 animate-in fade-in zoom-in duration-200"
-                    title="Scroll to top"
-                    aria-label="Scroll to top"
-                >
-                    <ChevronUp className="h-5 w-5" />
-                </button>
+            {/* Floating Actions Stack at Bottom-Right (Only Appears After Scroll) */}
+            {showFloatingActions && (
+                <div className="fixed bottom-6 right-6 z-40 flex flex-col items-center gap-3 animate-in fade-in zoom-in duration-200">
+                    {/* 1. Scroll to Top Floating Button */}
+                    <button
+                        onClick={scrollToTop}
+                        className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/90 text-white shadow-xl backdrop-blur-md border border-white/20 transition-all hover:bg-slate-800 hover:scale-110 active:scale-95 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+                        title="Scroll to top"
+                        aria-label="Scroll to top"
+                    >
+                        <ChevronUp className="h-5 w-5" />
+                    </button>
+
+                    {/* 2. Floating Circular WhatsApp Logo Button */}
+                    <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="relative flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] hover:bg-[#20ba59] text-white shadow-2xl shadow-emerald-500/40 transition-all hover:scale-110 active:scale-95 group border border-white/30"
+                        title={`Chat with ${settings.brand_name} on WhatsApp`}
+                        aria-label="Chat on WhatsApp"
+                    >
+                        {/* Official WhatsApp Vector Logo */}
+                        <svg
+                            className="h-6 w-6 fill-white"
+                            viewBox="0 0 24 24"
+                        >
+                            <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.694.079-2.146-.532-1.724-.727-2.825-2.474-2.91-2.589-.086-.114-.693-.923-.693-1.761s.443-1.25.602-1.422c.16-.172.348-.215.464-.215.116 0 .232.002.333.007.107.005.25.04.39.377.144.348.492 1.203.535 1.29.043.086.072.187.014.302-.058.115-.087.187-.174.288-.087.101-.183.226-.261.304-.087.087-.178.182-.077.355.101.173.449.741.964 1.2 0.662.59 1.22.773 1.393.86.173.086.275.072.376-.044.101-.115.434-.504.55-.677.115-.173.231-.144.39-.086s1.013.477 1.187.564.29.13.333.203c.043.072.043.418-.101.823z" />
+                            <path d="M12 2C6.477 2 2 6.477 2 12c0 1.891.526 3.662 1.442 5.178L2 22l4.982-1.397A9.957 9.957 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.2a8.17 8.17 0 0 1-4.223-1.168l-.303-.18-3.088.866.883-2.997-.197-.315A8.17 8.17 0 1 1 12 20.2z" />
+                        </svg>
+
+                        {/* Pulsing 24/7 Online Indicator Dot */}
+                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-85"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border border-white"></span>
+                        </span>
+                    </a>
+                </div>
             )}
 
             {/* Terms & Conditions Modal */}

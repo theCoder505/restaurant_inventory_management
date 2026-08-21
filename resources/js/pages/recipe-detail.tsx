@@ -22,6 +22,7 @@ interface Settings {
     logo_url?: string;
     tagline: string;
     phone: string;
+    whatsapp_number?: string;
     email: string;
     address: string;
     opening_hours: string;
@@ -108,11 +109,14 @@ export default function RecipeDetail({ item, relatedItems, settings }: Props) {
     }, []);
 
     // Format WhatsApp Link for this specific dish
-    const cleanPhone = settings.phone.replace(/[^0-9]/g, '');
+    const targetWhatsApp = settings.whatsapp_number || settings.phone || '+8801700000000';
+    const cleanWhatsApp = targetWhatsApp.replace(/[^0-9]/g, '');
+    const cleanVoicePhone = settings.phone.replace(/[^0-9]/g, '');
+
     const generateWhatsAppLink = (dishName?: string) => {
         const target = dishName || item.name;
         const text = `Hello ${settings.brand_name}, I would like to order the recipe: ${target} (${formatCurrency(item.price, settings.default_currency)})`;
-        return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
+        return `https://wa.me/${cleanWhatsApp}?text=${encodeURIComponent(text)}`;
     };
 
     const handleShare = () => {
@@ -329,7 +333,7 @@ export default function RecipeDetail({ item, relatedItems, settings }: Props) {
                             </a>
 
                             <a
-                                href={`tel:${cleanPhone}`}
+                                href={`tel:${cleanVoicePhone}`}
                                 className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white py-4 px-6 font-montserrat text-xs font-bold uppercase tracking-wider text-slate-800 hover:bg-slate-100 transition-all dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10 shadow-sm"
                             >
                                 <Phone className="h-4 w-4" />

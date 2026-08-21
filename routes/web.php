@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\PurchaseController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\SalesController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SupplierController;
@@ -17,6 +18,7 @@ use Inertia\Inertia;
 
 // Public Restaurant Landing Page & Recipe Details
 Route::get('/', [PublicController::class, 'index'])->name('home');
+Route::get('/recipes', [PublicController::class, 'recipes'])->name('recipes.index');
 Route::get('/recipi/{menuItem}/{slug?}', [PublicController::class, 'recipeDetail'])->name('recipe.detail');
 Route::get('/recipe/{menuItem}/{slug?}', [PublicController::class, 'recipeDetail']);
 Route::get('/recipes/{menuItem}/{slug?}', [PublicController::class, 'recipeDetail']);
@@ -96,6 +98,13 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     // Audit Logs
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
     Route::get('/audit-logs/export-excel', [AuditLogController::class, 'exportExcel'])->name('audit-logs.export-excel');
+
+    // Customer Reviews Management
+    Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
+    Route::post('/reviews', [ReviewController::class, 'store'])->name('reviews.store');
+    Route::put('/reviews/{review}', [ReviewController::class, 'update'])->name('reviews.update');
+    Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
+    Route::post('/reviews/{review}/toggle-active', [ReviewController::class, 'toggleActive'])->name('reviews.toggle-active');
 
     // App Settings
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');

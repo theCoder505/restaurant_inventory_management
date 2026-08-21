@@ -20,7 +20,7 @@ export default function SurfaceLayout({
     customOrderText,
 }: SurfaceLayoutProps) {
     return (
-        <div className="min-h-screen bg-slate-50 font-inter text-slate-900 selection:bg-orange-500 selection:text-white transition-colors duration-300 dark:bg-[#0a0a0a] dark:text-[#e5e2e1] flex flex-col justify-between">
+        <div className="min-h-screen bg-slate-50 font-inter text-slate-900 selection:bg-orange-500 selection:text-white transition-colors duration-300 dark:bg-[#0a0a0a] dark:text-[#e5e2e1] flex flex-col justify-between relative">
             <SurfaceHeader
                 settings={settings}
                 isSubpage={isSubpage}
@@ -29,9 +29,7 @@ export default function SurfaceLayout({
                 customOrderText={customOrderText}
             />
 
-            <div className="flex-1 w-full">
-                {children}
-            </div>
+            <div className="flex-1 w-full">{children}</div>
 
             <SurfaceFooter settings={settings} />
         </div>

@@ -7,6 +7,7 @@ import {
     Award,
     Bike,
     Bolt,
+    BookOpen,
     ChefHat,
     Clock,
     Compass,
@@ -33,6 +34,7 @@ interface Settings {
     tagline: string;
     about_text: string;
     phone: string;
+    whatsapp_number?: string;
     email: string;
     address: string;
     opening_hours: string;
@@ -45,6 +47,9 @@ interface Settings {
     terms_conditions?: string;
     privacy_policy?: string;
     footer_text: string;
+    hero_bg_image?: string;
+    atmosphere_image?: string;
+    vip_lounge_image?: string;
 }
 
 interface MenuItem {
@@ -66,14 +71,25 @@ interface MenuCategory {
     menu_items: MenuItem[];
 }
 
+interface ReviewItem {
+    id?: number;
+    customer_name: string;
+    customer_title?: string;
+    avatar_initials?: string;
+    avatar_url?: string;
+    rating: number;
+    comment: string;
+}
+
 interface Props {
     settings: Settings;
     menuCategories: MenuCategory[];
     featuredItems: MenuItem[];
+    reviews?: ReviewItem[];
 }
 
-// Fallback high-contrast culinary photography from home_test design
-const FALLBACK_DISH_IMAGES = [
+// Fallback high-contrast culinary photography if no custom image is uploaded in Admin AppSettings
+const DEFAULT_FALLBACK_IMAGES = [
     'https://lh3.googleusercontent.com/aida-public/AB6AXuCRJZggvezLijFrwuSzgIKkA9FngFa4JmIxEzmBboWeXLcrDepudFnLkwjW40C-7ux15j6qNOGnPvpRIh8urmva2y5Wwi-UUj68XkMgofMssSvj7n4cmXfvpMaxVHKlpsIQsMFbNXvkSn21qKHvmIjf96RQYHRU_GDUo6LOgv6LqdPEm8A95XRFmlaJDTTB2M5ApJ9aSMZ64NvVH9JPlsF30EhNhGzYRajswWEXulMn72jUmCfGlzcBlw',
     'https://lh3.googleusercontent.com/aida-public/AB6AXuDAgx_WRv3kuWUFuNT_Wia142uEUZYtTvie7-4E7aVozFm0HRA-dXviDoaRMcpRGlJlX6fR34IAi6c9iJOC8mgBeyRQP0FQgUP2uQximWxWWaYRDG1dRg-BHc_sohGQFcP9GIejGrZp93hsjNLMBJ_oUblGrTxNzidjyXOlfZ9OMah8LYLo7n8y1DSqi7rguI-skewLi1YLaj6TlviJV02EHc7PUpAmDP4SHhz4FWQMhZKYuOas0gHyyg',
     'https://lh3.googleusercontent.com/aida-public/AB6AXuC2LxGOqn8H8R482FU2ybovgZYVI73qnI0D-7A_qlb48iiZzKd1OqBYVB-Aw_-U_L40FiICYgyno3npqB_bo9E9vTV-vSfji9qvM2ACKrAol3QR-QKucFllf5kneD9Y5Y0Td0_LLHnk1BK2g8Fppq4Bax64oI5uT0Bg6tNDLqBhamGUzO5WGTgKP41S3_CuwMz46Nz98-_c8ch2VcOvJmk1ugwZgJQ7fonJL1LedVQ53seGQHFOvo7N-Q',
@@ -82,13 +98,13 @@ const FALLBACK_DISH_IMAGES = [
     'https://lh3.googleusercontent.com/aida-public/AB6AXuDdaiSEGwKgEQKSa0zVyqa1MOufsYEMG5n3bJfdR_3IP0HFeiHOgyfUq8FXEHH4xEYXy1ex5Z8Zcwq9gLWhlHCc8UcMUyrmixdQPR67YEweTGLydMDk2gn8hv7Czgd3EPZp27FN67s_ZpxGtvvjTTwJWhbb2jthdbMrg3r2yZnRjocW1gAR3iO6Z_MM7-by9b7HmHxyMcORiL1Sfvt6NrhHUp4swqLRfxd4xUYBd1A1FZrTMp55t4eqfg',
 ];
 
-const LOUNGE_IMAGE =
+const DEFAULT_LOUNGE_IMAGE =
     'https://lh3.googleusercontent.com/aida-public/AB6AXuBr-PEhknluR3U5ZxZSQVN215jF8nIDoib8TqvEE6wEdFYmPoKLvd7zdftAZXhSd30fhnoEz0lnIbkDa3C825hFSkUYui5dlfyZaqnLRhihj6KbjBpNPBAPpjN0XY1X1ZcbbKC37agTtuMTK0RhYjRLRao3ie8vnrzfm02kZPe12pu6ro1uVGmoFIvXelNWnM8RH17U_AoyJwL-lhyYvM2kWMnDXesagLCZc6NgQaG5-weyoS2CI6i_9w';
 
-const VIP_IMAGE =
+const DEFAULT_VIP_IMAGE =
     'https://lh3.googleusercontent.com/aida-public/AB6AXuB6mjjWNkLxHsdoFa4-6ySTHYf1InNUWssex9OeZfi3cMnOAEliJu_exu4MFK49fvvalvxuFuYY0jel4uaN7h778nO5WMaQTa1BCTzZn3e4wGrSd7GsgTKJ-WWw87WBdPGv6Zm0NlUJhrJMtTnDFMz1LBQvgQ8gceUFPZmWfoBDVhecp2n_rBnOvxuujPE9kFcF7XMhZhW3zaWtAqCrd9HuDpWh28bVDvw4WirTRMwZmYubGgfMJfG5mA';
 
-const HERO_BG =
+const DEFAULT_HERO_BG =
     'https://lh3.googleusercontent.com/aida-public/AB6AXuCRJZggvezLijFrwuSzgIKkA9FngFa4JmIxEzmBboWeXLcrDepudFnLkwjW40C-7ux15j6qNOGnPvpRIh8urmva2y5Wwi-UUj68XkMgofMssSvj7n4cmXfvpMaxVHKlpsIQsMFbNXvkSn21qKHvmIjf96RQYHRU_GDUo6LOgv6LqdPEm8A95XRFmlaJDTTB2M5ApJ9aSMZ64NvVH9JPlsF30EhNhGzYRajswWEXulMn72jUmCfGlzcBlw';
 
 // Helper to generate the exact recipi/id/title URL format
@@ -101,7 +117,7 @@ export const getRecipeUrl = (dish: { id: number; name: string }) => {
     return `/recipi/${dish.id}/${slug || 'dish'}`;
 };
 
-export default function Welcome({ settings, menuCategories, featuredItems }: Props) {
+export default function Welcome({ settings, menuCategories, featuredItems, reviews = [] }: Props) {
     const [activeTab, setActiveTab] = useState<number | 'all'>('all');
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -118,8 +134,44 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
         }
     }, [activeTab, searchQuery]);
 
-    // Format WhatsApp Link
-    const cleanPhone = settings.phone.replace(/[^0-9]/g, '');
+    // Initialize Swiper.js for Reviews Carousel
+    useEffect(() => {
+        let swiperInstance: any = null;
+        if (typeof window !== 'undefined' && (window as any).Swiper) {
+            swiperInstance = new (window as any).Swiper('.reviews-swiper', {
+                slidesPerView: 1,
+                spaceBetween: 24,
+                loop: true,
+                autoplay: {
+                    delay: 4000,
+                    disableOnInteraction: false,
+                },
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                },
+                breakpoints: {
+                    640: {
+                        slidesPerView: 2,
+                        spaceBetween: 24,
+                    },
+                    1024: {
+                        slidesPerView: 3,
+                        spaceBetween: 30,
+                    },
+                },
+            });
+        }
+        return () => {
+            if (swiperInstance && swiperInstance.destroy) {
+                swiperInstance.destroy(true, true);
+            }
+        };
+    }, [reviews]);
+
+    // Format WhatsApp Link using dedicated whatsapp_number or general phone
+    const targetWhatsApp = settings.whatsapp_number || settings.phone || '+8801700000000';
+    const cleanPhone = targetWhatsApp.replace(/[^0-9]/g, '');
     const generateWhatsAppLink = (dishName?: string) => {
         const text = dishName
             ? `Hello ${settings.brand_name}, I would like to order: ${dishName}`
@@ -136,20 +188,26 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
             dish.category?.name.toLowerCase().includes(searchQuery.toLowerCase()),
     );
 
+    // Limit to latest 15 dishes on landing page
+    const displayedDishes = filteredDishes.slice(0, 15);
+
     // Dynamic dish image helper
     const getDishImage = (dish: MenuItem, index: number) => {
         if (dish.image_path) return dish.image_path;
-        return FALLBACK_DISH_IMAGES[index % FALLBACK_DISH_IMAGES.length];
+        return DEFAULT_FALLBACK_IMAGES[index % DEFAULT_FALLBACK_IMAGES.length];
     };
 
     const brandLogoImage = settings.brand_logo || settings.logo_url;
+    const heroBgImage = settings.hero_bg_image || DEFAULT_HERO_BG;
+    const atmosphereImage = settings.atmosphere_image || DEFAULT_LOUNGE_IMAGE;
+    const vipLoungeImage = settings.vip_lounge_image || DEFAULT_VIP_IMAGE;
 
     // JSON-LD Structured Data for Restaurant SEO
     const structuredData = {
         '@context': 'https://schema.org',
         '@type': 'Restaurant',
         name: settings.brand_name,
-        image: brandLogoImage || HERO_BG,
+        image: brandLogoImage || heroBgImage,
         telephone: settings.phone,
         email: settings.email,
         address: {
@@ -162,7 +220,7 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
         priceRange: '$$',
         openingHours: 'Mo-Su 20:00-04:00',
         url: typeof window !== 'undefined' ? window.location.origin : 'https://restaurant.test',
-        menu: typeof window !== 'undefined' ? `${window.location.origin}#lineup` : 'https://restaurant.test#lineup',
+        menu: typeof window !== 'undefined' ? `${window.location.origin}/recipes` : 'https://restaurant.test/recipes',
         acceptsReservations: 'True',
     };
 
@@ -187,24 +245,24 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                     content={`Premium late-night gourmet food delivered hot & fast. Explore our full lineup and chef's exclusives at ${settings.brand_name}.`}
                 />
                 <meta property="og:type" content="restaurant.restaurant" />
-                <meta property="og:image" content={brandLogoImage || HERO_BG} />
+                <meta property="og:image" content={brandLogoImage || heroBgImage} />
                 <meta name="twitter:card" content="summary_large_image" />
                 <meta name="twitter:title" content={`${settings.brand_name} - ${settings.tagline}`} />
                 <meta
                     name="twitter:description"
                     content="Gourmet fast food for the late-night elite. Savor artisanal burgers, crispy sides, and midnight exclusives."
                 />
-                <meta name="twitter:image" content={brandLogoImage || HERO_BG} />
+                <meta name="twitter:image" content={brandLogoImage || heroBgImage} />
                 <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
             </Head>
 
-            {/* Hero Section (Takes Full 100% Screen Height with AOS) */}
+            {/* Hero Section */}
             <section className="relative min-h-screen flex items-center justify-center pt-24 pb-16 overflow-hidden">
                 {/* Background Photography & Gradients */}
                 <div className="absolute inset-0 z-0">
                     <img
-                        src={HERO_BG}
-                        alt="Late night gourmet double cheeseburger in dramatic ambient lighting"
+                        src={heroBgImage}
+                        alt="Late night gourmet burger dining in ambient atmosphere"
                         className="h-full w-full object-cover object-center scale-105 filter brightness-75 dark:brightness-50 transition-transform duration-1000"
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/70 to-transparent dark:from-[#0a0a0a] dark:via-[#0a0a0a]/85 dark:to-transparent"></div>
@@ -249,13 +307,13 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                                 <Flame className="h-5 w-5 fill-current" />
                                 <span>Ignite Order</span>
                             </a>
-                            <a
-                                href="#lineup"
+                            <Link
+                                href="/recipes"
                                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-white/30 bg-white/15 px-8 py-4 font-montserrat text-sm font-bold uppercase tracking-wider text-white backdrop-blur-md transition-all hover:bg-white/25 active:scale-95 text-center"
                             >
-                                <span>Explore Menu</span>
+                                <span>Explore All Recipes</span>
                                 <ArrowRight className="h-4 w-4" />
-                            </a>
+                            </Link>
                         </div>
                     </div>
                 </div>
@@ -281,13 +339,13 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                                 gourmet flavors. Whether you're fueling a late-night endeavor or unwinding after hours, we provide an escape from the ordinary.
                             </p>
                             <div className="pt-2">
-                                <a
-                                    href="#lineup"
+                                <Link
+                                    href="/recipes"
                                     className="inline-flex items-center gap-2 font-montserrat text-sm font-bold text-orange-600 hover:text-orange-500 dark:text-orange-400 dark:hover:text-orange-300 group"
                                 >
-                                    <span>Explore The Experience & Recipes</span>
+                                    <span>Explore The Full Menu & Recipes</span>
                                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                                </a>
+                                </Link>
                             </div>
                         </div>
 
@@ -297,7 +355,7 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                             data-aos="fade-left"
                         >
                             <img
-                                src={LOUNGE_IMAGE}
+                                src={atmosphereImage}
                                 alt="Moody late-night restaurant and lounge ambiance"
                                 className="h-full w-full object-cover opacity-95 transition-all duration-700 group-hover:scale-105"
                             />
@@ -311,7 +369,7 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                 </div>
             </section>
 
-            {/* The Lineup Section (Interactive Dynamic Menu & Recipes) */}
+            {/* The Lineup Section (Latest 15 Items + View All Recipes CTA) */}
             <section id="lineup" className="py-20 sm:py-24 bg-slate-100/90 dark:bg-[#131313] transition-colors border-y border-slate-200/90 dark:border-white/5">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     {/* Header */}
@@ -324,25 +382,34 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                                 The Lineup
                             </h2>
                             <p className="font-inter text-sm text-slate-700 dark:text-[#e5e2e1]/80 mt-2 max-w-xl">
-                                Signature creations for the midnight hour. Click any dish card to view its full recipe details.
+                                Featured late-night creations. Showing latest 15 dishes — click any card to explore its recipe story.
                             </p>
                         </div>
 
-                        {/* Live Search Input */}
-                        <div className="relative w-full md:w-80">
-                            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                            <input
-                                type="text"
-                                placeholder="Search dishes, burgers, pizza..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full rounded-full border border-slate-300 bg-white py-3 pr-4 pl-11 text-xs text-slate-900 placeholder-slate-400 shadow-sm transition-all focus:border-orange-500 focus:outline-none dark:border-white/15 dark:bg-[#1c1b1b] dark:text-slate-100"
-                            />
+                        {/* Search & All Recipes Link */}
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+                            <div className="relative w-full sm:w-72">
+                                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search creations..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full rounded-full border border-slate-300 bg-white py-3 pr-4 pl-11 text-xs text-slate-900 placeholder-slate-400 shadow-sm transition-all focus:border-orange-500 focus:outline-none dark:border-white/15 dark:bg-[#1c1b1b] dark:text-slate-100"
+                                />
+                            </div>
+                            <Link
+                                href="/recipes"
+                                className="inline-flex items-center justify-center gap-2 rounded-full bg-orange-600 hover:bg-orange-500 text-white px-5 py-3 font-montserrat text-xs font-bold uppercase tracking-wider shadow-md transition-all shrink-0"
+                            >
+                                <BookOpen className="h-3.5 w-3.5" />
+                                <span>View All</span>
+                            </Link>
                         </div>
                     </div>
 
-                    {/* Category Filter Tabs (Scrollable on mobile) */}
-                    <div className="flex items-center gap-2 mb-10 overflow-x-auto pb-2 scrollbar-none" data-aos="fade-up" data-aos-delay="100">
+                    {/* Category Filter Tabs */}
+                    <div className="flex items-center gap-2 mb-10 overflow-x-auto pb-2 scrollbar-none flex-wrap" data-aos="fade-up" data-aos-delay="100">
                         <button
                             onClick={() => setActiveTab('all')}
                             className={`rounded-full px-5 py-2.5 font-montserrat text-xs font-bold transition-all uppercase tracking-wider shrink-0 ${
@@ -351,7 +418,7 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                                     : 'border border-slate-300 bg-white text-slate-800 hover:bg-slate-100 hover:border-orange-400 dark:border-white/10 dark:bg-[#1c1b1b] dark:text-slate-200 dark:hover:bg-white/10'
                             }`}
                         >
-                            All Creations ({allDishes.length})
+                            All Featured ({allDishes.length})
                         </button>
                         {menuCategories.map((cat) => (
                             <button
@@ -368,8 +435,8 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                         ))}
                     </div>
 
-                    {/* Dish Cards Grid (Entire Card is Clickable to Recipe Link) */}
-                    {filteredDishes.length === 0 ? (
+                    {/* Dish Cards Grid (15 items max) */}
+                    {displayedDishes.length === 0 ? (
                         <div className="rounded-2xl border border-slate-200 bg-white py-20 text-center dark:border-white/10 dark:bg-[#1c1b1b]" data-aos="fade-up">
                             <Utensils className="mx-auto mb-3 h-12 w-12 text-slate-400 dark:text-slate-600" />
                             <p className="font-montserrat font-bold text-slate-800 dark:text-slate-200">No dishes match your query.</p>
@@ -377,7 +444,7 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-                            {filteredDishes.map((dish, idx) => (
+                            {displayedDishes.map((dish, idx) => (
                                 <Link
                                     key={dish.id}
                                     href={getRecipeUrl(dish)}
@@ -439,6 +506,18 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                             ))}
                         </div>
                     )}
+
+                    {/* View All Recipes CTA Banner */}
+                    <div className="mt-14 text-center" data-aos="fade-up">
+                        <Link
+                            href="/recipes"
+                            className="inline-flex items-center gap-3 rounded-full bg-slate-900 text-white dark:bg-white/10 dark:hover:bg-white/15 px-8 py-4 font-montserrat text-xs sm:text-sm font-extrabold uppercase tracking-wider shadow-lg hover:shadow-xl transition-all border border-slate-800 dark:border-white/20 hover:scale-105 active:scale-95"
+                        >
+                            <BookOpen className="h-4 w-4 text-orange-500" />
+                            <span>Browse All Recipes & Master Catalogue ({allDishes.length} Items)</span>
+                            <ArrowRight className="h-4 w-4" />
+                        </Link>
+                    </div>
                 </div>
             </section>
 
@@ -776,7 +855,11 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
             {/* The Lounge Membership / Elite Syndicate Section */}
             <section className="py-28 sm:py-32 relative overflow-hidden">
                 <div className="absolute inset-0 z-0">
-                    <img src={VIP_IMAGE} alt="Luxury restaurant VIP dining lounge" className="h-full w-full object-cover filter brightness-40" />
+                    <img
+                        src={vipLoungeImage}
+                        alt="Luxury restaurant VIP dining lounge"
+                        className="h-full w-full object-cover filter brightness-40"
+                    />
                     <div className="absolute inset-0 bg-black/80"></div>
                 </div>
 
@@ -810,77 +893,78 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                 </div>
             </section>
 
-            {/* Testimonials (The Word on the Street) */}
+            {/* Testimonials with Swiper Slider (The Word on the Street) */}
             <section id="reviews" className="py-20 sm:py-24 bg-slate-100/90 dark:bg-[#131313] transition-colors border-y border-slate-200/90 dark:border-white/5">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="text-center max-w-2xl mx-auto mb-14 space-y-2" data-aos="fade-up">
                         <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 bg-orange-100 dark:bg-orange-500/20 border border-orange-200 dark:border-orange-500/30 font-montserrat text-xs font-bold uppercase tracking-widest text-orange-800 dark:text-orange-300">
-                            Community Love
+                            Verified Guest Experiences
                         </span>
                         <h2 className="font-montserrat text-3xl sm:text-4xl font-extrabold uppercase tracking-tight text-slate-900 dark:text-[#ffb59e]">
                             The Word on the Street
                         </h2>
+                        <p className="font-inter text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                            Real reviews from our night-owl food connoisseurs and midnight diners.
+                        </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {/* Review 1 */}
-                        <div
-                            className="glass-panel p-8 rounded-2xl relative shadow-md border border-slate-200/90 dark:border-white/10"
-                            data-aos="fade-up"
-                            data-aos-delay="100"
-                        >
-                            <Quote className="absolute top-6 right-6 h-8 w-8 text-orange-500/20" />
-                            <div className="flex items-center gap-1 text-amber-500 mb-4">
-                                {[...Array(5)].map((_, i) => (
-                                    <Star key={i} className="h-4 w-4 fill-current" />
-                                ))}
-                            </div>
-                            <p className="font-inter text-sm italic text-slate-800 dark:text-slate-200 leading-relaxed mb-6">
-                                "The best burger I've had at 3 AM. It doesn't feel like regular fast food—it feels like a complete gastronomic event.
-                                Fresh, piping hot, and full of flavor."
-                            </p>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center font-bold text-white text-xs">
-                                    JD
-                                </div>
-                                <div>
-                                    <p className="font-montserrat text-xs font-bold text-slate-900 dark:text-slate-100">John D.</p>
-                                    <p className="text-[10px] text-slate-600 dark:text-slate-400">Verified Diner • Night Owl</p>
-                                </div>
-                            </div>
-                        </div>
+                    {/* Swiper Container */}
+                    <div className="relative pb-10" data-aos="fade-up">
+                        <div className="swiper reviews-swiper">
+                            <div className="swiper-wrapper">
+                                {reviews.map((rev, i) => (
+                                    <div key={rev.id ?? i} className="swiper-slide h-auto">
+                                        <div className="glass-panel p-8 rounded-2xl relative shadow-md border border-slate-200/90 dark:border-white/10 h-full flex flex-col justify-between">
+                                            <div>
+                                                <Quote className="absolute top-6 right-6 h-8 w-8 text-orange-500/20" />
+                                                
+                                                {/* Star Rating Display (5 or 4 stars) */}
+                                                <div className="flex items-center gap-1 text-amber-500 mb-4">
+                                                    {[...Array(5)].map((_, starIdx) => (
+                                                        <Star
+                                                            key={starIdx}
+                                                            className={`h-4 w-4 ${
+                                                                starIdx < rev.rating
+                                                                    ? 'fill-current text-amber-500'
+                                                                    : 'text-slate-300 dark:text-slate-700'
+                                                            }`}
+                                                        />
+                                                    ))}
+                                                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 ml-1.5">
+                                                        {rev.rating}.0
+                                                    </span>
+                                                </div>
 
-                        {/* Review 2 */}
-                        <div
-                            className="glass-panel p-8 rounded-2xl relative shadow-md border border-slate-200/90 dark:border-white/10"
-                            data-aos="fade-up"
-                            data-aos-delay="200"
-                        >
-                            <Quote className="absolute top-6 right-6 h-8 w-8 text-orange-500/20" />
-                            <div className="flex items-center gap-1 text-amber-500 mb-4">
-                                {[...Array(5)].map((_, i) => (
-                                    <Star key={i} className="h-4 w-4 fill-current" />
+                                                <p className="font-inter text-sm italic text-slate-800 dark:text-slate-200 leading-relaxed mb-6">
+                                                    "{rev.comment}"
+                                                </p>
+                                            </div>
+
+                                            {/* Customer Signature */}
+                                            <div className="flex items-center gap-3 pt-4 border-t border-slate-200/80 dark:border-white/5">
+                                                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center font-bold text-white text-xs shrink-0 shadow">
+                                                    {rev.avatar_initials || rev.customer_name.slice(0, 2).toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <p className="font-montserrat text-xs font-bold text-slate-900 dark:text-slate-100">
+                                                        {rev.customer_name}
+                                                    </p>
+                                                    <p className="text-[10px] text-slate-600 dark:text-slate-400">
+                                                        {rev.customer_title || 'Verified Diner • Night Owl'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
-                            <p className="font-inter text-sm italic text-slate-800 dark:text-slate-200 leading-relaxed mb-6">
-                                "Finally, a restaurant that takes delivery and midnight recipes seriously. The truffle fries were still crispy and the
-                                burger buns were toasted to perfection."
-                            </p>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center font-bold text-white text-xs">
-                                    SM
-                                </div>
-                                <div>
-                                    <p className="font-montserrat text-xs font-bold text-slate-900 dark:text-slate-100">Sarah M.</p>
-                                    <p className="text-[10px] text-slate-600 dark:text-slate-400">Verified Diner • Creative Director</p>
-                                </div>
-                            </div>
+                            <div className="swiper-pagination !-bottom-1"></div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Location & Hours Section (Find the Fire) - Map Takes Full Height */}
+            {/* Location & Hours Section (Find the Fire) */}
             <section id="locations" className="py-20 sm:py-24 bg-white dark:bg-[#0a0a0a] transition-colors">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10 items-stretch">
@@ -940,7 +1024,7 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                             </div>
                         </div>
 
-                        {/* Map Embed or Stylized Map Canvas (Takes Full Matched Height) */}
+                        {/* Map Embed or Stylized Map Canvas */}
                         <div
                             className="lg:col-span-2 min-h-[420px] h-full rounded-2xl overflow-hidden glass-panel relative shadow-xl border border-slate-200/90 dark:border-white/10 flex flex-col [&_iframe]:w-full [&_iframe]:h-full [&_iframe]:min-h-[420px] [&_iframe]:border-0 [&_iframe]:flex-1"
                             data-aos="fade-left"
@@ -976,7 +1060,7 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
             {/* Final Order CTA Section */}
             <section className="py-24 sm:py-28 relative overflow-hidden bg-slate-900 text-center">
                 <div className="absolute inset-0 z-0 opacity-25">
-                    <img src={HERO_BG} alt="Artisan burger textures" className="w-full h-full object-cover" />
+                    <img src={heroBgImage} alt="Artisan burger textures" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/80"></div>
                 </div>
 
@@ -990,7 +1074,7 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                     <p className="font-inter text-sm sm:text-base text-slate-200 max-w-xl mx-auto">
                         The kitchen is firing at full capacity. Fresh ingredients, exquisite flavors, and midnight speeds await.
                     </p>
-                    <div className="pt-4">
+                    <div className="pt-4 flex flex-wrap justify-center gap-4">
                         <a
                             href={generateWhatsAppLink()}
                             target="_blank"
@@ -1000,6 +1084,13 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                             <Flame className="h-5 w-5 fill-current" />
                             <span>Order Now On WhatsApp</span>
                         </a>
+                        <Link
+                            href="/recipes"
+                            className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 px-8 sm:px-10 py-4 sm:py-5 font-montserrat text-sm font-bold uppercase tracking-wider text-white backdrop-blur-md transition-all active:scale-95 text-center"
+                        >
+                            <BookOpen className="h-5 w-5 text-orange-400" />
+                            <span>View All Recipes</span>
+                        </Link>
                     </div>
                 </div>
             </section>

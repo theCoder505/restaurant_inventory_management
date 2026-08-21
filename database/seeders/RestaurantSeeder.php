@@ -246,5 +246,7 @@ class RestaurantSeeder extends Seeder
             'payment_status' => 'paid',
             'payment_date' => '2026-08-01',
         ]);
+
+        $this->call(ReviewSeeder::class);
     }
 }

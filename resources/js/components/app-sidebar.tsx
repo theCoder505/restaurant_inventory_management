@@ -9,6 +9,7 @@ import {
     Globe,
     History,
     LayoutDashboard,
+    Quote,
     Receipt,
     Settings,
     ShoppingBag,
@@ -81,6 +82,11 @@ const mainNavItems: NavItem[] = [
         hasDash: true,
     },
     {
+        title: 'Customer Reviews',
+        url: '/admin/reviews',
+        icon: Quote,
+    },
+    {
         title: 'App Settings',
         url: '/admin/settings',
         icon: Settings,
@@ -89,7 +95,7 @@ const mainNavItems: NavItem[] = [
 
 const secondaryNavItems: NavItem[] = [
     {
-        title: 'Public Restaurant Page',
+        title: 'Live Surface Website',
         url: '/',
         icon: Globe,
     },
@@ -97,32 +103,30 @@ const secondaryNavItems: NavItem[] = [
 
 export function AppSidebar() {
     return (
-        <Sidebar collapsible="icon" variant="inset" className="border-slate-200 bg-white dark:border-slate-800/80 dark:bg-slate-900">
-            <SidebarHeader className="border-b border-slate-200/80 bg-white dark:border-slate-800/80 dark:bg-slate-900">
+        <Sidebar collapsible="icon" variant="inset" className="border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+            <SidebarHeader className="border-b border-slate-200 p-4 dark:border-slate-800">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild className="hover:bg-slate-100 dark:hover:bg-slate-800/80">
-                            <a href="/" target='_blank'>
-                                <AppLogo />
-                            </a>
+                        <SidebarMenuButton size="lg" asChild>
+                            <AppLogo />
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent className="bg-white dark:bg-slate-900">
+            <SidebarContent className="px-2 py-4">
                 <NavMain items={mainNavItems} />
             </SidebarContent>
 
-            <SidebarFooter className="border-t border-slate-200/80 bg-white dark:border-slate-800/80 dark:bg-slate-900">
-                <NavMain items={secondaryNavItems} />
-                <div className="flex items-center justify-between px-3 py-1.5">
-                    <span className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase group-data-[collapsible=icon]:hidden dark:text-slate-400">
-                        Theme Appearance
-                    </span>
-                    <AppearanceToggleDropdown />
+            <SidebarFooter className="border-t border-slate-200 p-2 dark:border-slate-800">
+                <div className="flex flex-col gap-2">
+                    <NavMain items={secondaryNavItems} />
+                    <div className="flex items-center justify-between px-2 pt-2">
+                        <AppearanceToggleDropdown />
+                        <span className="text-[10px] font-bold text-slate-400">v2.6 Stable</span>
+                    </div>
+                    <NavUser />
                 </div>
-                <NavUser />
             </SidebarFooter>
         </Sidebar>
     );

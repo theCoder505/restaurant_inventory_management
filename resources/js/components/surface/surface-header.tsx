@@ -2,6 +2,7 @@ import { useAppearance } from '@/hooks/use-appearance';
 import { Link } from '@inertiajs/react';
 import {
     ArrowLeft,
+    BookOpen,
     Clock,
     Compass,
     Flame,
@@ -21,14 +22,23 @@ export interface SurfaceSettings {
     brand_icon?: string;
     logo_url?: string;
     phone: string;
+    whatsapp_number?: string;
     email?: string;
     address?: string;
+    opening_hours?: string;
+    tagline?: string;
+    about_text?: string;
+    default_currency?: string;
+    google_maps_embed?: string;
     social_facebook?: string;
     social_instagram?: string;
     social_twitter?: string;
     terms_conditions?: string;
     privacy_policy?: string;
     footer_text?: string;
+    hero_bg_image?: string;
+    atmosphere_image?: string;
+    vip_lounge_image?: string;
 }
 
 interface SurfaceHeaderProps {
@@ -85,7 +95,9 @@ export default function SurfaceHeader({
         return () => window.removeEventListener('scroll', handleScroll);
     }, [isSubpage]);
 
-    const cleanPhone = settings.phone.replace(/[^0-9]/g, '');
+    // Use dynamic WhatsApp number if provided, otherwise fallback to general phone
+    const targetPhone = settings.whatsapp_number || settings.phone || '+8801700000000';
+    const cleanPhone = targetPhone.replace(/[^0-9]/g, '');
     const generateWhatsAppLink = () => {
         const text = customOrderText
             ? `Hello ${settings.brand_name}, I would like to order: ${customOrderText}`
@@ -99,11 +111,12 @@ export default function SurfaceHeader({
     const isHeaderTransparent = !isScrolled && !isSubpage;
 
     const navItems = [
-        { id: 'lineup', label: 'The Lineup' },
-        { id: 'atmosphere', label: 'Atmosphere' },
-        { id: 'specials', label: 'Exclusives' },
-        { id: 'tracker', label: 'Live Radar' },
-        { id: 'locations', label: 'Find Us' },
+        { id: 'lineup', label: 'The Lineup', href: '/#lineup', isAnchor: true },
+        { id: 'recipes', label: 'Recipes', href: '/recipes', isAnchor: false },
+        { id: 'atmosphere', label: 'Atmosphere', href: '/#atmosphere', isAnchor: true },
+        { id: 'specials', label: 'Exclusives', href: '/#specials', isAnchor: true },
+        { id: 'tracker', label: 'Live Radar', href: '/#tracker', isAnchor: true },
+        { id: 'locations', label: 'Find Us', href: '/#locations', isAnchor: true },
     ];
 
     return (
@@ -147,33 +160,49 @@ export default function SurfaceHeader({
                 </div>
 
                 {/* Desktop Navigation Links with Scrollspy Active Activation */}
-                {!isSubpage && (
-                    <nav className="hidden lg:flex items-center gap-8 font-inter text-sm">
-                        {navItems.map((item) => {
-                            const isActive = activeSection === item.id;
+                <nav className="hidden lg:flex items-center gap-7 font-inter text-sm">
+                    {navItems.map((item) => {
+                        const isActive = activeSection === item.id;
+                        const isLinkElement = !item.isAnchor;
+
+                        if (isLinkElement) {
                             return (
-                                <a
+                                <Link
                                     key={item.id}
-                                    href={`#${item.id}`}
+                                    href={item.href}
                                     className={`relative py-1 transition-all ${
                                         isHeaderTransparent
-                                            ? isActive
-                                                ? 'text-orange-400 font-extrabold drop-shadow-[0_0_12px_rgba(251,146,60,0.6)]'
-                                                : 'text-white/90 hover:text-orange-400 font-semibold drop-shadow-sm'
-                                            : isActive
-                                            ? 'text-orange-600 dark:text-orange-400 font-extrabold'
+                                            ? 'text-white/90 hover:text-orange-400 font-semibold drop-shadow-sm'
                                             : 'text-slate-800 hover:text-orange-600 dark:text-[#e5e2e1]/85 dark:hover:text-[#ffb59e] font-semibold'
                                     }`}
                                 >
                                     {item.label}
-                                    {isActive && (
-                                        <span className="absolute -bottom-1 left-0 right-0 h-0.5 rounded-full bg-orange-500 shadow-sm transition-all" />
-                                    )}
-                                </a>
+                                </Link>
                             );
-                        })}
-                    </nav>
-                )}
+                        }
+
+                        return (
+                            <a
+                                key={item.id}
+                                href={item.href}
+                                className={`relative py-1 transition-all ${
+                                    isHeaderTransparent
+                                        ? isActive
+                                            ? 'text-orange-400 font-extrabold drop-shadow-[0_0_12px_rgba(251,146,60,0.6)]'
+                                            : 'text-white/90 hover:text-orange-400 font-semibold drop-shadow-sm'
+                                        : isActive
+                                        ? 'text-orange-600 dark:text-orange-400 font-extrabold'
+                                        : 'text-slate-800 hover:text-orange-600 dark:text-[#e5e2e1]/85 dark:hover:text-[#ffb59e] font-semibold'
+                                }`}
+                            >
+                                {item.label}
+                                {isActive && (
+                                    <span className="absolute -bottom-1 left-0 right-0 h-0.5 rounded-full bg-orange-500 shadow-sm transition-all" />
+                                )}
+                            </a>
+                        );
+                    })}
+                </nav>
 
                 {/* Right Action Controls */}
                 <div className="flex items-center gap-2.5 sm:gap-3">
@@ -220,80 +249,80 @@ export default function SurfaceHeader({
             {/* Mobile Dropdown Menu Sheet with Active State Highlighting */}
             {mobileMenuOpen && (
                 <div className="border-b border-slate-200/90 bg-white/98 px-5 py-6 shadow-2xl backdrop-blur-2xl lg:hidden dark:border-white/10 dark:bg-[#131313]/98 transition-all animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="flex flex-col gap-2.5 font-montserrat text-sm uppercase tracking-wider">
-                        {!isSubpage ? (
-                            <>
-                                <a
-                                    href="#lineup"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                    className={`flex items-center gap-3 rounded-xl p-3 transition-colors ${
-                                        activeSection === 'lineup'
-                                            ? 'bg-orange-50 text-orange-600 font-extrabold dark:bg-orange-500/15 dark:text-orange-400'
-                                            : 'text-slate-800 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5 font-bold'
-                                    }`}
-                                >
-                                    <Utensils className="h-4 w-4 text-orange-500" />
-                                    <span>The Lineup (Menu)</span>
-                                </a>
-                                <a
-                                    href="#atmosphere"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                    className={`flex items-center gap-3 rounded-xl p-3 transition-colors ${
-                                        activeSection === 'atmosphere'
-                                            ? 'bg-orange-50 text-orange-600 font-extrabold dark:bg-orange-500/15 dark:text-orange-400'
-                                            : 'text-slate-800 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5 font-bold'
-                                    }`}
-                                >
-                                    <Sparkles className="h-4 w-4 text-orange-500" />
-                                    <span>Atmosphere</span>
-                                </a>
-                                <a
-                                    href="#specials"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                    className={`flex items-center gap-3 rounded-xl p-3 transition-colors ${
-                                        activeSection === 'specials'
-                                            ? 'bg-orange-50 text-orange-600 font-extrabold dark:bg-orange-500/15 dark:text-orange-400'
-                                            : 'text-slate-800 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5 font-bold'
-                                    }`}
-                                >
-                                    <Flame className="h-4 w-4 text-orange-500" />
-                                    <span>Chef Exclusives</span>
-                                </a>
-                                <a
-                                    href="#tracker"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                    className={`flex items-center gap-3 rounded-xl p-3 transition-colors ${
-                                        activeSection === 'tracker'
-                                            ? 'bg-orange-50 text-orange-600 font-extrabold dark:bg-orange-500/15 dark:text-orange-400'
-                                            : 'text-slate-800 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5 font-bold'
-                                    }`}
-                                >
-                                    <Clock className="h-4 w-4 text-orange-500" />
-                                    <span>Live Kitchen Radar</span>
-                                </a>
-                                <a
-                                    href="#locations"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                    className={`flex items-center gap-3 rounded-xl p-3 transition-colors ${
-                                        activeSection === 'locations'
-                                            ? 'bg-orange-50 text-orange-600 font-extrabold dark:bg-orange-500/15 dark:text-orange-400'
-                                            : 'text-slate-800 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5 font-bold'
-                                    }`}
-                                >
-                                    <Compass className="h-4 w-4 text-orange-500" />
-                                    <span>Find Us & Hours</span>
-                                </a>
-                            </>
-                        ) : (
-                            <Link
-                                href="/#lineup"
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="flex items-center gap-3 rounded-xl p-3 text-orange-600 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-white/5 transition-colors font-bold"
-                            >
-                                <ArrowLeft className="h-4 w-4" />
-                                <span>Back to Full Menu</span>
-                            </Link>
-                        )}
+                    <div className="flex flex-col gap-2 font-montserrat text-sm uppercase tracking-wider">
+                        <a
+                            href="/#lineup"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={`flex items-center gap-3 rounded-xl p-3 transition-colors ${
+                                activeSection === 'lineup'
+                                    ? 'bg-orange-50 text-orange-600 font-extrabold dark:bg-orange-500/15 dark:text-orange-400'
+                                    : 'text-slate-800 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5 font-bold'
+                            }`}
+                        >
+                            <Utensils className="h-4 w-4 text-orange-500" />
+                            <span>The Lineup (Menu)</span>
+                        </a>
+
+                        <Link
+                            href="/recipes"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center gap-3 rounded-xl p-3 text-slate-800 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5 font-bold transition-colors"
+                        >
+                            <BookOpen className="h-4 w-4 text-orange-500" />
+                            <span>All Recipes</span>
+                        </Link>
+
+                        <a
+                            href="/#atmosphere"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={`flex items-center gap-3 rounded-xl p-3 transition-colors ${
+                                activeSection === 'atmosphere'
+                                    ? 'bg-orange-50 text-orange-600 font-extrabold dark:bg-orange-500/15 dark:text-orange-400'
+                                    : 'text-slate-800 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5 font-bold'
+                            }`}
+                        >
+                            <Sparkles className="h-4 w-4 text-orange-500" />
+                            <span>Atmosphere</span>
+                        </a>
+
+                        <a
+                            href="/#specials"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={`flex items-center gap-3 rounded-xl p-3 transition-colors ${
+                                activeSection === 'specials'
+                                    ? 'bg-orange-50 text-orange-600 font-extrabold dark:bg-orange-500/15 dark:text-orange-400'
+                                    : 'text-slate-800 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5 font-bold'
+                            }`}
+                        >
+                            <Flame className="h-4 w-4 text-orange-500" />
+                            <span>Chef Exclusives</span>
+                        </a>
+
+                        <a
+                            href="/#tracker"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={`flex items-center gap-3 rounded-xl p-3 transition-colors ${
+                                activeSection === 'tracker'
+                                    ? 'bg-orange-50 text-orange-600 font-extrabold dark:bg-orange-500/15 dark:text-orange-400'
+                                    : 'text-slate-800 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5 font-bold'
+                            }`}
+                        >
+                            <Clock className="h-4 w-4 text-orange-500" />
+                            <span>Live Kitchen Radar</span>
+                        </a>
+
+                        <a
+                            href="/#locations"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={`flex items-center gap-3 rounded-xl p-3 transition-colors ${
+                                activeSection === 'locations'
+                                    ? 'bg-orange-50 text-orange-600 font-extrabold dark:bg-orange-500/15 dark:text-orange-400'
+                                    : 'text-slate-800 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5 font-bold'
+                            }`}
+                        >
+                            <Compass className="h-4 w-4 text-orange-500" />
+                            <span>Find Us & Hours</span>
+                        </a>
 
                         <div className="pt-3 mt-1 border-t border-slate-200 dark:border-white/10 flex flex-col gap-3">
                             <a
