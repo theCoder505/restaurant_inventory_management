@@ -72,12 +72,29 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
         return filteredEmployees.slice(start, start + perPage);
     }, [filteredEmployees, currentPage, perPage]);
 
-    // Salary Log Pagination & Search/Date Range State
+    // Salary Log Pagination & Search/Date Range/Scope State
+    type PayrollScope = 'monthly' | 'yearly' | 'all' | 'custom';
+    const [payrollScope, setPayrollScope] = useState<PayrollScope>('monthly');
+    const [selectedMonth, setSelectedMonth] = useState<string>(() => new Date().toISOString().slice(0, 7));
+    const [selectedYear, setSelectedYear] = useState<string>(() => new Date().getFullYear().toString());
     const [salarySearchTerm, setSalarySearchTerm] = useState('');
     const [salaryStartDate, setSalaryStartDate] = useState('');
     const [salaryEndDate, setSalaryEndDate] = useState('');
     const [salaryCurrentPage, setSalaryCurrentPage] = useState(1);
     const [salaryPerPage, setSalaryPerPage] = useState(10);
+
+    const availableYears = useMemo(() => {
+        const currentYr = new Date().getFullYear();
+        const years = new Set<string>([currentYr.toString()]);
+        allSalaries.forEach((sal) => {
+            if (sal.month_year) {
+                years.add(sal.month_year.slice(0, 4));
+            } else if (sal.payment_date) {
+                years.add(sal.payment_date.slice(0, 4));
+            }
+        });
+        return Array.from(years).sort((a, b) => Number(b) - Number(a));
+    }, [allSalaries]);
 
     const filteredSalaries = useMemo(() => {
         return allSalaries.filter((sal) => {
@@ -90,30 +107,51 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
                 }
             }
 
-            const targetDateStr = sal.payment_date || sal.updated_at || sal.created_at;
-            if (salaryStartDate) {
-                if (targetDateStr) {
-                    const salDate = new Date(targetDateStr).setHours(0, 0, 0, 0);
-                    const startDate = new Date(salaryStartDate).setHours(0, 0, 0, 0);
-                    if (salDate < startDate) return false;
-                } else if (sal.month_year < salaryStartDate.slice(0, 7)) {
-                    return false;
+            if (payrollScope === 'monthly') {
+                const salMonth = sal.month_year || (sal.payment_date ? sal.payment_date.slice(0, 7) : '');
+                if (salMonth !== selectedMonth) return false;
+            } else if (payrollScope === 'yearly') {
+                const salYear = sal.month_year ? sal.month_year.slice(0, 4) : (sal.payment_date ? sal.payment_date.slice(0, 4) : '');
+                if (salYear !== selectedYear) return false;
+            } else if (payrollScope === 'custom') {
+                const targetDateStr = sal.payment_date || sal.updated_at || sal.created_at;
+                if (salaryStartDate) {
+                    if (targetDateStr) {
+                        const salDate = new Date(targetDateStr).setHours(0, 0, 0, 0);
+                        const startDate = new Date(salaryStartDate).setHours(0, 0, 0, 0);
+                        if (salDate < startDate) return false;
+                    } else if (sal.month_year < salaryStartDate.slice(0, 7)) {
+                        return false;
+                    }
                 }
-            }
 
-            if (salaryEndDate) {
-                if (targetDateStr) {
-                    const salDate = new Date(targetDateStr).setHours(23, 59, 59, 999);
-                    const endDate = new Date(salaryEndDate).setHours(23, 59, 59, 999);
-                    if (salDate > endDate) return false;
-                } else if (sal.month_year > salaryEndDate.slice(0, 7)) {
-                    return false;
+                if (salaryEndDate) {
+                    if (targetDateStr) {
+                        const salDate = new Date(targetDateStr).setHours(23, 59, 59, 999);
+                        const endDate = new Date(salaryEndDate).setHours(23, 59, 59, 999);
+                        if (salDate > endDate) return false;
+                    } else if (sal.month_year > salaryEndDate.slice(0, 7)) {
+                        return false;
+                    }
                 }
             }
 
             return true;
         });
-    }, [allSalaries, salarySearchTerm, salaryStartDate, salaryEndDate]);
+    }, [allSalaries, payrollScope, selectedMonth, selectedYear, salarySearchTerm, salaryStartDate, salaryEndDate]);
+
+    const salaryTotals = useMemo(() => {
+        return filteredSalaries.reduce(
+            (acc, sal) => {
+                acc.base += sal.base_salary || 0;
+                acc.bonus += sal.bonus || 0;
+                acc.deduction += sal.deduction || 0;
+                acc.netPay += sal.net_pay || 0;
+                return acc;
+            },
+            { base: 0, bonus: 0, deduction: 0, netPay: 0 }
+        );
+    }, [filteredSalaries]);
 
     const totalSalaryPages = Math.max(1, Math.ceil(filteredSalaries.length / salaryPerPage));
 
@@ -456,38 +494,137 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
 
                 {/* Salary Log Table */}
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                    <div className="flex flex-col gap-3 border-b border-slate-200 p-4 lg:flex-row lg:items-center lg:justify-between dark:border-slate-800">
-                        <div className="flex items-center gap-2">
-                            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Monthly Payroll Disbursement Log</h3>
-                            <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                                {filteredSalaries.length} {filteredSalaries.length === 1 ? 'Voucher' : 'Vouchers'}
-                            </span>
+                    <div className="flex flex-col gap-4 border-b border-slate-200 p-4 xl:flex-row xl:items-center xl:justify-between dark:border-slate-800">
+                        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Monthly Payroll Disbursement Log</h3>
+                                <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                                    {filteredSalaries.length} {filteredSalaries.length === 1 ? 'Voucher' : 'Vouchers'}
+                                </span>
+                            </div>
+
+                            {/* Scope Selector Pills */}
+                            <div className="flex flex-wrap items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-950">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setPayrollScope('monthly');
+                                        setSalaryCurrentPage(1);
+                                    }}
+                                    className={`rounded-lg px-3 py-1 text-xs font-bold transition-all ${
+                                        payrollScope === 'monthly'
+                                            ? 'bg-amber-500 text-slate-950 shadow-sm'
+                                            : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                                    }`}
+                                >
+                                    Monthly
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setPayrollScope('yearly');
+                                        setSalaryCurrentPage(1);
+                                    }}
+                                    className={`rounded-lg px-3 py-1 text-xs font-bold transition-all ${
+                                        payrollScope === 'yearly'
+                                            ? 'bg-amber-500 text-slate-950 shadow-sm'
+                                            : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                                    }`}
+                                >
+                                    Yearly
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setPayrollScope('all');
+                                        setSalaryCurrentPage(1);
+                                    }}
+                                    className={`rounded-lg px-3 py-1 text-xs font-bold transition-all ${
+                                        payrollScope === 'all'
+                                            ? 'bg-amber-500 text-slate-950 shadow-sm'
+                                            : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                                    }`}
+                                >
+                                    All Time
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setPayrollScope('custom');
+                                        setSalaryCurrentPage(1);
+                                    }}
+                                    className={`rounded-lg px-3 py-1 text-xs font-bold transition-all ${
+                                        payrollScope === 'custom'
+                                            ? 'bg-amber-500 text-slate-950 shadow-sm'
+                                            : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                                    }`}
+                                >
+                                    Custom Range
+                                </button>
+                            </div>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2.5">
-                            {/* Date Range Inputs */}
-                            <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
-                                <span className="font-medium">From:</span>
-                                <input
-                                    type="date"
-                                    value={salaryStartDate}
-                                    onChange={(e) => {
-                                        setSalaryStartDate(e.target.value);
-                                        setSalaryCurrentPage(1);
-                                    }}
-                                    className="rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-mono text-slate-900 focus:border-amber-500 focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
-                                />
-                                <span className="font-medium">To:</span>
-                                <input
-                                    type="date"
-                                    value={salaryEndDate}
-                                    onChange={(e) => {
-                                        setSalaryEndDate(e.target.value);
-                                        setSalaryCurrentPage(1);
-                                    }}
-                                    className="rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-mono text-slate-900 focus:border-amber-500 focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
-                                />
-                            </div>
+                            {/* Dynamic Scope Selector Inputs */}
+                            {payrollScope === 'monthly' && (
+                                <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                                    <span className="font-semibold">Month:</span>
+                                    <input
+                                        type="month"
+                                        value={selectedMonth}
+                                        onChange={(e) => {
+                                            setSelectedMonth(e.target.value);
+                                            setSalaryCurrentPage(1);
+                                        }}
+                                        className="rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-mono font-bold text-amber-600 focus:border-amber-500 focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-amber-400"
+                                    />
+                                </div>
+                            )}
+
+                            {payrollScope === 'yearly' && (
+                                <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                                    <span className="font-semibold">Year:</span>
+                                    <select
+                                        value={selectedYear}
+                                        onChange={(e) => {
+                                            setSelectedYear(e.target.value);
+                                            setSalaryCurrentPage(1);
+                                        }}
+                                        className="rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-mono font-bold text-amber-600 focus:border-amber-500 focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-amber-400"
+                                    >
+                                        {availableYears.map((yr) => (
+                                            <option key={yr} value={yr}>
+                                                {yr}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
+                            {payrollScope === 'custom' && (
+                                <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                                    <span className="font-medium">From:</span>
+                                    <input
+                                        type="date"
+                                        value={salaryStartDate}
+                                        onChange={(e) => {
+                                            setSalaryStartDate(e.target.value);
+                                            setSalaryCurrentPage(1);
+                                        }}
+                                        className="rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-mono text-slate-900 focus:border-amber-500 focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                    />
+                                    <span className="font-medium">To:</span>
+                                    <input
+                                        type="date"
+                                        value={salaryEndDate}
+                                        onChange={(e) => {
+                                            setSalaryEndDate(e.target.value);
+                                            setSalaryCurrentPage(1);
+                                        }}
+                                        className="rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-mono text-slate-900 focus:border-amber-500 focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                    />
+                                </div>
+                            )}
 
                             {/* Search Input */}
                             <div className="relative min-w-[170px]">
@@ -504,9 +641,12 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
                                 />
                             </div>
 
-                            {(salaryStartDate || salaryEndDate || salarySearchTerm) && (
+                            {(payrollScope !== 'monthly' || salarySearchTerm || selectedMonth !== new Date().toISOString().slice(0, 7) || salaryStartDate || salaryEndDate) && (
                                 <button
                                     onClick={() => {
+                                        setPayrollScope('monthly');
+                                        setSelectedMonth(new Date().toISOString().slice(0, 7));
+                                        setSelectedYear(new Date().getFullYear().toString());
                                         setSalaryStartDate('');
                                         setSalaryEndDate('');
                                         setSalarySearchTerm('');
@@ -514,7 +654,7 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
                                     }}
                                     className="rounded-xl bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                                 >
-                                    Reset
+                                    Reset Filters
                                 </button>
                             )}
 
@@ -556,9 +696,9 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
                             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                                 {paginatedSalaries.length === 0 ? (
                                     <tr>
-                                        <td colSpan={8} className="py-6 text-center text-slate-500">
-                                            {salarySearchTerm || salaryStartDate || salaryEndDate
-                                                ? 'No salary vouchers match your date range or search criteria.'
+                                        <td colSpan={8} className="py-8 text-center text-slate-500">
+                                            {salarySearchTerm || salaryStartDate || salaryEndDate || payrollScope === 'monthly' || payrollScope === 'yearly'
+                                                ? 'No salary vouchers found for the selected scope or filter criteria.'
                                                 : 'No salary vouchers generated yet.'}
                                         </td>
                                     </tr>
@@ -594,7 +734,7 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
                                                         className="rounded-lg bg-slate-100 p-1.5 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                                                     >
                                                         <Edit className="h-3.5 w-3.5" />
-                                                    </button>
+                                                     </button>
                                                     <button
                                                         onClick={() => handleDeleteSalary(sal)}
                                                         title="Delete Salary Voucher"
@@ -608,7 +748,78 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
                                     ))
                                 )}
                             </tbody>
+
+                            {/* Column Totals Footer */}
+                            {filteredSalaries.length > 0 && (
+                                <tfoot className="border-t-2 border-slate-200 bg-slate-100/90 font-bold dark:border-slate-800 dark:bg-slate-950/90">
+                                    <tr>
+                                        <td colSpan={2} className="p-3.5 text-slate-900 dark:text-slate-100">
+                                            Total Disbursed ({filteredSalaries.length} {filteredSalaries.length === 1 ? 'Voucher' : 'Vouchers'})
+                                        </td>
+                                        <td className="p-3.5 text-right font-extrabold text-slate-900 dark:text-slate-100">
+                                            {formatCurrency(salaryTotals.base, currency)}
+                                        </td>
+                                        <td className="p-3.5 text-right font-extrabold text-emerald-600 dark:text-emerald-400">
+                                            +{formatCurrency(salaryTotals.bonus, currency)}
+                                        </td>
+                                        <td className="p-3.5 text-right font-extrabold text-rose-500">
+                                            -{formatCurrency(salaryTotals.deduction, currency)}
+                                        </td>
+                                        <td className="p-3.5 text-right text-sm font-black text-amber-600 dark:text-amber-400">
+                                            {formatCurrency(salaryTotals.netPay, currency)}
+                                        </td>
+                                        <td colSpan={2} className="p-3.5 text-center text-[11px] text-slate-400 uppercase tracking-wider">
+                                            Scope Total
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            )}
                         </table>
+                    </div>
+
+                    {/* Total Expense Summary Banner */}
+                    <div className="border-t border-slate-200 bg-slate-50 p-4 text-slate-900 transition-colors dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100">
+                        <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 shadow-inner dark:bg-amber-500/20 dark:text-amber-400">
+                                    <DollarSign className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                            Total Payroll Expense
+                                        </span>
+                                        <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-extrabold text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">
+                                            {payrollScope === 'monthly'
+                                                ? `Month: ${selectedMonth}`
+                                                : payrollScope === 'yearly'
+                                                ? `Year: ${selectedYear}`
+                                                : payrollScope === 'all'
+                                                ? 'All Time'
+                                                : 'Custom Date Range'}
+                                        </span>
+                                    </div>
+                                    <p className="text-2xl font-black tracking-tight text-amber-600 dark:text-amber-400">
+                                        {formatCurrency(salaryTotals.netPay, currency)}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-3 text-xs">
+                                <div className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+                                    <span className="text-slate-500 dark:text-slate-400">Base Salary: </span>
+                                    <span className="font-bold text-slate-900 dark:text-slate-100">{formatCurrency(salaryTotals.base, currency)}</span>
+                                </div>
+                                <div className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+                                    <span className="text-slate-500 dark:text-slate-400">Bonuses: </span>
+                                    <span className="font-bold text-emerald-600 dark:text-emerald-400">+{formatCurrency(salaryTotals.bonus, currency)}</span>
+                                </div>
+                                <div className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+                                    <span className="text-slate-500 dark:text-slate-400">Deductions: </span>
+                                    <span className="font-bold text-rose-500 dark:text-rose-400">-{formatCurrency(salaryTotals.deduction, currency)}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Pagination Footer */}

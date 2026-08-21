@@ -24,8 +24,6 @@ interface SummaryData {
     expensesTotal: number;
     salariesTotal: number;
     totalCosts: number;
-    grossProfit: number;
-    grossMarginPercent: number;
     netProfit: number;
     netMarginPercent: number;
     orderCount: number;
@@ -49,6 +47,12 @@ interface ProfitBreakdown {
     all_time: ProfitPeriod;
 }
 
+interface FinancialPieItem {
+    name: string;
+    value: number;
+    color?: string;
+}
+
 interface ExpensePieItem {
     name: string;
     value: number;
@@ -69,6 +73,7 @@ interface Props {
     endDate: string;
     summary: SummaryData;
     profitBreakdown?: ProfitBreakdown;
+    financialDistribution?: FinancialPieItem[];
     expenseDistribution: ExpensePieItem[];
     dishInsights: DishInsight[];
 }
@@ -91,14 +96,12 @@ export default function ReportsIndex({
         expensesTotal: 0,
         salariesTotal: 0,
         totalCosts: 0,
-        grossProfit: 0,
-        grossMarginPercent: 0,
         netProfit: 0,
         netMarginPercent: 0,
         orderCount: 0,
     },
     profitBreakdown,
-    expenseDistribution = [],
+    financialDistribution = [],
     dishInsights = [],
 }: Props) {
     const filterForm = useForm({
@@ -154,15 +157,15 @@ export default function ReportsIndex({
         );
     };
 
-    const handleExportCSV = () => {
-        window.location.href = `/admin/reports/export-csv?period=${filterForm.data.period}&start_date=${filterForm.data.start_date}&end_date=${filterForm.data.end_date}`;
+    const handleExportExcel = () => {
+        window.location.href = `/admin/reports/export-excel?period=${filterForm.data.period}&start_date=${filterForm.data.start_date}&end_date=${filterForm.data.end_date}`;
     };
 
     const profitCards = [
-        { key: 'daily', title: 'Daily Profit / Loss', subtitle: 'Today', data: profitBreakdown?.daily },
-        { key: 'weekly', title: 'Weekly Profit / Loss', subtitle: 'This Week', data: profitBreakdown?.weekly },
+        { key: 'daily', title: 'Daily Profit / Loss', subtitle: 'Today (Daily Salary: Monthly / Days in Month)', data: profitBreakdown?.daily },
+        { key: 'weekly', title: 'Weekly Profit / Loss', subtitle: 'This Week (Weekly Salary: Monthly / Weeks in Month)', data: profitBreakdown?.weekly },
         { key: 'monthly', title: 'Monthly Profit / Loss', subtitle: 'This Month', data: profitBreakdown?.monthly },
-        { key: 'yearly', title: 'Yearly Profit / Loss', subtitle: 'This Year', data: profitBreakdown?.yearly },
+        { key: 'yearly', title: 'Yearly Profit / Loss', subtitle: 'This Year (Jan-Dec Current Year)', data: profitBreakdown?.yearly },
         { key: 'all_time', title: 'All Time Profit / Loss', subtitle: 'Cumulative', data: profitBreakdown?.all_time },
     ];
 
@@ -177,7 +180,7 @@ export default function ReportsIndex({
                             <TrendingUp className="h-6 w-6 text-amber-500" /> Financial Profit & Loss Analytics
                         </h1>
                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            Sales revenue rollups, procurement COGS, operational overhead, net profit margins, and daily email summaries
+                            Sales revenue rollups, procurement Cost of Goods Sold (COGS), operational overhead, net profit margins, and daily email summaries
                         </p>
                     </div>
 
@@ -189,10 +192,10 @@ export default function ReportsIndex({
                             <Mail className="h-4 w-4" /> Trigger Daily Closing Email
                         </button>
                         <button
-                            onClick={handleExportCSV}
+                            onClick={handleExportExcel}
                             className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-200 px-4 py-2 text-xs font-bold text-slate-800 transition-all hover:bg-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                         >
-                            <Download className="h-4 w-4" /> Export CSV Report
+                            <Download className="h-4 w-4" /> Export Excel (.xlsx)
                         </button>
                     </div>
                 </div>
@@ -201,7 +204,7 @@ export default function ReportsIndex({
                 <div className="space-y-3">
                     <div className="flex items-center justify-between">
                         <h2 className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
-                            <TrendingUp className="h-4 w-4 text-amber-500" /> Profit & Loss Breakdown [Formula: Sales &minus; (Purchases + Salaries + Bills)]
+                            <TrendingUp className="h-4 w-4 text-amber-500" /> Profit & Loss Breakdown [Formula: Sales &minus; (Purchases + Apportioned Salaries + Bills)]
                         </h2>
                     </div>
 
@@ -322,22 +325,26 @@ export default function ReportsIndex({
                     </div>
 
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Procurement & Expenses</span>
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Operational Costs</span>
                         <div className="mt-2 text-2xl font-black text-rose-600 dark:text-rose-400">
                             {formatCurrency(summary.totalCosts, currency)}
                         </div>
                         <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                            COGS: {formatCurrency(summary.purchasesCost, currency)} | Overhead: {formatCurrency(summary.expensesTotal, currency)}
+                            COGS: {formatCurrency(summary.purchasesCost, currency)} | Bills: {formatCurrency(summary.expensesTotal, currency)} | Salaries: {formatCurrency(summary.salariesTotal, currency)}
                         </p>
                     </div>
 
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Gross Profit Margin %</span>
-                        <div className="mt-2 flex items-center gap-1 text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                            <ArrowUpRight className="h-5 w-5" /> {summary.grossMarginPercent}%
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Net Profit / Loss</span>
+                        <div
+                            className={`mt-2 flex items-center gap-1 text-2xl font-black ${
+                                summary.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                            }`}
+                        >
+                            {summary.netProfit >= 0 ? '+' : '-'}{formatCurrency(Math.abs(summary.netProfit), currency)}
                         </div>
                         <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                            Gross Profit: {formatCurrency(summary.grossProfit, currency)}
+                            Formula: Sales Revenue &minus; Total Costs
                         </p>
                     </div>
 
@@ -345,43 +352,56 @@ export default function ReportsIndex({
                         <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Net Profit Margin %</span>
                         <div
                             className={`mt-2 flex items-center gap-1 text-2xl font-black ${
-                                summary.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                                summary.netMarginPercent >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                             }`}
                         >
-                            {summary.netProfit >= 0 ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
+                            {summary.netMarginPercent >= 0 ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
                             {summary.netMarginPercent}%
                         </div>
                         <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                            Net Profit: {formatCurrency(summary.netProfit, currency)}
+                            Formula: (Net Profit ÷ Sales Revenue) &times; 100
                         </p>
                     </div>
                 </div>
 
-                {/* Expense Pie Chart & Dish Profitability */}
+                               {/* Financial Distribution Chart & Dish Profitability */}
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    {/* Expense Pie Chart */}
+                    {/* Operational Financial Distribution Chart */}
                     <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                        <div>
-                            <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-100">
-                                <PieChartIcon className="h-4 w-4 text-amber-500" /> Operational Expense Distribution
-                            </h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">Breakdown by category tagging</p>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                                    <PieChartIcon className="h-4 w-4 text-amber-500" /> Operational Expense & Revenue Distribution
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    Sales, Purchases, Salaries & Bills for active searched filter
+                                </p>
+                            </div>
                         </div>
 
                         <div className="h-56 w-full">
-                            {!expenseDistribution || expenseDistribution.length === 0 ? (
+                            {!financialDistribution || financialDistribution.length === 0 ? (
                                 <div className="flex h-full w-full items-center justify-center text-xs text-slate-500">
-                                    No operational expense breakdown found for selected period.
+                                    No distribution data found for selected date range.
                                 </div>
                             ) : (
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
-                                        <Pie data={expenseDistribution} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label>
-                                            {(expenseDistribution || []).map((_, index) => (
-                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        <Pie
+                                            data={financialDistribution}
+                                            dataKey="value"
+                                            nameKey="name"
+                                            cx="50%"
+                                            cy="50%"
+                                            outerRadius={70}
+                                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                        >
+                                            {financialDistribution.map((item, index) => (
+                                                <Cell key={`cell-${index}`} fill={item.color || COLORS[index % COLORS.length]} />
                                             ))}
                                         </Pie>
                                         <Tooltip
+                                            formatter={(val: number) => formatCurrency(val, currency)}
                                             contentStyle={{
                                                 backgroundColor: '#0f172a',
                                                 borderColor: '#1e293b',
@@ -393,6 +413,17 @@ export default function ReportsIndex({
                                     </PieChart>
                                 </ResponsiveContainer>
                             )}
+                        </div>
+
+                        {/* Chart Legend Summary List */}
+                        <div className="grid grid-cols-2 gap-2 border-t border-slate-200/60 pt-3 text-[11px] dark:border-slate-800">
+                            {financialDistribution.map((item, idx) => (
+                                <div key={idx} className="flex items-center gap-1.5">
+                                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color || COLORS[idx % COLORS.length] }} />
+                                    <span className="truncate text-slate-600 dark:text-slate-400">{item.name}:</span>
+                                    <span className="ml-auto font-bold text-slate-900 dark:text-slate-100">{formatCurrency(item.value, currency)}</span>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
@@ -537,7 +568,6 @@ export default function ReportsIndex({
                                                 {page}
                                             </button>
                                         ))}
-
                                         <button
                                             onClick={() => setDishPage((p) => Math.min(totalDishPages, p + 1))}
                                             disabled={dishPage === totalDishPages}
@@ -549,6 +579,104 @@ export default function ReportsIndex({
                                 )}
                             </div>
                         )}
+                    </div>
+
+                    {/* Financial Calculation Process & Methodology Guide */}
+                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 col-span-3">
+                        <div className="flex items-center gap-2 border-b border-slate-200/60 pb-3 dark:border-slate-800">
+                            <TrendingUp className="h-5 w-5 text-amber-500" />
+                            <div>
+                                <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                                    How Profit & Loss Calculations Work (Calculation Methodology)
+                                </h2>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    Easy step-by-step breakdown of how Purchases, Bills, Salaries, and Net Profits are apportioned across daily, weekly, monthly, yearly, and custom date filters.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                            {/* Daily Math Card */}
+                            <div className="rounded-xl border border-amber-500/20 bg-amber-50/40 p-4 dark:bg-amber-950/20">
+                                <h3 className="text-xs font-bold text-amber-700 dark:text-amber-400">1. Daily Calculation (Today / Single Day)</h3>
+                                <div className="mt-2 space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
+                                    <p>
+                                        <strong>Formula:</strong> Total Monthly Amount ÷ Days in Month
+                                    </p>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                                        Example (August - 31 Days): If Monthly Salary is ৳31,000, <strong>Daily Salary</strong> = ৳31,000 ÷ 31 = ৳1,000/day. Same daily apportionment applies to Purchases and Bills.
+                                    </p>
+                                    <p className="pt-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                        Daily Profit = Today's Sales &minus; (Daily Purchases + Daily Bills + Daily Salaries)
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Weekly Math Card */}
+                            <div className="rounded-xl border border-blue-500/20 bg-blue-50/40 p-4 dark:bg-blue-950/20">
+                                <h3 className="text-xs font-bold text-blue-700 dark:text-blue-400">2. Weekly Calculation (This Week / 7 Days)</h3>
+                                <div className="mt-2 space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
+                                    <p>
+                                        <strong>Formula:</strong> Total Monthly Amount ÷ Weeks in Month
+                                    </p>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                                        Total Weeks in Month = Days in Month ÷ 7 (e.g., 31 ÷ 7 = 4.43 weeks).
+                                        <strong>Weekly Rate</strong> = Monthly Amount ÷ 4.43 (equivalent to 7 days of daily rates).
+                                    </p>
+                                    <p className="pt-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                        Weekly Profit = Week Sales &minus; (Weekly Purchases + Weekly Bills + Weekly Salaries)
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Monthly Math Card */}
+                            <div className="rounded-xl border border-purple-500/20 bg-purple-50/40 p-4 dark:bg-purple-950/20">
+                                <h3 className="text-xs font-bold text-purple-700 dark:text-purple-400">3. Monthly Calculation (Full Month)</h3>
+                                <div className="mt-2 space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
+                                    <p>
+                                        <strong>Formula:</strong> Sum of all transactions for the entire month
+                                    </p>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                                        Aggregates all paid sales, total ingredient purchases, monthly operational bills, and paid staff salaries for that month.
+                                    </p>
+                                    <p className="pt-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                        Monthly Profit = Monthly Sales &minus; (Monthly Purchases + Monthly Bills + Monthly Salaries)
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Yearly & Custom Date Math Card */}
+                            <div className="rounded-xl border border-emerald-500/20 bg-emerald-50/40 p-4 dark:bg-emerald-950/20">
+                                <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-400">4. Yearly & Custom Date Ranges</h3>
+                                <div className="mt-2 space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
+                                    <p>
+                                        <strong>Yearly:</strong> Sum of all 12 months (Jan 1 to Dec 31) for current year.
+                                    </p>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                                        <strong>Custom Range (e.g. Aug 5–15 = 11 days):</strong> Sum of 11 individual daily rates for Purchases, Bills, and Salaries.
+                                    </p>
+                                    <p className="pt-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                        Custom Range Profit = Range Sales &minus; Apportioned Costs for Selected Days
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Net Margin % Math Card */}
+                            <div className="rounded-xl border border-rose-500/20 bg-rose-50/40 p-4 dark:bg-rose-950/20 sm:col-span-2 lg:col-span-1">
+                                <h3 className="text-xs font-bold text-rose-700 dark:text-rose-400">5. Net Profit Margin %</h3>
+                                <div className="mt-2 space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
+                                    <p>
+                                        <strong>Net Margin %:</strong> (Net Profit ÷ Sales Revenue) × 100
+                                    </p>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                                        Sales Revenue = Direct sum of order total amounts. Net Profit = Sales Revenue &minus; Total Costs.
+                                    </p>
+                                    <p className="pt-1 text-[10px] font-semibold text-rose-600 dark:text-rose-400">
+                                        Straightforward Math: Pulls total amounts directly for simple calculation.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -48,24 +48,16 @@ class DashboardController extends Controller
         }
 
         // Metrics for active selected period
-        $salesSelected = (float)Order::where('payment_status', 'paid')
-            ->when($startDate && $endDate, fn($q) => $q->whereBetween('created_at', [$startDate, $endDate]))
-            ->sum('total_amount');
+        $salesSelected = ReportController::getSalesForRange($startDate, $endDate);
 
-        $purchasesSelected = (float)Purchase::query()
-            ->when($startDate && $endDate, fn($q) => $q->whereBetween('purchase_date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')]))
-            ->sum('total_amount');
-
-        $expensesSelected = (float)Expense::query()
-            ->when($startDate && $endDate, fn($q) => $q->whereBetween('expense_date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')]))
-            ->sum('amount');
-
-        $salariesSelected = (float)Salary::where('payment_status', 'paid')
-            ->when($startDate && $endDate, fn($q) => $q->whereBetween('created_at', [$startDate, $endDate]))
-            ->sum('net_pay');
+        $purchasesSelected = ReportController::calculatePurchaseForRange($startDate, $endDate);
+        $expensesSelected = ReportController::calculateExpenseForRange($startDate, $endDate);
+        $salariesSelected = ReportController::calculateSalaryForRange($startDate, $endDate);
 
         $grossProfitSelected = $salesSelected - $purchasesSelected;
         $netProfitSelected = $salesSelected - ($purchasesSelected + $expensesSelected + $salariesSelected);
+        $grossMarginPercentSelected = $salesSelected > 0 ? round(($grossProfitSelected / $salesSelected) * 100, 1) : 0;
+        $netMarginPercentSelected = $salesSelected > 0 ? round(($netProfitSelected / $salesSelected) * 100, 1) : 0;
 
         // Profit Breakdown across 5 standard timeframes
         $profitBreakdown = [
@@ -214,21 +206,14 @@ class DashboardController extends Controller
     private function calculateProfitForRange($startDate = null, $endDate = null): array
     {
         $salesQuery = Order::where('payment_status', 'paid');
-        $purchaseQuery = Purchase::query();
-        $expenseQuery = Expense::query();
-        $salaryQuery = Salary::where('payment_status', 'paid');
-
         if ($startDate && $endDate) {
             $salesQuery->whereBetween('created_at', [$startDate, $endDate]);
-            $purchaseQuery->whereBetween('purchase_date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')]);
-            $expenseQuery->whereBetween('expense_date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')]);
-            $salaryQuery->whereBetween('created_at', [$startDate, $endDate]);
         }
 
         $sales = (float)$salesQuery->sum('total_amount');
-        $purchases = (float)$purchaseQuery->sum('total_amount');
-        $expenses = (float)$expenseQuery->sum('amount');
-        $salaries = (float)$salaryQuery->sum('net_pay');
+        $purchases = ReportController::calculatePurchaseForRange($startDate, $endDate);
+        $expenses = ReportController::calculateExpenseForRange($startDate, $endDate);
+        $salaries = ReportController::calculateSalaryForRange($startDate, $endDate);
 
         $totalCosts = $purchases + $expenses + $salaries;
         $netProfit = $sales - $totalCosts;

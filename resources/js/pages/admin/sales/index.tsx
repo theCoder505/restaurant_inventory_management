@@ -64,7 +64,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'POS Billing & Sales', href: '/admin/sales' },
 ];
 
-export default function SalesPOS({ categories, allMenuItems, currency, taxPercentage, recentOrders }: Props) {
+export default function SalesPOS({ categories, allMenuItems, currency, taxPercentage }: Props) {
     const [selectedCategory, setSelectedCategory] = useState<number | 'all'>('all');
     const [search, setSearch] = useState('');
     const [cart, setCart] = useState<CartItem[]>([]);
@@ -182,7 +182,7 @@ export default function SalesPOS({ categories, allMenuItems, currency, taxPercen
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Point of Sale (POS) Billing" />
 
-            <div className="flex min-h-screen flex-col gap-6 bg-slate-50 p-4 text-slate-900 transition-colors md:p-6 lg:flex-row dark:bg-slate-950 dark:text-slate-100">
+            <div className="flex min-h-[calc(100vh-75px)] flex-col gap-6 bg-slate-50 p-4 text-slate-900 transition-colors md:p-6 lg:flex-row dark:bg-slate-950 dark:text-slate-100">
                 {/* Left Section: Dish Menu & Categories */}
                 <div className="flex-1 space-y-4">
                     <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
