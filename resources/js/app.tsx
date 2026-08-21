@@ -17,6 +17,15 @@ declare global {
 // Global active brand name fallback
 window.__APP_BRAND_NAME = 'Restaurant';
 
+// Defensive Ziggy initialization from global scope if available
+if (typeof window !== 'undefined') {
+    try {
+        if (!window.Ziggy && typeof (globalThis as any).Ziggy !== 'undefined') {
+            window.Ziggy = (globalThis as any).Ziggy;
+        }
+    } catch (e) {}
+}
+
 // Listen to all Inertia page transitions and settings saves to update title instantly
 router.on('navigate', (event) => {
     const pageProps = event.detail.page.props as any;
@@ -26,6 +35,7 @@ router.on('navigate', (event) => {
     }
     if (pageProps?.ziggy) {
         window.Ziggy = pageProps.ziggy;
+        (globalThis as any).Ziggy = pageProps.ziggy;
     }
 });
 
@@ -43,6 +53,7 @@ createInertiaApp({
         }
         if (initialProps?.ziggy) {
             window.Ziggy = initialProps.ziggy;
+            (globalThis as any).Ziggy = initialProps.ziggy;
         }
 
         const root = createRoot(el);

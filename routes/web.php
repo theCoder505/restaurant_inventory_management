@@ -129,7 +129,7 @@ Route::get('/admin/{any}', function ($any) {
 // Also alias /dashboard to /administration-control/dashboard for Inertia auth redirect fallback
 Route::get('/dashboard', function () {
     return redirect()->route('admin.dashboard');
-})->middleware(['auth']);
+})->middleware(['auth'])->name('dashboard');
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

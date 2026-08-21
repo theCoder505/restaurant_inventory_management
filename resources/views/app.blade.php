@@ -28,9 +28,11 @@
 
         @routes
         <script type="text/javascript">
-            if (typeof Ziggy !== 'undefined') {
-                window.Ziggy = Ziggy;
-            }
+            try {
+                if (typeof Ziggy !== 'undefined') {
+                    window.Ziggy = Ziggy;
+                }
+            } catch (e) {}
         </script>
         @viteReactRefresh
         @vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])

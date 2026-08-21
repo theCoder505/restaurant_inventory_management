@@ -12,6 +12,7 @@ export default function ErrorPage({ status = 404, message }: Props) {
         500: 'Internal Kitchen Error',
         503: 'Service Temporarily Unavailable',
         403: 'Access Forbidden',
+        505: 'HTTP Version Not Supported',
     };
 
     const descriptionMap: Record<number, string> = {
@@ -19,6 +20,7 @@ export default function ErrorPage({ status = 404, message }: Props) {
         500: 'Something went wrong in our server kitchen while preparing your request. Please try again shortly.',
         503: 'We are performing routine kitchen maintenance. Please check back in a few minutes.',
         403: 'You do not have administrative permission to view this restricted page.',
+        505: 'The HTTP protocol version used in this request is not supported by our restaurant server. Please upgrade your browser or client connection.',
     };
 
     const wordmarkMap: Record<number, string> = {
@@ -26,6 +28,7 @@ export default function ErrorPage({ status = 404, message }: Props) {
         500: 'SERVER ERROR',
         503: 'UNAVAILABLE',
         403: 'FORBIDDEN',
+        505: 'VERSION UNSUPPORTED',
     };
 
     const errorTitle = titleMap[status] || 'Unexpected Error';

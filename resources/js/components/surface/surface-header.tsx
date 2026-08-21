@@ -142,7 +142,7 @@ export default function SurfaceHeader({
             className={`fixed top-0 z-50 w-full transition-all duration-300 ${
                 isHeaderTransparent
                     ? 'border-b border-transparent bg-transparent'
-                    : 'border-b border-slate-200/90 bg-white/95 shadow-md backdrop-blur-xl dark:border-white/10 dark:bg-[#0a0a0a]/95'
+                    : 'border-b border-slate-200/90 bg-white/95 shadow-md backdrop-blur-xl dark:border-white/10 dark:bg-black/95 dark:shadow-black/50'
             }`}
         >
             <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
@@ -154,7 +154,7 @@ export default function SurfaceHeader({
                             className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-slate-100 px-3.5 py-2 font-montserrat text-xs font-bold uppercase text-slate-800 transition-all hover:bg-slate-200 dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15 active:scale-95 shadow-sm"
                         >
                             <ArrowLeft className="h-3.5 w-3.5" />
-                            <span className="hidden xs:inline">{backLabel}</span>
+                            <span className="hidden sm:inline">{backLabel}</span>
                         </Link>
                     )}
 
@@ -190,10 +190,10 @@ export default function SurfaceHeader({
                                 <Link
                                     key={item.id}
                                     href={item.href}
-                                    className={`relative py-1 transition-all ${
+                                    className={`relative py-1 transition-all font-semibold ${
                                         isHeaderTransparent
-                                            ? 'text-white/90 hover:text-orange-400 font-semibold drop-shadow-sm'
-                                            : 'text-slate-800 hover:text-orange-600 dark:text-[#e5e2e1]/85 dark:hover:text-[#ffb59e] font-semibold'
+                                            ? 'text-white/90 hover:text-orange-400 drop-shadow-sm'
+                                            : 'text-slate-800 hover:text-orange-600 dark:text-stone-200 dark:hover:text-orange-400'
                                     }`}
                                 >
                                     {item.label}
@@ -212,7 +212,7 @@ export default function SurfaceHeader({
                                             : 'text-white/90 hover:text-orange-400 font-semibold drop-shadow-sm'
                                         : isActive
                                         ? 'text-orange-600 dark:text-orange-400 font-extrabold'
-                                        : 'text-slate-800 hover:text-orange-600 dark:text-[#e5e2e1]/85 dark:hover:text-[#ffb59e] font-semibold'
+                                        : 'text-slate-800 hover:text-orange-600 dark:text-stone-200 dark:hover:text-orange-400 font-semibold'
                                 }`}
                             >
                                 {item.label}
@@ -272,7 +272,7 @@ export default function SurfaceHeader({
 
             {/* Mobile Dropdown Menu Sheet with Active State Highlighting */}
             {mobileMenuOpen && (
-                <div className="border-b border-slate-200/90 bg-white/98 px-5 py-6 shadow-2xl backdrop-blur-2xl lg:hidden dark:border-white/10 dark:bg-[#131313]/98 transition-all animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="border-b border-slate-200/90 bg-white/95 px-5 py-6 shadow-2xl backdrop-blur-2xl lg:hidden dark:border-white/10 dark:bg-stone-950/95 transition-all animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="flex flex-col gap-2 font-montserrat text-sm uppercase tracking-wider">
                         <a
                             href="/#lineup"
