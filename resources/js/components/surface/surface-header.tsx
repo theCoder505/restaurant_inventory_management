@@ -68,7 +68,14 @@ export default function SurfaceHeader({
 
     useEffect(() => {
         const handleScroll = () => {
-            setIsScrolled(window.scrollY > 40);
+            const heroSection = document.getElementById('hero-section');
+            if (heroSection) {
+                const heroRect = heroSection.getBoundingClientRect();
+                // Add background only after the hero section is fully scrolled past the header
+                setIsScrolled(heroRect.bottom <= 70);
+            } else {
+                setIsScrolled(window.scrollY > 40);
+            }
 
             if (isSubpage) return;
 
@@ -76,26 +83,28 @@ export default function SurfaceHeader({
             const sections = ['atmosphere', 'lineup', 'specials', 'tracker', 'locations'];
             const scrollPosition = window.scrollY + 200;
 
+            let currentActive = '';
             for (let i = sections.length - 1; i >= 0; i--) {
                 const sectionId = sections[i];
                 const element = document.getElementById(sectionId);
                 if (element) {
                     const top = element.offsetTop;
                     if (scrollPosition >= top) {
-                        setActiveSection(sectionId);
-                        return;
+                        currentActive = sectionId;
+                        break;
                     }
                 }
             }
-
-            if (window.scrollY < 250) {
-                setActiveSection('');
-            }
+            setActiveSection(currentActive);
         };
 
         window.addEventListener('scroll', handleScroll, { passive: true });
+        window.addEventListener('resize', handleScroll, { passive: true });
         handleScroll();
-        return () => window.removeEventListener('scroll', handleScroll);
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            window.removeEventListener('resize', handleScroll);
+        };
     }, [isSubpage]);
 
     const isWhatsAppEnabled = settings.enable_whatsapp !== false;
@@ -116,8 +125,8 @@ export default function SurfaceHeader({
 
     const brandLogoImage = settings.brand_logo || settings.logo_url;
 
-    // Determine header style: transparent over hero if not scrolled and not subpage
-    const isHeaderTransparent = !isScrolled && !isSubpage;
+    // Determine header style: transparent over hero if not scrolled, not subpage, and mobile menu closed
+    const isHeaderTransparent = !isScrolled && !isSubpage && !mobileMenuOpen;
 
     const navItems = [
         { id: 'lineup', label: 'The Lineup', href: '/#lineup', isAnchor: true },
