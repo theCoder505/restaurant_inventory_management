@@ -1,7 +1,7 @@
 import SurfaceLayout from '@/components/surface/surface-layout';
 import { formatCurrency } from '@/lib/swal';
 import { Head, Link } from '@inertiajs/react';
-import { ChefHat, CookingPot, Flame, MessageCircle, Search, Utensils } from 'lucide-react';
+import { ChefHat, CookingPot, Flame, MessageCircle, Phone, Search, Utensils } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { SurfaceSettings } from '@/components/surface/surface-header';
 
@@ -62,9 +62,16 @@ export default function RecipesPage({ settings, menuCategories, allDishes }: Pro
         }
     }, [activeTab, searchQuery]);
 
-    const targetWhatsApp = settings.whatsapp_number || settings.phone || '+8801700000000';
-    const cleanPhone = targetWhatsApp.replace(/[^0-9]/g, '');
-    const generateWhatsAppLink = (dishName?: string) => {
+    const isWhatsAppEnabled = settings.enable_whatsapp !== false;
+    const targetPhone = isWhatsAppEnabled
+        ? settings.whatsapp_number || settings.phone || '+8801700000000'
+        : settings.phone || '+8801700000000';
+    const cleanPhone = targetPhone.replace(/[^0-9]/g, '');
+
+    const generateOrderLink = (dishName?: string) => {
+        if (!isWhatsAppEnabled) {
+            return `tel:${cleanPhone}`;
+        }
         const text = dishName
             ? `Hello ${settings.brand_name}, I would like to order the recipe: ${dishName}`
             : `Hello ${settings.brand_name}, I have an inquiry about recipes and orders.`;
@@ -204,14 +211,18 @@ export default function RecipesPage({ settings, menuCategories, allDishes }: Pro
                                     </span>
 
                                     <a
-                                        href={generateWhatsAppLink(dish.name)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                                        href={generateOrderLink(dish.name)}
+                                        target={isWhatsAppEnabled ? '_blank' : undefined}
+                                        rel={isWhatsAppEnabled ? 'noopener noreferrer' : undefined}
                                         onClick={(e) => e.stopPropagation()}
                                         className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 font-montserrat text-xs font-bold text-white shadow transition-all hover:bg-emerald-500 active:scale-95 z-20 relative"
                                     >
-                                        <MessageCircle className="h-3.5 w-3.5" />
-                                        <span>Order</span>
+                                        {isWhatsAppEnabled ? (
+                                            <MessageCircle className="h-3.5 w-3.5" />
+                                        ) : (
+                                            <Phone className="h-3.5 w-3.5" />
+                                        )}
+                                        <span>{isWhatsAppEnabled ? 'Order' : 'Call'}</span>
                                     </a>
                                 </div>
                             </Link>

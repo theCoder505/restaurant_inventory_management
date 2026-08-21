@@ -106,6 +106,16 @@ export default function Dashboard({
 }: Props) {
     const { flash } = usePage().props as any;
 
+    const safeMetrics = {
+        salesSelected: metrics?.salesSelected ?? 0,
+        purchasesSelected: metrics?.purchasesSelected ?? 0,
+        expensesSelected: metrics?.expensesSelected ?? 0,
+        salariesSelected: metrics?.salariesSelected ?? 0,
+        grossProfitSelected: metrics?.grossProfitSelected ?? 0,
+        netProfitSelected: metrics?.netProfitSelected ?? 0,
+        expiredCount: metrics?.expiredCount ?? 0,
+    };
+
     const filterForm = useForm({
         period: period || 'month',
         start_date: startDate || '',
@@ -319,7 +329,7 @@ export default function Dashboard({
                         </div>
                         <div className="mt-3">
                             <div className="text-2xl font-black text-slate-900 dark:text-slate-100">
-                                {formatCurrency(metrics.salesSelected, currency)}
+                                {formatCurrency(safeMetrics.salesSelected, currency)}
                             </div>
                             <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
                                 Total Completed Orders in {getPeriodLabel()}
@@ -337,7 +347,7 @@ export default function Dashboard({
                         </div>
                         <div className="mt-3">
                             <div className="text-2xl font-black text-slate-900 dark:text-slate-100">
-                                {formatCurrency(metrics.purchasesSelected, currency)}
+                                {formatCurrency(safeMetrics.purchasesSelected, currency)}
                             </div>
                             <p className="mt-1 flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
                                 <Layers className="h-3.5 w-3.5" /> Ingredient Procurement Costs
@@ -355,7 +365,7 @@ export default function Dashboard({
                         </div>
                         <div className="mt-3">
                             <div className="text-2xl font-black text-slate-900 dark:text-slate-100">
-                                {formatCurrency(metrics.expensesSelected, currency)}
+                                {formatCurrency(safeMetrics.expensesSelected, currency)}
                             </div>
                             <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Utilities, Rent & Operational Overhead</p>
                         </div>
@@ -367,22 +377,22 @@ export default function Dashboard({
                             <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Net Profit / Loss ({getPeriodLabel()})</span>
                             <div
                                 className={`flex h-9 w-9 items-center justify-center rounded-xl ${
-                                    metrics.netProfitSelected >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
+                                    safeMetrics.netProfitSelected >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
                                 }`}
                             >
-                                {metrics.netProfitSelected >= 0 ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
+                                {safeMetrics.netProfitSelected >= 0 ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
                             </div>
                         </div>
                         <div className="mt-3">
                             <div
                                 className={`text-2xl font-black ${
-                                    metrics.netProfitSelected >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                                    safeMetrics.netProfitSelected >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                                 }`}
                             >
-                                {metrics.netProfitSelected >= 0 ? '+' : '-'}{formatCurrency(Math.abs(metrics.netProfitSelected), currency)}
+                                {safeMetrics.netProfitSelected >= 0 ? '+' : '-'}{formatCurrency(Math.abs(safeMetrics.netProfitSelected), currency)}
                             </div>
                             <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                                Gross Profit: {formatCurrency(metrics.grossProfitSelected, currency)}
+                                Gross Profit: {formatCurrency(safeMetrics.grossProfitSelected, currency)}
                             </p>
                         </div>
                     </div>

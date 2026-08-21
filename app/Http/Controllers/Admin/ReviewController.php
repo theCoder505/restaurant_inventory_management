@@ -13,9 +13,13 @@ class ReviewController extends Controller
 {
     public function index(): Response
     {
-        $reviews = Review::orderBy('order_index', 'asc')
-            ->orderBy('id', 'desc')
-            ->get();
+        try {
+            $reviews = Review::orderBy('order_index', 'asc')
+                ->orderBy('id', 'desc')
+                ->get();
+        } catch (\Throwable $e) {
+            $reviews = collect();
+        }
 
         return Inertia::render('admin/reviews/index', [
             'reviews' => $reviews,

@@ -27,12 +27,14 @@ class SettingController extends Controller
                 'about_text' => $settings['about_text'] ?? 'Step into a world where culinary excellence meets nightlife seduction. Nocturne isn\'t just a meal; it\'s a sensory experience designed for those who thrive when the sun goes down.',
                 'phone' => $settings['phone'] ?? '+8801700000000',
                 'whatsapp_number' => $settings['whatsapp_number'] ?? '+8801700000000',
+                'enable_whatsapp' => $settings['enable_whatsapp'] ?? '1',
                 'email' => $settings['email'] ?? 'contact@restaurant.com',
                 'notification_email' => $settings['notification_email'] ?? 'admin@restaurant.com',
                 'address' => $settings['address'] ?? '889 Midnight Ave, Suite B, Downtown District',
-                'opening_hours' => $settings['opening_hours'] ?? 'Mon - Sun: 8:00 PM - 4:00 AM (Fri-Sat till 6 AM)',
+                'opening_hours' => $settings['opening_hours'] ?? "Saturday - Wednesday: 8:00 PM - 4:00 AM\nThursday - Friday (Peak Nights): 8:00 PM - 6:00 AM",
                 'logo_url' => $settings['logo_url'] ?? null,
                 'default_currency' => $settings['default_currency'] ?? '৳',
+                'week_start_day' => $settings['week_start_day'] ?? 'saturday',
                 'tax_percentage' => $settings['tax_percentage'] ?? '5.0',
                 'expiry_warning_threshold' => $settings['expiry_warning_threshold'] ?? '80',
                 'google_maps_embed' => $settings['google_maps_embed'] ?? '',
@@ -58,12 +60,14 @@ class SettingController extends Controller
             'about_text' => 'nullable|string',
             'phone' => 'required|string|max:50',
             'whatsapp_number' => 'nullable|string|max:50',
+            'enable_whatsapp' => 'nullable|string|in:0,1,true,false',
             'email' => 'required|email|max:255',
             'notification_email' => 'required|email|max:255',
             'address' => 'nullable|string',
             'opening_hours' => 'nullable|string',
             'logo_url' => 'nullable|string',
             'default_currency' => 'required|string|max:10',
+            'week_start_day' => 'nullable|string|in:saturday,sunday,monday,tuesday,wednesday,thursday,friday',
             'tax_percentage' => 'required|numeric|min:0|max:100',
             'expiry_warning_threshold' => 'required|numeric|min:1|max:100',
             'google_maps_embed' => 'nullable|string',
@@ -140,9 +144,9 @@ class SettingController extends Controller
             }
         }
 
-        AuditLogService::log("Updated application settings, WhatsApp number and background image assets", "settings");
+        AuditLogService::log("Updated application settings, week start day ({$request->week_start_day}) and operating hours", "settings");
 
-        return redirect()->back()->with('success', 'App settings, WhatsApp number & background images saved successfully.');
+        return redirect()->back()->with('success', 'App settings, week start day & operating hours saved successfully.');
     }
 
     public function backupDatabase(): StreamedResponse

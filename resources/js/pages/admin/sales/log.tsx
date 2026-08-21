@@ -87,8 +87,10 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
         } else if (preset === 'week') {
             const now = new Date();
             const day = now.getDay();
-            const diffToMon = now.getDate() - day + (day === 0 ? -6 : 1);
-            const startOfWeek = new Date(now.setDate(diffToMon)).toISOString().split('T')[0];
+            const diffToSat = (day + 1) % 7;
+            const saturdayDate = new Date(now);
+            saturdayDate.setDate(now.getDate() - diffToSat);
+            const startOfWeek = saturdayDate.toISOString().split('T')[0];
             setFromDate(startOfWeek);
             setToDate(todayStr);
             applyFilters({ from_date: startOfWeek, to_date: todayStr, all_time: undefined });

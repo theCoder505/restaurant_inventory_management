@@ -29,12 +29,14 @@ class ReportController extends Controller
         $startDateParam = $request->get('start_date');
         $endDateParam = $request->get('end_date');
 
+        $weekRange = AppSetting::getWeekRange();
+
         if ($period === 'today') {
             $startDate = now()->startOfDay();
             $endDate = now()->endOfDay();
         } elseif ($period === 'week') {
-            $startDate = now()->startOfWeek();
-            $endDate = now()->endOfWeek();
+            $startDate = $weekRange[0];
+            $endDate = $weekRange[1];
         } elseif ($period === 'year') {
             $startDate = now()->startOfYear();
             $endDate = now()->endOfYear();
@@ -63,7 +65,7 @@ class ReportController extends Controller
         // Profit Breakdown across 5 timeframes: Daily, Weekly, Monthly, Yearly, All Time
         $profitBreakdown = [
             'daily' => $this->calculateProfitForRange(now()->startOfDay(), now()->endOfDay()),
-            'weekly' => $this->calculateProfitForRange(now()->startOfWeek(), now()->endOfWeek()),
+            'weekly' => $this->calculateProfitForRange($weekRange[0], $weekRange[1]),
             'monthly' => $this->calculateProfitForRange(now()->startOfMonth(), now()->endOfMonth()),
             'yearly' => $this->calculateProfitForRange(now()->startOfYear(), now()->endOfYear()),
             'all_time' => $this->calculateProfitForRange(null, null),
@@ -331,12 +333,14 @@ class ReportController extends Controller
         $startDateParam = $request->get('start_date');
         $endDateParam = $request->get('end_date');
 
+        $weekRange = AppSetting::getWeekRange();
+
         if ($period === 'today') {
             $startDate = now()->startOfDay();
             $endDate = now()->endOfDay();
         } elseif ($period === 'week') {
-            $startDate = now()->startOfWeek();
-            $endDate = now()->endOfWeek();
+            $startDate = $weekRange[0];
+            $endDate = $weekRange[1];
         } elseif ($period === 'year') {
             $startDate = now()->startOfYear();
             $endDate = now()->endOfYear();

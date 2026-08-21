@@ -1,4 +1,5 @@
 import SurfaceLayout from '@/components/surface/surface-layout';
+import { SurfaceSettings } from '@/components/surface/surface-header';
 import { formatCurrency } from '@/lib/swal';
 import { Head, Link } from '@inertiajs/react';
 import {
@@ -15,26 +16,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-interface Settings {
-    brand_name: string;
-    brand_logo?: string;
-    brand_icon?: string;
-    logo_url?: string;
-    tagline: string;
-    phone: string;
-    whatsapp_number?: string;
-    email: string;
-    address: string;
-    opening_hours: string;
-    default_currency: string;
-    social_facebook: string;
-    social_instagram: string;
-    social_twitter: string;
-    terms_conditions?: string;
-    privacy_policy?: string;
-    footer_text: string;
-}
-
 interface MenuItem {
     id: number;
     name: string;
@@ -50,7 +31,7 @@ interface MenuItem {
 interface Props {
     item: MenuItem;
     relatedItems: MenuItem[];
-    settings: Settings;
+    settings: SurfaceSettings;
 }
 
 const DEFAULT_RECIPE_IMAGE =
@@ -320,25 +301,37 @@ export default function RecipeDetail({ item, relatedItems, settings }: Props) {
                             )}
                         </div>
 
-                        {/* Order via WhatsApp Action Button */}
+                        {/* Order Action Buttons */}
                         <div className="pt-2 flex flex-col sm:flex-row gap-4" data-aos="fade-up" data-aos-delay="250">
-                            <a
-                                href={generateWhatsAppLink()}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex-1 inline-flex items-center justify-center gap-3 rounded-full bg-gradient-to-r from-orange-600 to-amber-500 py-4 px-8 font-montserrat text-sm font-extrabold uppercase tracking-wider text-white shadow-xl shadow-orange-500/30 transition-all hover:scale-105 hover:brightness-110 active:scale-95 neon-glow text-center"
-                            >
-                                <Flame className="h-5 w-5 fill-current" />
-                                <span>Order This Recipe on WhatsApp</span>
-                            </a>
+                            {settings.enable_whatsapp !== false ? (
+                                <>
+                                    <a
+                                        href={generateWhatsAppLink()}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex-1 inline-flex items-center justify-center gap-3 rounded-full bg-gradient-to-r from-orange-600 to-amber-500 py-4 px-8 font-montserrat text-sm font-extrabold uppercase tracking-wider text-white shadow-xl shadow-orange-500/30 transition-all hover:scale-105 hover:brightness-110 active:scale-95 neon-glow text-center"
+                                    >
+                                        <Flame className="h-5 w-5 fill-current" />
+                                        <span>Order This Recipe on WhatsApp</span>
+                                    </a>
 
-                            <a
-                                href={`tel:${cleanVoicePhone}`}
-                                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white py-4 px-6 font-montserrat text-xs font-bold uppercase tracking-wider text-slate-800 hover:bg-slate-100 transition-all dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10 shadow-sm"
-                            >
-                                <Phone className="h-4 w-4" />
-                                <span>Call Kitchen</span>
-                            </a>
+                                    <a
+                                        href={`tel:${cleanVoicePhone}`}
+                                        className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white py-4 px-6 font-montserrat text-xs font-bold uppercase tracking-wider text-slate-800 hover:bg-slate-100 transition-all dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10 shadow-sm"
+                                    >
+                                        <Phone className="h-4 w-4" />
+                                        <span>Call Kitchen</span>
+                                    </a>
+                                </>
+                            ) : (
+                                <a
+                                    href={`tel:${cleanVoicePhone}`}
+                                    className="flex-1 inline-flex items-center justify-center gap-3 rounded-full bg-gradient-to-r from-orange-600 to-amber-500 py-4 px-8 font-montserrat text-sm font-extrabold uppercase tracking-wider text-white shadow-xl shadow-orange-500/30 transition-all hover:scale-105 hover:brightness-110 active:scale-95 neon-glow text-center"
+                                >
+                                    <Phone className="h-5 w-5" />
+                                    <span>Call Kitchen to Order ({settings.phone})</span>
+                                </a>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -115,3 +115,16 @@ export async function showConfirm(title: string, text?: string, confirmButtonTex
 
     return result.isConfirmed;
 }
+
+export async function confirmAction(
+    title: string,
+    text?: string,
+    confirmButtonText = 'Yes, proceed!',
+    onConfirm?: () => void,
+): Promise<boolean> {
+    const isConfirmed = await showConfirm(title, text, confirmButtonText);
+    if (isConfirmed && onConfirm) {
+        onConfirm();
+    }
+    return isConfirmed;
+}

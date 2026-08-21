@@ -16,6 +16,7 @@ import {
     MapPin,
     MessageCircle,
     Navigation,
+    Phone,
     Quote,
     Radio,
     Search,
@@ -35,6 +36,7 @@ interface Settings {
     about_text: string;
     phone: string;
     whatsapp_number?: string;
+    enable_whatsapp?: boolean;
     email: string;
     address: string;
     opening_hours: string;
@@ -117,6 +119,32 @@ export const getRecipeUrl = (dish: { id: number; name: string }) => {
     return `/recipi/${dish.id}/${slug || 'dish'}`;
 };
 
+// Helper to parse line-by-line operating hours from AppSettings
+export const parseOpeningHours = (hoursStr?: string) => {
+    if (!hoursStr) {
+        return [
+            { day: 'Saturday - Wednesday', hours: '8:00 PM - 4:00 AM', isPeak: false },
+            { day: 'Thursday - Friday (Peak Nights)', hours: '8:00 PM - 6:00 AM', isPeak: true },
+        ];
+    }
+
+    const lines = hoursStr.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    return lines.map((line) => {
+        const colonIdx = line.indexOf(':');
+        if (colonIdx !== -1) {
+            const dayPart = line.substring(0, colonIdx).trim();
+            const hourPart = line.substring(colonIdx + 1).trim();
+            const isPeak =
+                dayPart.toLowerCase().includes('peak') ||
+                dayPart.toLowerCase().includes('weekend') ||
+                dayPart.toLowerCase().includes('fri') ||
+                dayPart.toLowerCase().includes('thu');
+            return { day: dayPart, hours: hourPart, isPeak };
+        }
+        return { day: line.trim(), hours: '', isPeak: false };
+    });
+};
+
 export default function Welcome({ settings, menuCategories, featuredItems, reviews = [] }: Props) {
     const [activeTab, setActiveTab] = useState<number | 'all'>('all');
     const [searchQuery, setSearchQuery] = useState('');
@@ -169,10 +197,17 @@ export default function Welcome({ settings, menuCategories, featuredItems, revie
         };
     }, [reviews]);
 
-    // Format WhatsApp Link using dedicated whatsapp_number or general phone
-    const targetWhatsApp = settings.whatsapp_number || settings.phone || '+8801700000000';
-    const cleanPhone = targetWhatsApp.replace(/[^0-9]/g, '');
-    const generateWhatsAppLink = (dishName?: string) => {
+    // Format Order Link using WhatsApp (if enabled) or Voice Phone Call
+    const isWhatsAppEnabled = settings.enable_whatsapp !== false;
+    const targetPhone = isWhatsAppEnabled
+        ? settings.whatsapp_number || settings.phone || '+8801700000000'
+        : settings.phone || '+8801700000000';
+    const cleanPhone = targetPhone.replace(/[^0-9]/g, '');
+
+    const generateOrderLink = (dishName?: string) => {
+        if (!isWhatsAppEnabled) {
+            return `tel:${cleanPhone}`;
+        }
         const text = dishName
             ? `Hello ${settings.brand_name}, I would like to order: ${dishName}`
             : `Hello ${settings.brand_name}, I have an inquiry about reservations and late-night delivery.`;
@@ -299,13 +334,17 @@ export default function Welcome({ settings, menuCategories, featuredItems, revie
                         {/* CTA Buttons */}
                         <div className="flex flex-wrap items-center gap-4 pt-3">
                             <a
-                                href={generateWhatsAppLink()}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                                href={generateOrderLink()}
+                                target={isWhatsAppEnabled ? '_blank' : undefined}
+                                rel={isWhatsAppEnabled ? 'noopener noreferrer' : undefined}
                                 className="w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-full bg-gradient-to-r from-orange-600 to-amber-500 px-8 py-4 font-montserrat text-sm font-extrabold uppercase tracking-wider text-white shadow-2xl shadow-orange-500/40 transition-all hover:scale-105 hover:brightness-110 active:scale-95 neon-glow text-center"
                             >
-                                <Flame className="h-5 w-5 fill-current" />
-                                <span>Ignite Order</span>
+                                {isWhatsAppEnabled ? (
+                                    <Flame className="h-5 w-5 fill-current" />
+                                ) : (
+                                    <Phone className="h-5 w-5" />
+                                )}
+                                <span>{isWhatsAppEnabled ? 'Ignite Order' : 'Call Kitchen'}</span>
                             </a>
                             <Link
                                 href="/recipes"
@@ -492,14 +531,18 @@ export default function Welcome({ settings, menuCategories, featuredItems, revie
                                         </span>
 
                                         <a
-                                            href={generateWhatsAppLink(dish.name)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
+                                            href={generateOrderLink(dish.name)}
+                                            target={isWhatsAppEnabled ? '_blank' : undefined}
+                                            rel={isWhatsAppEnabled ? 'noopener noreferrer' : undefined}
                                             onClick={(e) => e.stopPropagation()}
                                             className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 font-montserrat text-xs font-bold text-white shadow transition-all hover:bg-emerald-500 active:scale-95 z-20 relative"
                                         >
-                                            <MessageCircle className="h-3.5 w-3.5" />
-                                            <span>Order</span>
+                                            {isWhatsAppEnabled ? (
+                                                <MessageCircle className="h-3.5 w-3.5" />
+                                            ) : (
+                                                <Phone className="h-3.5 w-3.5" />
+                                            )}
+                                            <span>{isWhatsAppEnabled ? 'Order' : 'Call'}</span>
                                         </a>
                                     </div>
                                 </Link>
@@ -780,12 +823,12 @@ export default function Welcome({ settings, menuCategories, featuredItems, revie
                             <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-white/10">
                                 <span className="text-xs text-slate-300">Live order delivery tracking active on all orders.</span>
                                 <a
-                                    href={generateWhatsAppLink()}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                    href={generateOrderLink('Kitchen Status & Order Tracking')}
+                                    target={isWhatsAppEnabled ? '_blank' : undefined}
+                                    rel={isWhatsAppEnabled ? 'noopener noreferrer' : undefined}
                                     className="inline-flex items-center gap-2 rounded-full bg-orange-600 hover:bg-orange-500 px-4 py-2 font-montserrat text-xs font-bold text-white transition-all shadow"
                                 >
-                                    <span>Track or Order via WhatsApp</span>
+                                    <span>{isWhatsAppEnabled ? 'Track or Order via WhatsApp' : 'Call Kitchen Hotline'}</span>
                                     <ArrowRight className="h-3 w-3" />
                                 </a>
                             </div>
@@ -880,12 +923,12 @@ export default function Welcome({ settings, menuCategories, featuredItems, revie
                         </p>
                         <div className="pt-2">
                             <a
-                                href={generateWhatsAppLink('VIP Membership & Table Reservation')}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                                href={generateOrderLink('VIP Membership & Table Reservation')}
+                                target={isWhatsAppEnabled ? '_blank' : undefined}
+                                rel={isWhatsAppEnabled ? 'noopener noreferrer' : undefined}
                                 className="inline-flex items-center gap-2 rounded-full border-2 border-orange-500 px-8 py-3.5 font-montserrat text-xs font-extrabold uppercase tracking-widest text-orange-400 hover:bg-orange-500 hover:text-white transition-all active:scale-95 neon-glow-hover"
                             >
-                                <span>Join The Elite / Reserve Table</span>
+                                <span>{isWhatsAppEnabled ? 'Join The Elite / Reserve Table' : 'Call Lounge For Table Reservation'}</span>
                                 <ArrowRight className="h-4 w-4" />
                             </a>
                         </div>
@@ -995,27 +1038,28 @@ export default function Welcome({ settings, menuCategories, featuredItems, revie
                                         Operating Hours
                                     </h3>
                                     <ul className="font-inter text-xs sm:text-sm text-slate-700 dark:text-[#e5e2e1]/85 space-y-2">
-                                        <li className="flex justify-between border-b border-slate-200/80 dark:border-white/5 pb-1">
-                                            <span>Mon - Thu</span>
-                                            <span className="font-bold text-slate-900 dark:text-slate-100">8:00 PM - 4:00 AM</span>
-                                        </li>
-                                        <li className="flex justify-between text-orange-600 dark:text-orange-400 font-bold border-b border-slate-200/80 dark:border-white/5 pb-1">
-                                            <span>Fri - Sat (Peak Night)</span>
-                                            <span>8:00 PM - 6:00 AM</span>
-                                        </li>
-                                        <li className="flex justify-between pb-1">
-                                            <span>Sunday</span>
-                                            <span className="font-bold text-slate-900 dark:text-slate-100">8:00 PM - 3:00 AM</span>
-                                        </li>
+                                        {parseOpeningHours(settings.opening_hours).map((schedule, idx, arr) => (
+                                            <li
+                                                key={idx}
+                                                className={`flex justify-between ${
+                                                    idx < arr.length - 1 ? 'border-b border-slate-200/80 dark:border-white/5 pb-1' : 'pb-1'
+                                                } ${schedule.isPeak ? 'text-orange-600 dark:text-orange-400 font-bold' : ''}`}
+                                            >
+                                                <span>{schedule.day}</span>
+                                                <span className={schedule.isPeak ? 'font-bold' : 'font-bold text-slate-900 dark:text-slate-100'}>
+                                                    {schedule.hours}
+                                                </span>
+                                            </li>
+                                        ))}
                                     </ul>
                                 </div>
                             </div>
 
                             <div className="pt-4">
                                 <a
-                                    href={generateWhatsAppLink('Location Directions & Inquiries')}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                    href={generateOrderLink('Location Directions & Inquiries')}
+                                    target={isWhatsAppEnabled ? '_blank' : undefined}
+                                    rel={isWhatsAppEnabled ? 'noopener noreferrer' : undefined}
                                     className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-slate-100 py-3.5 font-montserrat text-xs font-bold uppercase text-slate-800 hover:bg-slate-200 transition-all dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
                                 >
                                     <Compass className="h-4 w-4 text-orange-500" />
@@ -1076,13 +1120,17 @@ export default function Welcome({ settings, menuCategories, featuredItems, revie
                     </p>
                     <div className="pt-4 flex flex-wrap justify-center gap-4">
                         <a
-                            href={generateWhatsAppLink()}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href={generateOrderLink()}
+                            target={isWhatsAppEnabled ? '_blank' : undefined}
+                            rel={isWhatsAppEnabled ? 'noopener noreferrer' : undefined}
                             className="inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-orange-600 to-amber-500 px-8 sm:px-10 py-4 sm:py-5 font-montserrat text-sm font-extrabold uppercase tracking-wider text-white shadow-2xl shadow-orange-500/40 transition-all hover:scale-105 active:scale-95 neon-glow text-center"
                         >
-                            <Flame className="h-5 w-5 fill-current" />
-                            <span>Order Now On WhatsApp</span>
+                            {isWhatsAppEnabled ? (
+                                <Flame className="h-5 w-5 fill-current" />
+                            ) : (
+                                <Phone className="h-5 w-5" />
+                            )}
+                            <span>{isWhatsAppEnabled ? 'Order Now On WhatsApp' : 'Call Kitchen Hotline'}</span>
                         </a>
                         <Link
                             href="/recipes"

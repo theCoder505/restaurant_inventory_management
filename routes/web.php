@@ -25,6 +25,11 @@ Route::get('/recipes/{menuItem}/{slug?}', [PublicController::class, 'recipeDetai
 
 // Authenticated Admin Panel
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    // Root Admin redirect
+    Route::get('/', function () {
+        return redirect()->route('admin.dashboard');
+    });
+
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 

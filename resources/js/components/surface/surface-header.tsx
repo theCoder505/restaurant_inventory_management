@@ -9,6 +9,7 @@ import {
     Menu as MenuIcon,
     MessageCircle,
     Moon,
+    Phone,
     Sparkles,
     Sun,
     Utensils,
@@ -23,12 +24,14 @@ export interface SurfaceSettings {
     logo_url?: string;
     phone: string;
     whatsapp_number?: string;
+    enable_whatsapp?: boolean;
     email?: string;
     address?: string;
     opening_hours?: string;
     tagline?: string;
     about_text?: string;
     default_currency?: string;
+    week_start_day?: string;
     google_maps_embed?: string;
     social_facebook?: string;
     social_instagram?: string;
@@ -95,10 +98,16 @@ export default function SurfaceHeader({
         return () => window.removeEventListener('scroll', handleScroll);
     }, [isSubpage]);
 
-    // Use dynamic WhatsApp number if provided, otherwise fallback to general phone
-    const targetPhone = settings.whatsapp_number || settings.phone || '+8801700000000';
+    const isWhatsAppEnabled = settings.enable_whatsapp !== false;
+    const targetPhone = isWhatsAppEnabled
+        ? settings.whatsapp_number || settings.phone || '+8801700000000'
+        : settings.phone || '+8801700000000';
     const cleanPhone = targetPhone.replace(/[^0-9]/g, '');
-    const generateWhatsAppLink = () => {
+
+    const generateOrderLink = () => {
+        if (!isWhatsAppEnabled) {
+            return `tel:${cleanPhone}`;
+        }
         const text = customOrderText
             ? `Hello ${settings.brand_name}, I would like to order: ${customOrderText}`
             : `Hello ${settings.brand_name}, I have an inquiry about menu, specials, and late-night delivery.`;
@@ -220,15 +229,19 @@ export default function SurfaceHeader({
                         {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                     </button>
 
-                    {/* Order / WhatsApp CTA */}
+                    {/* Order CTA (WhatsApp if enabled, otherwise Phone Call) */}
                     <a
-                        href={generateWhatsAppLink()}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href={generateOrderLink()}
+                        target={isWhatsAppEnabled ? '_blank' : undefined}
+                        rel={isWhatsAppEnabled ? 'noopener noreferrer' : undefined}
                         className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-600 to-amber-500 px-4 sm:px-5 py-2 sm:py-2.5 font-montserrat text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-orange-500/30 transition-all hover:brightness-110 active:scale-95 neon-glow-hover"
                     >
-                        <Flame className="h-3.5 w-3.5 fill-current" />
-                        <span>{customOrderText ? 'Order Recipe' : 'Order Now'}</span>
+                        {isWhatsAppEnabled ? (
+                            <Flame className="h-3.5 w-3.5 fill-current" />
+                        ) : (
+                            <Phone className="h-3.5 w-3.5" />
+                        )}
+                        <span>{customOrderText ? 'Order Recipe' : isWhatsAppEnabled ? 'Order Now' : 'Call Kitchen'}</span>
                     </a>
 
                     {/* Mobile Hamburger Button */}
@@ -326,13 +339,22 @@ export default function SurfaceHeader({
 
                         <div className="pt-3 mt-1 border-t border-slate-200 dark:border-white/10 flex flex-col gap-3">
                             <a
-                                href={generateWhatsAppLink()}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                                href={generateOrderLink()}
+                                target={isWhatsAppEnabled ? '_blank' : undefined}
+                                rel={isWhatsAppEnabled ? 'noopener noreferrer' : undefined}
                                 className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 py-3.5 text-center text-xs font-extrabold uppercase tracking-wider text-white shadow-md shadow-orange-500/20"
                             >
-                                <MessageCircle className="h-4 w-4" />
-                                <span>Order via WhatsApp</span>
+                                {isWhatsAppEnabled ? (
+                                    <>
+                                        <MessageCircle className="h-4 w-4" />
+                                        <span>Order via WhatsApp</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Phone className="h-4 w-4" />
+                                        <span>Call Kitchen: {settings.phone}</span>
+                                    </>
+                                )}
                             </a>
                         </div>
                     </div>

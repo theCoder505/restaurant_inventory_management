@@ -144,31 +144,38 @@ export default function SurfaceFooter({ settings }: SurfaceFooterProps) {
                     >
                         <ChevronUp className="h-5 w-5" />
                     </button>
-
-                    {/* 2. Floating Circular WhatsApp Logo Button */}
-                    <a
-                        href={whatsappUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="relative flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] hover:bg-[#20ba59] text-white shadow-2xl shadow-emerald-500/40 transition-all hover:scale-110 active:scale-95 group border border-white/30"
-                        title={`Chat with ${settings.brand_name} on WhatsApp`}
-                        aria-label="Chat on WhatsApp"
-                    >
-                        {/* Official WhatsApp Vector Logo */}
-                        <svg
-                            className="h-6 w-6 fill-white"
-                            viewBox="0 0 24 24"
+                    {/* 2. Floating Circular WhatsApp Logo Button (Only if enabled) */}
+                    {settings.enable_whatsapp !== false && (
+                        <a
+                            href={whatsappUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="relative flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] hover:bg-[#20ba59] text-white shadow-2xl shadow-emerald-500/40 transition-all hover:scale-110 active:scale-95 group border border-white/30"
+                            title={`Chat with ${settings.brand_name} on WhatsApp`}
+                            aria-label="Chat on WhatsApp"
                         >
-                            <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.694.079-2.146-.532-1.724-.727-2.825-2.474-2.91-2.589-.086-.114-.693-.923-.693-1.761s.443-1.25.602-1.422c.16-.172.348-.215.464-.215.116 0 .232.002.333.007.107.005.25.04.39.377.144.348.492 1.203.535 1.29.043.086.072.187.014.302-.058.115-.087.187-.174.288-.087.101-.183.226-.261.304-.087.087-.178.182-.077.355.101.173.449.741.964 1.2 0.662.59 1.22.773 1.393.86.173.086.275.072.376-.044.101-.115.434-.504.55-.677.115-.173.231-.144.39-.086s1.013.477 1.187.564.29.13.333.203c.043.072.043.418-.101.823z" />
-                            <path d="M12 2C6.477 2 2 6.477 2 12c0 1.891.526 3.662 1.442 5.178L2 22l4.982-1.397A9.957 9.957 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.2a8.17 8.17 0 0 1-4.223-1.168l-.303-.18-3.088.866.883-2.997-.197-.315A8.17 8.17 0 1 1 12 20.2z" />
-                        </svg>
+                            {/* Official WhatsApp Vector Logo */}
+                            <svg
+                                className="h-6 w-6 fill-white"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path d="M17.472 14.382c-.301-.15-1.782-.879-2.058-.979-.276-.1-.477-.15-.678.15-.2.301-.778.979-.954 1.18-.176.2-.351.226-.652.075-.301-.15-1.272-.469-2.423-1.496-.895-.798-1.5-1.784-1.676-2.085-.176-.301-.019-.464.132-.614.136-.135.301-.351.451-.527.151-.175.2-.301.301-.501.101-.2.05-.376-.025-.527-.075-.15-.678-1.634-.929-2.239-.244-.589-.493-.509-.678-.519l-.578-.01c-.2 0-.527.075-.803.376-.276.301-1.054 1.03-1.054 2.511s1.079 2.912 1.23 3.113c.15.2 2.124 3.243 5.145 4.549.719.311 1.28.497 1.718.636.722.23 1.378.198 1.897.12.578-.088 1.782-.728 2.033-1.431.251-.703.251-1.305.176-1.431-.075-.126-.276-.201-.577-.351z" />
+                                <path
+                                    fillRule="evenodd"
+                                    clipRule="evenodd"
+                                    d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2.05 21.95l4.912-1.353A9.957 9.957 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.2a8.165 8.165 0 01-4.298-1.214l-.308-.188-2.916.804.81-2.842-.206-.328A8.163 8.163 0 013.8 12c0-4.529 3.671-8.2 8.2-8.2 4.529 0 8.2 3.671 8.2 8.2 0 4.529-3.671 8.2-8.2 8.2z"
+                                />
+                            </svg>
 
-                        {/* Pulsing 24/7 Online Indicator Dot */}
-                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-85"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border border-white"></span>
-                        </span>
-                    </a>
+                            {/* Live Pulsing Online Indicator */}
+                            <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border border-white"></span>
+                            </span>
+                        </a>
+                    )}
                 </div>
             )}
 

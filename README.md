@@ -1,93 +1,137 @@
-# 🍽️ Restaurant Inventory & Recipe Costing Management System
+# 🍽️ NOCTURNE — Enterprise Restaurant Inventory, Recipe Costing & Gourmet Surface System
 
-A modern, full-stack Restaurant Inventory, Recipe Costing, POS Sales, and Financial Management Application built with **Laravel 12**, **Inertia.js**, **React (TypeScript)**, **Tailwind CSS**, and **SweetAlert2**.
+A high-performance, full-stack Restaurant Inventory, Recipe Costing, POS Terminal, Financial Analytics, and Public Surface Experience built with **Laravel 12**, **Inertia.js**, **React 18 (TypeScript)**, **Tailwind CSS**, **Swiper.js 11**, **AOS (Animate On Scroll)**, and **SweetAlert2**.
 
 ---
 
 ## 📋 Table of Contents
 
-- [Overview](#-overview)
-- [Key Features](#-key-features)
-- [End-to-End System Workflow](#-end-to-end-system-workflow)
-- [Deep Dive: Ingredient Costing & Unit Conversion](#-deep-dive-ingredient-costing--unit-conversion)
+- [🌟 System Overview](#-system-overview)
+- [✨ Key Highlights & Dual Architecture](#-key-highlights--dual-architecture)
+  - [1. Public Gourmet Surface Experience](#1-public-gourmet-surface-experience)
+  - [2. Admin Operations & Management Portal](#2-admin-operations--management-portal)
+- [🔄 End-to-End System Workflow](#-end-to-end-system-workflow)
+- [🧮 Costing, Conversion & Financial Calculations](#-costing-conversion--financial-calculations)
   - [Recipe Costing Formula](#recipe-costing-formula)
   - [Unit Conversion Logic](#unit-conversion-logic)
   - [Profit Margin Calculation](#profit-margin-calculation)
-- [System Architecture & Modules](#-system-architecture--modules)
-- [Database Entity Relationships](#-database-entity-relationships)
-- [Technology Stack](#-technology-stack)
-- [Installation & Setup](#-installation--setup)
+  - [Custom Week Calculation (Saturday Start Default)](#custom-week-calculation-saturday-start-default)
+- [📱 WhatsApp Integration & Ordering Control](#-whatsapp-integration--ordering-control)
+- [🏗️ System Architecture & Module Directory](#️-system-architecture--module-directory)
+- [🗄️ Database Entity Relationships](#️-database-entity-relationships)
+- [🛠️ Technology Stack](#️-technology-stack)
+- [⚙️ Installation & Seeding Guide](#️-installation--seeding-guide)
 
 ---
 
-## 🌟 Overview
+## 🌟 System Overview
 
-The **Restaurant Inventory & Recipe Costing System** automates food cost management, inventory tracking, purchasing, POS sales, and profitability analytics for restaurants. 
+**NOCTURNE** delivers a complete dual-layer solution designed for modern restaurants and nightlife dining establishments:
 
-By linking raw inventory ingredients directly to menu items through recipes, the system automatically calculates dish production costs, updates profit margins, and deducts raw stock in real-time whenever a sale is completed at the POS terminal.
+1. **Customer-Facing Surface**: An ultra-premium, dark/light themed public website featuring a high-energy late-night aesthetic, live dish lineups, dedicated recipe catalogues (`/recipes`), dynamic Swiper customer reviews, interactive operating schedules, and WhatsApp/Voice order integrations.
+2. **Back-Office Operations**: A robust inventory and financial management control center featuring automated recipe costing, real-time raw ingredient deduction upon POS billing, supplier purchase orders, employee payroll, audit logging, and configurable calendar rules (Saturday-starting financial weeks).
 
 ---
 
-## 🚀 Key Features
+## ✨ Key Highlights & Dual Architecture
 
-- 🥩 **Raw Inventory Tracking**: Manage stock levels, unit costs, reorder alerts, and safety stock thresholds.
-- 📦 **Supplier & Purchase Management**: Create purchase orders, receive incoming stock, and update unit purchase prices dynamically.
-- 📜 **Menu Catalog & Recipe Builder**: Define menu items, build precise ingredient recipes with custom units (`g`, `kg`, `ml`, `L`, `pcs`, etc.).
-- 🧮 **Automated Recipe Costing**: Instant recalculation of dish cost prices (`cost_price`) and profit margins (`profit_margin`).
-- 🛒 **POS Billing & Auto-Deduction**: Process orders quickly with automatic real-time deduction of raw recipe ingredients from inventory.
-- 📊 **Financial Reports & P&L Analysis**: Comprehensive Profit & Loss calculations (Gross Revenue, Cost of Goods Sold (COGS), Operating Expenses, Net Profit).
-- 👥 **HR & Employee Management**: Employee records, daily attendance tracking, and automated monthly salary generation.
-- 💸 **Operational Expense Tracking**: Log utility bills, rent, maintenance, and custom business overheads.
-- 🛡️ **Audit Logs & Security**: Detailed system audit logging for inventory movements, menu edits, purchases, and sales.
+```mermaid
+graph TB
+    subgraph Public_Surface["🌐 Public Surface Website"]
+        A[Hero & Atmosphere]
+        B[Lineup - 15 Latest Dishes]
+        C[Full Recipe Catalogue /recipes]
+        D[Recipe Details /recipi/:id/:slug]
+        E[Swiper Customer Reviews]
+        F[Live Kitchen Radar]
+        G[Operating Hours & Map]
+        H[Floating WhatsApp & Scroll-to-Top]
+    end
+
+    subgraph Admin_Portal["⚙️ Admin Management Portal"]
+        I[Dashboard & Saturday Week Metrics]
+        J[POS Sales Terminal]
+        K[Raw Inventory & Min Stock Alerts]
+        L[Recipe Builder & Unit Conversion]
+        M[Purchases & Supplier POs]
+        N[P&L Financial Reports]
+        O[HR & Salary Management]
+        P[Reviews CMS]
+        Q[Branding & Settings with Live Previews]
+    end
+
+    Public_Surface <-->|Inertia.js + Dynamic Settings| Admin_Portal
+    J -->|Auto-Deducts Recipe Ingredients| K
+    M -->|Updates Cost per Unit| L
+    L -->|Recalculates Dish Cost & Margin| J
+    J -->|Feeds Gross Revenue & COGS| N
+```
+
+---
+
+### 1. Public Gourmet Surface Experience
+
+- **Midnight Aesthetic & Theme Switcher**: Sleek dark mode by default with rich copper-amber accents, glassmorphism panels, and instant toggle to high-contrast light mode.
+- **Hero & Atmospheric Storytelling**: Dynamic hero section with customizable background images, typography, and live kitchen status indicators.
+- **The Lineup (Latest 15 Items)**: Clean showcase on the landing page displaying the top 15 latest culinary dishes with category filter tabs, search, and a direct "View All Recipes" link.
+- **Dedicated All Recipes Page (`/recipes`)**: Comprehensive catalogue of all restaurant recipes with search by name, ingredient, or category, and responsive grid layouts.
+- **Rich Recipe Detail Pages (`/recipi/{id}/{slug}`)**: Dedicated view for each dish featuring culinary preparation notes, ingredient highlights, dynamic pricing, social sharing, and structured JSON-LD SEO schema.
+- **Dynamic Swiper Reviews Carousel**: Auto-playing testimonial slider powered by Swiper 11, populated with seeded 5-star and 4-star verified customer reviews and fully manageable from the admin panel.
+- **Live Telemetry Kitchen Radar**: Simulated real-time kitchen station status (Grill Brigade, Prep Station, Expediter, Dispatch Courier).
+- **Dynamic Operating Hours**: Multi-line opening hours loaded from App Settings, rendering peak-night highlights automatically.
+- **Floating Action Stack**: Smooth scroll-to-top button paired with a bottom-right circular WhatsApp contact button with live pulsing online indicator.
+
+---
+
+### 2. Admin Operations & Management Portal
+
+- **Configurable Week Start Day (Default: Saturday)**: Select any day of the week to serve as the start of the business week. All weekly P&L reports, POS sales filters, and dashboard trend charts automatically recalculate based on this calendar setting.
+- **Automated Recipe Costing**: Link raw inventory ingredients to menu dishes with custom units (`g`, `kg`, `ml`, `L`, `pcs`, `dozen`). The system automatically converts units and calculates dish cost price (`cost_price`) and profit margin.
+- **Point of Sale (POS) Billing & Auto-Deduction**: Process customer orders with receipt generation, cash/card payment logging, and instant automated deduction of raw recipe ingredients from inventory balances.
+- **Suppliers & Purchase Orders**: Track vendor price fluctuations. When purchase orders are received, inventory quantities increase and raw ingredient unit costs are updated across all recipes.
+- **P&L Financial Analytics & Excel Export**: Track Gross Revenue, Cost of Goods Sold (COGS), Operating Expenses, and Net Profit across customizable date ranges with one-click Excel/CSV export.
+- **HR, Attendance & Payroll**: Staff database with daily attendance tracking, overtime calculation, and automated monthly salary generation.
+- **Review Moderation CMS (`/admin/reviews`)**: Create, approve, edit, and feature customer testimonials displayed on the public landing page.
+- **App Settings & Dynamic Media (`/admin/settings`)**: Live preview uploaders for Hero backgrounds, Atmosphere images, VIP lounge media, and brand logos; multi-line operating hours editor; WhatsApp toggle; and business rules.
 
 ---
 
 ## 🔄 End-to-End System Workflow
 
 ```mermaid
-flowchart TD
-    A[1. Raw Inventory Setup] -->|Add Ingredients & Base Unit Costs| B[2. Supplier & Purchase Orders]
-    B -->|Receive Stock & Update Cost per Unit| C[3. Recipe Builder & Costing]
-    C -->|Link Ingredients + Convert Units| D[Calculate Dish Cost Price & Profit Margin]
-    D --> E[4. POS Terminal & Sales Billing]
-    E -->|Customer Order Placed| F[5. Real-Time Stock Deduction]
-    F -->|Deduct Raw Ingredients from Stock| G[6. Financial Reports & Audit Log]
-    G -->|P&L Analytics, COGS, Net Profit| H[Dashboard Insights]
+sequenceDiagram
+    autonumber
+    actor Admin as Restaurant Manager / Admin
+    actor Chef as Master Chef
+    actor Cashier as POS Cashier
+    actor Customer as Website Customer
+    participant System as Nocturne Backend (Laravel)
+    participant Inventory as Raw Stock Database
+    participant Menu as Menu & Recipe Engine
+    participant POS as POS & Sales Module
+
+    Admin->>Inventory: 1. Add Raw Items (Flour: $2/kg, Cheese: $10/kg)
+    Admin->>System: 2. Create Purchase Order & Receive Stock
+    Chef->>Menu: 3. Create Dish "Truffle Burger" ($18.00)
+    Chef->>Menu: 4. Add Recipe: 200g Flour, 100g Cheese, 150g Patty
+    System->>Menu: 5. Convert Units (200g -> 0.2kg) & Calculate Dish Cost ($4.20) -> 76.67% Margin
+    Customer->>System: 6. Browse /recipes or Landing Page
+    Customer->>Cashier: 7. Orders 2x "Truffle Burger" ($36.00)
+    Cashier->>POS: 8. Process Order & Print Receipt
+    POS->>Inventory: 9. Auto-Deduct: 400g Flour, 200g Cheese, 300g Patty
+    POS->>System: 10. Record Sale, COGS ($8.40) & Gross Profit ($27.60)
+    System->>Admin: 11. Update Saturday-Week Dashboard & Financial P&L
 ```
-
-### Operational Steps:
-
-1. **Inventory Initialization (`/admin/inventory`)**:
-   - Register raw items (e.g., *Flour*, *Beef*, *Milk*, *Eggs*) specifying base unit (`kg`, `L`, `pcs`) and `cost_per_unit`.
-
-2. **Purchasing & Stock Inward (`/admin/purchases`)**:
-   - Issue purchase orders to suppliers. When marked as **Completed**, stock quantities are incremented and the item's `cost_per_unit` is updated according to the latest vendor price.
-
-3. **Recipe Building & Cost Calculation (`/admin/menu`)**:
-   - Add menu items (e.g., *Cheeseburger*, *Latte*).
-   - In the **Recipe Builder Modal**, select ingredients and specify quantities required per dish serving (e.g., `200 g Flour`, `50 ml Milk`).
-   - The system executes unit conversion (`200 g` $\rightarrow$ `0.2 kg`) and calculates the exact ingredient cost price (`cost_price`).
-
-4. **POS Order Processing (`/admin/sales`)**:
-   - Select dishes on the POS interface and complete the transaction.
-   - For every dish sold, the backend iterates through its recipe ingredients, converts recipe units to inventory units, and deducts the exact consumed quantity from raw stock balances.
-
-5. **Financial & Inventory Analytics (`/admin/reports`)**:
-   - Review gross revenue, total food cost (COGS), operating expenses, and net profit.
 
 ---
 
-## 🧮 Deep Dive: Ingredient Costing & Unit Conversion
+## 🧮 Costing, Conversion & Financial Calculations
 
 ### Recipe Costing Formula
 
-The dish cost price (`cost_price`) is calculated automatically by summing the cost of each raw ingredient used in its recipe:
+The dish cost price (`cost_price`) is calculated automatically by converting each ingredient's quantity to its native inventory storage unit and multiplying by the latest unit purchase cost:
 
-$$\text{Ingredient Cost} = \sum_{i=1}^{n} \Big( \text{Converted Quantity}_i \times \text{Cost Per Unit}_i \Big)$$
-
-Where:
-- $\text{Converted Quantity}_i$: Recipe ingredient quantity converted into the raw inventory item's native unit.
-- $\text{Cost Per Unit}_i$: Latest purchase cost per native unit from `inventory_items`.
+$$\text{Dish Cost Price} = \sum_{i=1}^{n} \Big( \text{Converted Quantity}_i \times \text{Cost Per Unit}_i \Big)$$
 
 #### Backend Implementation (`MenuController.php`):
 ```php
@@ -98,20 +142,20 @@ private function recalculateDishCost(MenuItem $menuItem): void
 
     foreach ($recipes as $recipe) {
         if ($recipe->inventoryItem) {
-            // 1. Convert recipe unit to inventory base unit
+            // 1. Convert recipe unit (e.g. 'g') to inventory storage unit (e.g. 'kg')
             $convertedQty = UnitConverterService::convert(
                 $recipe->quantity, 
                 $recipe->unit, 
                 $recipe->inventoryItem->unit
             );
 
-            // 2. Multiply by ingredient unit cost
+            // 2. Multiply converted quantity by latest inventory cost per unit
             $ingredientCost = $convertedQty * $recipe->inventoryItem->cost_per_unit;
             $totalCost += $ingredientCost;
         }
     }
 
-    // 3. Save rounded cost price
+    // 3. Persist exact calculated cost price
     $menuItem->cost_price = round($totalCost, 2);
     $menuItem->save();
 }
@@ -121,48 +165,101 @@ private function recalculateDishCost(MenuItem $menuItem): void
 
 ### Unit Conversion Logic
 
-The [`UnitConverterService`](file:///c:/xampp/htdocs/laravelwebsites/inventory_management/app/Services/UnitConverterService.php) normalizes unit differences between recipe measurements and inventory storage units:
+The [`UnitConverterService`](file:///c:/xampp/htdocs/laravelwebsites/inventory_management/app/Services/UnitConverterService.php) normalizes unit differences across all standard culinary and inventory metrics:
 
-- **Weight** (Base unit: `g` / `gram`):
-  - `1 kg` = `1000 g`
+- **Mass / Weight** (Base unit: `g`):
+  - `1 kg` = `1,000 g`
   - `1 mg` = `0.001 g`
-- **Volume** (Base unit: `ml` / `milliliter`):
-  - `1 L` = `1000 ml`
-- **Count** (Base unit: `pc` / `piece`):
+  - `1 lb` = `453.592 g`
+  - `1 oz` = `28.3495 g`
+- **Volume / Liquid** (Base unit: `ml`):
+  - `1 L` = `1,000 ml`
+  - `1 cl` = `10 ml`
+  - `1 cup` = `240 ml`
+  - `1 tbsp` = `15 ml`
+  - `1 tsp` = `5 ml`
+- **Discreet Count** (Base unit: `pc`):
   - `1 dozen` = `12 pcs`
+  - `1 pair` = `2 pcs`
 
-*Example*: If a recipe calls for `250 g` of Cheese and Cheese is stored in `kg` at `$10.00 / kg`:
+*Conversion Example*: A recipe calls for `250 g` of Cheddar Cheese, stored in inventory by `kg` at `$12.00 / kg`:
 $$\text{Converted Quantity} = \frac{250 \text{ g}}{1000} = 0.25 \text{ kg}$$
-$$\text{Ingredient Cost} = 0.25 \text{ kg} \times \$10.00/\text{kg} = \$2.50$$
+$$\text{Cost Contribution} = 0.25 \text{ kg} \times \$12.00/\text{kg} = \$3.00$$
 
 ---
 
 ### Profit Margin Calculation
 
-Both the backend model ([`MenuItem.php`](file:///c:/xampp/htdocs/laravelwebsites/inventory_management/app/Models/MenuItem.php)) and frontend view compute the profit margin percentage as:
-
 $$\text{Profit Margin \%} = \left( \frac{\text{Selling Price} - \text{Ingredient Cost}}{\text{Selling Price}} \right) \times 100$$
 
-*Example*: If Selling Price = `$15.00` and Ingredient Cost = `$4.50`:
-$$\text{Profit Margin \%} = \left( \frac{15.00 - 4.50}{15.00} \right) \times 100 = 70.0\%$$
+*Example*: Selling Price = `$20.00`, Ingredient Cost = `$5.00`:
+$$\text{Profit Margin \%} = \left( \frac{20.00 - 5.00}{20.00} \right) \times 100 = 75.0\%$$
 
 ---
 
-## 🏗️ System Architecture & Modules
+### Custom Week Calculation (Saturday Start Default)
 
-| Module | Route | Key Responsibilities |
-| :--- | :--- | :--- |
-| **Dashboard** | `/admin/dashboard` | Key performance indicators, low stock warnings, recent orders, sales charts |
-| **Inventory** | `/admin/inventory` | Manage raw items, stock levels, safety stock, manual adjustments, CSV export |
-| **Purchases** | `/admin/purchases` | Vendor POs, receiving stock, cost price updates |
-| **Menu Catalog** | `/admin/menu` | Menu dishes, categories, images, recipe builder, automated dish costing |
-| **POS Sales** | `/admin/sales` | Quick billing terminal, stock auto-deduction, order history log |
-| **Expenses** | `/admin/expenses` | Operational expenses, category breakdown |
-| **HR & Payroll** | `/admin/employees` | Staff management, daily attendance, salary slip generation |
-| **Financial Reports** | `/admin/reports` | Profit & Loss statement, COGS breakdown, daily report trigger |
-| **Suppliers** | `/admin/suppliers` | Vendor details, contact info, transaction history |
-| **Audit Logs** | `/admin/audit-logs` | System change tracking, user action history |
-| **Settings** | `/admin/settings` | Currency configuration, tax rates, database backups |
+In many regions and commercial restaurant operations, business reporting cycles start on **Saturday** rather than Sunday or Monday.
+
+The system encapsulates this logic in [`AppSetting::getWeekRange()`](file:///c:/xampp/htdocs/laravelwebsites/inventory_management/app/Models/AppSetting.php):
+
+```php
+public static function getWeekRange(?Carbon $date = null): array
+{
+    $targetDate = $date ? $date->copy() : Carbon::now();
+    $weekStartDay = self::getWeekStartDay(); // Defaults to CarbonInterface::SATURDAY
+
+    // Calculate Week Start (Saturday 00:00:00)
+    $startOfWeek = $targetDate->copy()->startOfWeek($weekStartDay);
+    if ($targetDate->dayOfWeek < $weekStartDay) {
+        $startOfWeek->subWeek();
+    }
+    $startOfWeek->startOfDay();
+
+    // Calculate Week End (Friday 23:59:59)
+    $endOfWeek = $startOfWeek->copy()->addDays(6)->endOfDay();
+
+    return [$startOfWeek, $endOfWeek];
+}
+```
+
+This ensures that:
+- **Weekly Dashboard Profit Breakdowns** capture Saturday to Friday revenue and expenses.
+- **7-Day Trend Charts** begin on Saturday.
+- **Financial P&L Weekly Reports** aggregate exact Saturday-to-Friday financial periods.
+- **POS Sales Log** "This Week" presets filter Saturday 00:00:00 to current timestamp.
+
+---
+
+## 📱 WhatsApp Integration & Ordering Control
+
+Administrators can enable or disable WhatsApp customer integration with a single toggle in **App Settings** (`/admin/settings`):
+
+| State | Public Surface Header | Dish & Recipe Cards | Floating Bottom-Right Stack |
+| :--- | :--- | :--- | :--- |
+| **Enabled (Active)** | Links to `https://wa.me/{number}` with prefilled order text | "Order" button opens WhatsApp chat with dish details | Displays floating WhatsApp logo with 24/7 pulsing indicator |
+| **Disabled (Hidden)** | Switches to "Call Kitchen" (`tel:{phone}`) | "Call" button opens phone dialer | Floating WhatsApp button is hidden (retains Scroll-to-Top) |
+
+---
+
+## 🏗️ System Architecture & Module Directory
+
+| Module | Route | Controller | Primary Capabilities |
+| :--- | :--- | :--- | :--- |
+| **Surface Landing** | `/` | `PublicController@welcome` | Hero section, Lineup (15 dishes), Atmosphere, Radar, Reviews slider, Map |
+| **Recipe Catalogue** | `/recipes` | `PublicController@recipes` | Complete searchable recipe catalogue by category |
+| **Recipe Detail** | `/recipi/{id}/{slug}` | `PublicController@recipeDetail` | In-depth recipe view, culinary notes, social share, WhatsApp/Call CTA |
+| **Admin Dashboard** | `/admin/dashboard` | `DashboardController@index` | Saturday-week KPI cards, profit breakdown, low stock alerts, sales chart |
+| **Raw Inventory** | `/admin/inventory` | `InventoryController` | Item registry, stock balances, reorder points, manual adjustments, CSV export |
+| **Suppliers & POs** | `/admin/purchases` | `PurchaseController` | Purchase orders, stock inward, auto-cost updates |
+| **Menu & Costing** | `/admin/menu` | `MenuController` | Dishes, categories, recipe builder, automated dish costing |
+| **POS Sales** | `/admin/sales` | `SalesController` | Fast billing terminal, recipe auto-deduction, invoice printing, sales log |
+| **Customer Reviews** | `/admin/reviews` | `ReviewController` | Testimonials CMS, star ratings, review moderation |
+| **P&L Reports** | `/admin/reports` | `ReportController` | Profit & Loss statement, COGS analysis, Excel exports |
+| **HR & Salaries** | `/admin/employees` | `EmployeeController` | Staff records, attendance log, monthly salary generation |
+| **Expenses** | `/admin/expenses` | `ExpenseController` | Operating overheads, utilities, rent, maintenance logging |
+| **App Settings** | `/admin/settings` | `SettingController` | Branding images, WhatsApp toggle, Week start day, Operating hours |
+| **Audit Logs** | `/admin/audit-logs` | `AuditLogController` | Full system audit trail and user action history |
 
 ---
 
@@ -174,52 +271,81 @@ $$\text{Profit Margin \%} = \left( \frac{15.00 - 4.50}{15.00} \right) \times 100
 - `orders` **1 : N** `order_items` **N : 1** `menu_items`
 - `employees` **1 : N** `attendance_logs` & `salaries`
 - `inventory_items` **1 : N** `inventory_movements`
+- `reviews` (Independent model for public testimonials & ratings)
+- `app_settings` (Key-value store for branding, business rules, hours, and toggles)
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **Backend**: Laravel 12, PHP 8.2+
-- **Frontend**: Inertia.js (React 18 + TypeScript)
-- **Styling & UI**: Tailwind CSS, Lucide React Icons
-- **Alerts & Modals**: SweetAlert2 (Custom styled dark/light theme integration)
-- **Database**: MySQL / PostgreSQL / SQLite
+- **Backend Framework**: [Laravel 12](https://laravel.com/) (PHP 8.2+)
+- **SPA Bridge**: [Inertia.js](https://inertiajs.com/)
+- **Frontend Framework**: [React 18](https://react.dev/) with [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) & Custom Vanilla CSS Tokens
+- **Carousel Engine**: [Swiper 11](https://swiperjs.com/)
+- **Scroll Animations**: [AOS (Animate On Scroll)](https://michalsnik.github.io/aos/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Modals & Alerts**: [SweetAlert2](https://sweetalert2.github.io/)
+- **Database**: MySQL 8.0+ / MariaDB / PostgreSQL
 
 ---
 
-## ⚙️ Installation & Setup
+## ⚙️ Installation & Seeding Guide
 
-1. **Clone & Navigate**:
-   ```bash
-   git clone <repository-url>
-   cd inventory_management
-   ```
+### 1. Prerequisites
+- PHP `>= 8.2` with `pdo`, `mbstring`, `openssl`, `bcmath`, `xml`, `curl` extensions.
+- Composer `>= 2.5`
+- Node.js `>= 18` & npm
+- MySQL / MariaDB Server
 
-2. **Install Dependencies**:
-   ```bash
-   composer install
-   npm install
-   ```
+### 2. Setup Steps
 
-3. **Configure Environment**:
-   ```bash
-   cp .env.example .env
-   php artisan key:generate
-   ```
+```bash
+# 1. Clone repository
+git clone <repository-url>
+cd inventory_management
 
-4. **Run Migrations & Seeders**:
-   ```bash
-   php artisan migrate --seed
-   ```
+# 2. Install backend dependencies
+composer install
 
-5. **Start Application Servers**:
-   ```bash
-   # In Terminal 1 (Laravel Dev Server)
-   php artisan serve
+# 3. Install frontend dependencies
+npm install
 
-   # In Terminal 2 (Vite Frontend Builder)
-   npm run dev
-   ```
+# 4. Configure environment variables
+cp .env.example .env
+php artisan key:generate
 
-6. **Access Dashboard**:
-   Navigate to `http://127.0.0.1:8000/admin/dashboard` in your browser.
+# 5. Configure MySQL database in .env
+# DB_DATABASE=inventory_management
+# DB_USERNAME=root
+# DB_PASSWORD=
+
+# 6. Run migrations & database seeders (Seeds 10 customer reviews, default branding & settings)
+php artisan migrate --seed
+
+# 7. Create storage symlink for uploaded branding media
+php artisan storage:link
+```
+
+### 3. Running Dev Servers
+
+```bash
+# Terminal 1: Laravel Backend Server
+php artisan serve
+
+# Terminal 2: Vite Frontend HMR Server
+npm run dev
+```
+
+### 4. Default Access Points
+
+- **Public Surface Website**: `http://localhost:8000/`
+- **All Recipes Catalogue**: `http://localhost:8000/recipes`
+- **Admin Control Center**: `http://localhost:8000/admin/dashboard`
+- **Default Admin Credentials**:
+  - **Email**: `admin@restaurant.com`
+  - **Password**: `password` (or as configured in `DatabaseSeeder.php`)
+
+---
+
+*Crafted with precision for high-volume restaurant and nightlife hospitality.*

@@ -45,8 +45,10 @@ class RestaurantSeeder extends Seeder
             'phone' => '+8801712345678',
             'email' => 'contact@legourmetbistro.com',
             'notification_email' => 'admin@legourmetbistro.com',
-            'address' => '45 Artisan Boulevard, Gulshan 2, Dhaka 1212',
-            'opening_hours' => 'Mon - Sun: 11:00 AM - 11:00 PM',
+            'address' => '889 Midnight Ave, Suite B, Downtown District',
+            'opening_hours' => "Saturday - Wednesday: 8:00 PM - 4:00 AM\nThursday - Friday (Peak Nights): 8:00 PM - 6:00 AM",
+            'week_start_day' => 'saturday',
+            'enable_whatsapp' => '1',
             'default_currency' => '৳',
             'tax_percentage' => '5.0',
             'low_stock_threshold_default' => '5',
@@ -65,111 +67,103 @@ class RestaurantSeeder extends Seeder
 
         // 3. Categories
         $invCategories = [
-            'Vegetables & Produce' => Category::create(['name' => 'Vegetables & Produce', 'type' => 'inventory', 'description' => 'Fresh garden produce']),
-            'Meat & Poultry' => Category::create(['name' => 'Meat & Poultry', 'type' => 'inventory', 'description' => 'Beef, chicken, lamb']),
-            'Dairy & Cheese' => Category::create(['name' => 'Dairy & Cheese', 'type' => 'inventory', 'description' => 'Milk, butter, mozzarella, cream']),
-            'Dry Goods & Grains' => Category::create(['name' => 'Dry Goods & Grains', 'type' => 'inventory', 'description' => 'Flour, rice, spices, oil']),
-            'Beverages & Coffee' => Category::create(['name' => 'Beverages & Coffee', 'type' => 'inventory', 'description' => 'Coffee beans, syrup, soft drinks']),
-            'Packaging & Supplies' => Category::create(['name' => 'Packaging & Supplies', 'type' => 'inventory', 'description' => 'Boxes, cups, napkins']),
+            'Vegetables & Produce' => Category::firstOrCreate(['name' => 'Vegetables & Produce', 'type' => 'inventory'], ['description' => 'Fresh garden produce']),
+            'Meat & Poultry' => Category::firstOrCreate(['name' => 'Meat & Poultry', 'type' => 'inventory'], ['description' => 'Beef, chicken, lamb']),
+            'Dairy & Cheese' => Category::firstOrCreate(['name' => 'Dairy & Cheese', 'type' => 'inventory'], ['description' => 'Milk, butter, mozzarella, cream']),
+            'Dry Goods & Grains' => Category::firstOrCreate(['name' => 'Dry Goods & Grains', 'type' => 'inventory'], ['description' => 'Flour, rice, spices, oil']),
+            'Beverages & Coffee' => Category::firstOrCreate(['name' => 'Beverages & Coffee', 'type' => 'inventory'], ['description' => 'Coffee beans, syrup, soft drinks']),
+            'Packaging & Supplies' => Category::firstOrCreate(['name' => 'Packaging & Supplies', 'type' => 'inventory'], ['description' => 'Boxes, cups, napkins']),
         ];
 
         $menuCategories = [
-            'Appetizers' => Category::create(['name' => 'Appetizers & Starters', 'type' => 'menu', 'description' => 'Light savory starters']),
-            'Main Course' => Category::create(['name' => 'Chef Main Courses', 'type' => 'menu', 'description' => 'Signature main dishes']),
-            'Desserts' => Category::create(['name' => 'Artisan Desserts', 'type' => 'menu', 'description' => 'Sweet treats']),
-            'Beverages' => Category::create(['name' => 'Handcrafted Beverages', 'type' => 'menu', 'description' => 'Hot coffee & cold drinks']),
+            'Appetizers' => Category::firstOrCreate(['name' => 'Appetizers & Starters', 'type' => 'menu'], ['description' => 'Light savory starters']),
+            'Main Course' => Category::firstOrCreate(['name' => 'Chef Main Courses', 'type' => 'menu'], ['description' => 'Signature main dishes']),
+            'Desserts' => Category::firstOrCreate(['name' => 'Artisan Desserts', 'type' => 'menu'], ['description' => 'Sweet treats']),
+            'Beverages' => Category::firstOrCreate(['name' => 'Handcrafted Beverages', 'type' => 'menu'], ['description' => 'Hot coffee & cold drinks']),
         ];
 
         $expCategories = [
-            'Rent' => Category::create(['name' => 'Rent & Facility', 'type' => 'expense']),
-            'Utilities' => Category::create(['name' => 'Electricity, Gas & Water', 'type' => 'expense']),
-            'Internet' => Category::create(['name' => 'Internet & Phone', 'type' => 'expense']),
-            'Marketing' => Category::create(['name' => 'Marketing & Promotions', 'type' => 'expense']),
-            'Repairs' => Category::create(['name' => 'Equipment Repairs', 'type' => 'expense']),
-            'Misc' => Category::create(['name' => 'Miscellaneous', 'type' => 'expense']),
+            'Rent' => Category::firstOrCreate(['name' => 'Rent & Facility', 'type' => 'expense']),
+            'Utilities' => Category::firstOrCreate(['name' => 'Electricity, Gas & Water', 'type' => 'expense']),
+            'Internet' => Category::firstOrCreate(['name' => 'Internet & Phone', 'type' => 'expense']),
+            'Marketing' => Category::firstOrCreate(['name' => 'Marketing & Promotions', 'type' => 'expense']),
+            'Repairs' => Category::firstOrCreate(['name' => 'Equipment Repairs', 'type' => 'expense']),
+            'Misc' => Category::firstOrCreate(['name' => 'Miscellaneous', 'type' => 'expense']),
         ];
 
         // 4. Suppliers
-        $supBazar = Supplier::create([
+        $supBazar = Supplier::firstOrCreate(['phone' => '+8801811111111'], [
             'name' => 'Local City Bazar Vendor',
             'contact_person' => 'Rahim Miah',
-            'phone' => '+8801811111111',
             'notes' => 'Daily local market fresh vegetables purchase',
         ]);
 
-        $supPoultry = Supplier::create([
+        $supPoultry = Supplier::firstOrCreate(['phone' => '+8801822222222'], [
             'name' => 'Fresh Farm Meats Co.',
             'contact_person' => 'Tariq Hassan',
-            'phone' => '+8801822222222',
             'email' => 'sales@freshfarmmeats.com',
         ]);
 
-        $supDairy = Supplier::create([
+        $supDairy = Supplier::firstOrCreate(['phone' => '+8801833333333'], [
             'name' => 'Golden Dairy Products',
             'contact_person' => 'Salma Begum',
-            'phone' => '+8801833333333',
         ]);
 
         // 5. Inventory Items
         $invItems = [
-            'chicken' => InventoryItem::create(['name' => 'Chicken Breast', 'sku' => 'ING-001', 'category_id' => $invCategories['Meat & Poultry']->id, 'unit' => 'kg', 'current_stock' => 25.5, 'min_stock_threshold' => 5, 'cost_per_unit' => 6.50, 'expiry_date' => now()->addDays(5)]),
-            'beef' => InventoryItem::create(['name' => 'Prime Ground Beef', 'sku' => 'ING-002', 'category_id' => $invCategories['Meat & Poultry']->id, 'unit' => 'kg', 'current_stock' => 18.0, 'min_stock_threshold' => 4, 'cost_per_unit' => 9.00, 'expiry_date' => now()->addDays(4)]),
-            'tomatoes' => InventoryItem::create(['name' => 'Fresh Tomatoes', 'sku' => 'ING-003', 'category_id' => $invCategories['Vegetables & Produce']->id, 'unit' => 'kg', 'current_stock' => 15.0, 'min_stock_threshold' => 3, 'cost_per_unit' => 1.80, 'expiry_date' => now()->addDays(6)]),
-            'mozzarella' => InventoryItem::create(['name' => 'Mozzarella Cheese', 'sku' => 'ING-004', 'category_id' => $invCategories['Dairy & Cheese']->id, 'unit' => 'kg', 'current_stock' => 10.0, 'min_stock_threshold' => 2, 'cost_per_unit' => 8.00, 'expiry_date' => now()->addDays(14)]),
-            'flour' => InventoryItem::create(['name' => 'All-Purpose Flour', 'sku' => 'ING-005', 'category_id' => $invCategories['Dry Goods & Grains']->id, 'unit' => 'kg', 'current_stock' => 40.0, 'min_stock_threshold' => 10, 'cost_per_unit' => 1.10]),
-            'oil' => InventoryItem::create(['name' => 'Cooking Olive Oil', 'sku' => 'ING-006', 'category_id' => $invCategories['Dry Goods & Grains']->id, 'unit' => 'l', 'current_stock' => 30.0, 'min_stock_threshold' => 5, 'cost_per_unit' => 4.50]),
-            'coffee' => InventoryItem::create(['name' => 'Arabica Coffee Beans', 'sku' => 'ING-007', 'category_id' => $invCategories['Beverages & Coffee']->id, 'unit' => 'kg', 'current_stock' => 8.0, 'min_stock_threshold' => 2, 'cost_per_unit' => 18.00]),
-            'boxes' => InventoryItem::create(['name' => 'Takeaway Food Box', 'sku' => 'SUP-001', 'category_id' => $invCategories['Packaging & Supplies']->id, 'unit' => 'piece', 'current_stock' => 150, 'min_stock_threshold' => 30, 'cost_per_unit' => 0.25]),
+            'chicken' => InventoryItem::firstOrCreate(['sku' => 'ING-001'], ['name' => 'Chicken Breast', 'category_id' => $invCategories['Meat & Poultry']->id, 'unit' => 'kg', 'current_stock' => 25.5, 'min_stock_threshold' => 5, 'cost_per_unit' => 6.50, 'expiry_date' => now()->addDays(5)]),
+            'beef' => InventoryItem::firstOrCreate(['sku' => 'ING-002'], ['name' => 'Prime Ground Beef', 'category_id' => $invCategories['Meat & Poultry']->id, 'unit' => 'kg', 'current_stock' => 18.0, 'min_stock_threshold' => 4, 'cost_per_unit' => 9.00, 'expiry_date' => now()->addDays(4)]),
+            'tomatoes' => InventoryItem::firstOrCreate(['sku' => 'ING-003'], ['name' => 'Fresh Tomatoes', 'category_id' => $invCategories['Vegetables & Produce']->id, 'unit' => 'kg', 'current_stock' => 15.0, 'min_stock_threshold' => 3, 'cost_per_unit' => 1.80, 'expiry_date' => now()->addDays(6)]),
+            'mozzarella' => InventoryItem::firstOrCreate(['sku' => 'ING-004'], ['name' => 'Mozzarella Cheese', 'category_id' => $invCategories['Dairy & Cheese']->id, 'unit' => 'kg', 'current_stock' => 10.0, 'min_stock_threshold' => 2, 'cost_per_unit' => 8.00, 'expiry_date' => now()->addDays(14)]),
+            'flour' => InventoryItem::firstOrCreate(['sku' => 'ING-005'], ['name' => 'All-Purpose Flour', 'category_id' => $invCategories['Dry Goods & Grains']->id, 'unit' => 'kg', 'current_stock' => 40.0, 'min_stock_threshold' => 10, 'cost_per_unit' => 1.10]),
+            'oil' => InventoryItem::firstOrCreate(['sku' => 'ING-006'], ['name' => 'Cooking Olive Oil', 'category_id' => $invCategories['Dry Goods & Grains']->id, 'unit' => 'l', 'current_stock' => 30.0, 'min_stock_threshold' => 5, 'cost_per_unit' => 4.50]),
+            'coffee' => InventoryItem::firstOrCreate(['sku' => 'ING-007'], ['name' => 'Arabica Coffee Beans', 'category_id' => $invCategories['Beverages & Coffee']->id, 'unit' => 'kg', 'current_stock' => 8.0, 'min_stock_threshold' => 2, 'cost_per_unit' => 18.00]),
+            'boxes' => InventoryItem::firstOrCreate(['sku' => 'SUP-001'], ['name' => 'Takeaway Food Box', 'category_id' => $invCategories['Packaging & Supplies']->id, 'unit' => 'piece', 'current_stock' => 150, 'min_stock_threshold' => 30, 'cost_per_unit' => 0.25]),
         ];
 
         // 6. Menu Items & Recipes
-        $dish1 = MenuItem::create([
-            'name' => 'Gourmet Chicken Burger',
+        $dish1 = MenuItem::firstOrCreate(['name' => 'Gourmet Chicken Burger'], [
             'category_id' => $menuCategories['Main Course']->id,
             'description' => 'Grilled seasoned chicken patty, lettuce, tomato, house sauce on brioche bun.',
             'price' => 12.50,
             'is_available' => true,
             'is_featured' => true,
         ]);
-        Recipe::create(['menu_item_id' => $dish1->id, 'inventory_item_id' => $invItems['chicken']->id, 'quantity' => 200, 'unit' => 'g']);
-        Recipe::create(['menu_item_id' => $dish1->id, 'inventory_item_id' => $invItems['tomatoes']->id, 'quantity' => 50, 'unit' => 'g']);
+        Recipe::firstOrCreate(['menu_item_id' => $dish1->id, 'inventory_item_id' => $invItems['chicken']->id], ['quantity' => 200, 'unit' => 'g']);
+        Recipe::firstOrCreate(['menu_item_id' => $dish1->id, 'inventory_item_id' => $invItems['tomatoes']->id], ['quantity' => 50, 'unit' => 'g']);
 
-        $dish2 = MenuItem::create([
-            'name' => 'Artisan Margherita Pizza',
+        $dish2 = MenuItem::firstOrCreate(['name' => 'Artisan Margherita Pizza'], [
             'category_id' => $menuCategories['Main Course']->id,
             'description' => 'Wood-fired crust, San Marzano tomato sauce, fresh mozzarella & basil.',
             'price' => 14.00,
             'is_available' => true,
             'is_featured' => true,
         ]);
-        Recipe::create(['menu_item_id' => $dish2->id, 'inventory_item_id' => $invItems['flour']->id, 'quantity' => 250, 'unit' => 'g']);
-        Recipe::create(['menu_item_id' => $dish2->id, 'inventory_item_id' => $invItems['mozzarella']->id, 'quantity' => 150, 'unit' => 'g']);
-        Recipe::create(['menu_item_id' => $dish2->id, 'inventory_item_id' => $invItems['tomatoes']->id, 'quantity' => 100, 'unit' => 'g']);
+        Recipe::firstOrCreate(['menu_item_id' => $dish2->id, 'inventory_item_id' => $invItems['flour']->id], ['quantity' => 250, 'unit' => 'g']);
+        Recipe::firstOrCreate(['menu_item_id' => $dish2->id, 'inventory_item_id' => $invItems['mozzarella']->id], ['quantity' => 150, 'unit' => 'g']);
+        Recipe::firstOrCreate(['menu_item_id' => $dish2->id, 'inventory_item_id' => $invItems['tomatoes']->id], ['quantity' => 100, 'unit' => 'g']);
 
-        $dish3 = MenuItem::create([
-            'name' => 'Double Cheeseburger',
+        $dish3 = MenuItem::firstOrCreate(['name' => 'Double Cheeseburger'], [
             'category_id' => $menuCategories['Main Course']->id,
             'description' => 'Two ground beef patties, melted mozzarella cheese, pickles & special glaze.',
             'price' => 15.50,
             'is_available' => true,
             'is_featured' => true,
         ]);
-        Recipe::create(['menu_item_id' => $dish3->id, 'inventory_item_id' => $invItems['beef']->id, 'quantity' => 250, 'unit' => 'g']);
-        Recipe::create(['menu_item_id' => $dish3->id, 'inventory_item_id' => $invItems['mozzarella']->id, 'quantity' => 80, 'unit' => 'g']);
+        Recipe::firstOrCreate(['menu_item_id' => $dish3->id, 'inventory_item_id' => $invItems['beef']->id], ['quantity' => 250, 'unit' => 'g']);
+        Recipe::firstOrCreate(['menu_item_id' => $dish3->id, 'inventory_item_id' => $invItems['mozzarella']->id], ['quantity' => 80, 'unit' => 'g']);
 
-        $dish4 = MenuItem::create([
-            'name' => 'Double Espresso',
+        $dish4 = MenuItem::firstOrCreate(['name' => 'Double Espresso'], [
             'category_id' => $menuCategories['Beverages']->id,
             'description' => 'Rich, aromatic double shot of 100% Arabica roast beans.',
             'price' => 4.50,
             'is_available' => true,
             'is_featured' => false,
         ]);
-        Recipe::create(['menu_item_id' => $dish4->id, 'inventory_item_id' => $invItems['coffee']->id, 'quantity' => 18, 'unit' => 'g']);
+        Recipe::firstOrCreate(['menu_item_id' => $dish4->id, 'inventory_item_id' => $invItems['coffee']->id], ['quantity' => 18, 'unit' => 'g']);
 
         // 7. Initial Purchase Entry
-        $po = Purchase::create([
-            'purchase_number' => 'PO-20260816-001',
+        $po = Purchase::firstOrCreate(['purchase_number' => 'PO-20260816-001'], [
             'supplier_id' => $supPoultry->id,
             'purchase_date' => now()->format('Y-m-d'),
             'status' => 'received',
@@ -177,9 +171,10 @@ class RestaurantSeeder extends Seeder
             'notes' => 'Weekly poultry delivery',
             'created_by' => $admin->id,
         ]);
-        PurchaseItem::create([
+        PurchaseItem::firstOrCreate([
             'purchase_id' => $po->id,
             'inventory_item_id' => $invItems['chicken']->id,
+        ], [
             'quantity' => 30,
             'unit' => 'kg',
             'unit_price' => 6.50,
@@ -188,8 +183,7 @@ class RestaurantSeeder extends Seeder
         ]);
 
         // 8. Initial Sales Orders
-        $ord1 = Order::create([
-            'order_number' => 'INV-20260816-0001',
+        $ord1 = Order::firstOrCreate(['order_number' => 'INV-20260816-0001'], [
             'order_type' => 'dine_in',
             'table_number' => 'T-04',
             'customer_name' => 'John Doe',
@@ -202,32 +196,40 @@ class RestaurantSeeder extends Seeder
             'transaction_id' => 'TXN-998811',
             'created_by' => $admin->id,
         ]);
-        OrderItem::create(['order_id' => $ord1->id, 'menu_item_id' => $dish1->id, 'item_name' => $dish1->name, 'quantity' => 1, 'unit_price' => 12.50, 'total_price' => 12.50]);
-        OrderItem::create(['order_id' => $ord1->id, 'menu_item_id' => $dish2->id, 'item_name' => $dish2->name, 'quantity' => 1, 'unit_price' => 14.00, 'total_price' => 14.00]);
+        OrderItem::firstOrCreate(['order_id' => $ord1->id, 'menu_item_id' => $dish1->id], [
+            'item_name' => $dish1->name,
+            'quantity' => 1,
+            'unit_price' => 12.50,
+            'total_price' => 12.50,
+        ]);
+        OrderItem::firstOrCreate(['order_id' => $ord1->id, 'menu_item_id' => $dish2->id], [
+            'item_name' => $dish2->name,
+            'quantity' => 1,
+            'unit_price' => 14.00,
+            'total_price' => 14.00,
+        ]);
 
         // 9. Initial Expenses
-        Expense::create([
+        Expense::firstOrCreate(['reference_no' => 'UTIL-8822'], [
             'title' => 'August Restaurant Electricity Bill',
             'category_id' => $expCategories['Utilities']->id,
             'amount' => 240.00,
             'expense_date' => now()->startOfMonth()->format('Y-m-d'),
             'payment_method' => 'bKash',
-            'reference_no' => 'UTIL-8822',
             'created_by' => $admin->id,
         ]);
 
         // 10. Employees & Salary
-        $emp1 = Employee::create([
+        $emp1 = Employee::firstOrCreate(['email' => 'alex@legourmetbistro.com'], [
             'name' => 'Chef Alex Rivers',
             'role_title' => 'Head Chef',
             'phone' => '+8801799999999',
-            'email' => 'alex@legourmetbistro.com',
             'joining_date' => '2024-01-15',
             'base_salary' => 1200.00,
             'status' => 'active',
         ]);
 
-        $emp2 = Employee::create([
+        $emp2 = Employee::firstOrCreate(['email' => 'maria@legourmetbistro.com'], [
             'name' => 'Maria Santos',
             'role_title' => 'Lead Server',
             'phone' => '+8801788888888',
@@ -236,9 +238,10 @@ class RestaurantSeeder extends Seeder
             'status' => 'active',
         ]);
 
-        Salary::create([
+        Salary::firstOrCreate([
             'employee_id' => $emp1->id,
             'month_year' => '2026-07',
+        ], [
             'base_salary' => 1200.00,
             'bonus' => 100.00,
             'deduction' => 0.00,
@@ -246,7 +249,5 @@ class RestaurantSeeder extends Seeder
             'payment_status' => 'paid',
             'payment_date' => '2026-08-01',
         ]);
-
-        $this->call(ReviewSeeder::class);
     }
 }

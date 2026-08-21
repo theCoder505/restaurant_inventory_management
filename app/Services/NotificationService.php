@@ -29,6 +29,28 @@ class NotificationService
     }
 
     /**
+     * Get all active system notifications (expiry warnings, threshold usage, etc.)
+     */
+    public static function getAllNotifications(): array
+    {
+        $alerts = self::checkAlerts();
+        $notifications = [];
+
+        foreach ($alerts['expiring'] as $item) {
+            $usedPercent = $item->quantity > 0 ? round(($item->used_amount / $item->quantity) * 100, 1) : 0;
+            $notifications[] = [
+                'id' => $item->id,
+                'title' => "High Ingredient Usage ({$usedPercent}%)",
+                'message' => "Ingredient '{$item->ingredient_name}' has reached {$usedPercent}% usage.",
+                'type' => 'warning',
+                'created_at' => $item->created_at?->toIso8601String() ?? now()->toIso8601String(),
+            ];
+        }
+
+        return $notifications;
+    }
+
+    /**
      * Sends daily summary report email synchronously.
      */
     public static function sendDailySummaryEmail(array $summaryData): bool
