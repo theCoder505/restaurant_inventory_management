@@ -60,8 +60,8 @@ interface Props {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/admin/dashboard' },
-    { title: 'POS Billing & Sales', href: '/admin/sales' },
+    { title: 'Dashboard', href: '/administration-control/dashboard' },
+    { title: 'POS Billing & Sales', href: '/administration-control/sales' },
 ];
 
 export default function SalesPOS({ categories, allMenuItems, currency, taxPercentage }: Props) {
@@ -161,7 +161,7 @@ export default function SalesPOS({ categories, allMenuItems, currency, taxPercen
             })),
         };
 
-        router.post('/admin/sales', payload, {
+        router.post('/administration-control/sales', payload, {
             onSuccess: (page) => {
                 showToast('Sale Order Completed & Stock Deducted!', 'success');
                 clearCart();
@@ -182,9 +182,9 @@ export default function SalesPOS({ categories, allMenuItems, currency, taxPercen
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Point of Sale (POS) Billing" />
 
-            <div className="flex min-h-[calc(100vh-75px)] flex-col gap-6 bg-slate-50 p-4 text-slate-900 transition-colors md:p-6 lg:flex-row dark:bg-slate-950 dark:text-slate-100">
+            <div className="flex min-h-[calc(100vh-75px)] w-full max-w-full min-w-0 flex-col gap-6 bg-slate-50 p-3 sm:p-4 md:p-6 text-slate-900 transition-colors overflow-x-hidden lg:flex-row dark:bg-slate-950 dark:text-slate-100">
                 {/* Left Section: Dish Menu & Categories */}
-                <div className="flex-1 space-y-4">
+                <div className="flex-1 min-w-0 space-y-4">
                     <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                         <div>
                             <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
@@ -209,7 +209,7 @@ export default function SalesPOS({ categories, allMenuItems, currency, taxPercen
                             />
                         </div>
 
-                        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+                        <div className="flex items-center flex-wrap gap-2 overflow-x-auto pb-1 text-xs">
                             <button
                                 onClick={() => setSelectedCategory('all')}
                                 className={`rounded-xl px-3.5 py-1.5 font-bold whitespace-nowrap transition-all ${
@@ -267,7 +267,7 @@ export default function SalesPOS({ categories, allMenuItems, currency, taxPercen
                 </div>
 
                 {/* Right Section: Order Cart & Checkout Panel */}
-                <div className="flex w-full flex-col justify-between space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:w-96 dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex w-full shrink-0 flex-col justify-between space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:w-96 dark:border-slate-800 dark:bg-slate-900">
                     <div className="space-y-4">
                         <div className="flex items-center justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
                             <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-100">
@@ -462,7 +462,7 @@ export default function SalesPOS({ categories, allMenuItems, currency, taxPercen
                 {/* Printable Receipt Modal */}
                 {completedOrder && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                        <div className="w-full max-w-sm space-y-4 rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-2xl print:border-none print:p-0 print:shadow-none">
+                        <div className="w-full max-w-sm max-h-[90vh] overflow-y-auto space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 text-slate-900 shadow-2xl print:border-none print:p-0 print:shadow-none">
                             <div className="space-y-1 border-b border-dashed border-slate-300 pb-4 text-center">
                                 <h2 className="text-lg font-black">LE GOURMET BISTRO</h2>
                                 <p className="text-[10px] text-slate-500">45 Artisan Boulevard, Gulshan 2, Dhaka</p>

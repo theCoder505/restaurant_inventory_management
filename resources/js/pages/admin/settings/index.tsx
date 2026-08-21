@@ -40,8 +40,8 @@ interface Props {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/admin/dashboard' },
-    { title: 'App Branding & Settings', href: '/admin/settings' },
+    { title: 'Dashboard', href: '/administration-control/dashboard' },
+    { title: 'App Branding & Settings', href: '/administration-control/settings' },
 ];
 
 export default function SettingsIndex({ settings }: Props) {
@@ -125,7 +125,7 @@ export default function SettingsIndex({ settings }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        form.post('/admin/settings', {
+        form.post('/administration-control/settings', {
             forceFormData: true,
             onSuccess: () => showToast('App settings, week start day & operating hours saved successfully!', 'success'),
         });
@@ -135,7 +135,7 @@ export default function SettingsIndex({ settings }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="App Branding & Settings" />
 
-            <div className="flex min-h-screen flex-col gap-6 bg-slate-50 p-4 text-slate-900 md:p-6 dark:bg-slate-950 dark:text-slate-100">
+            <div className="flex min-h-screen w-full max-w-full min-w-0 flex-col gap-6 bg-slate-50 p-3 sm:p-4 md:p-6 text-slate-900 overflow-x-hidden dark:bg-slate-950 dark:text-slate-100">
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -149,7 +149,7 @@ export default function SettingsIndex({ settings }: Props) {
 
                     <div className="flex items-center gap-3">
                         <a
-                            href="/admin/settings/backup"
+                            href="/administration-control/settings/backup"
                             className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50 active:scale-95 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                         >
                             <Download className="h-4 w-4 text-amber-500" /> Download DB Backup

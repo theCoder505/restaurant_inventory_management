@@ -45,8 +45,8 @@ interface Props {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/admin/dashboard' },
-    { title: 'System Audit Logs', href: '/admin/audit-logs' },
+    { title: 'Dashboard', href: '/administration-control/dashboard' },
+    { title: 'System Audit Logs', href: '/administration-control/audit-logs' },
 ];
 
 export default function AuditLogsIndex({ logs, filters, modules = [] }: Props) {
@@ -66,7 +66,7 @@ export default function AuditLogsIndex({ logs, filters, modules = [] }: Props) {
 
     const handleFilter = () => {
         router.get(
-            '/admin/audit-logs',
+            '/administration-control/audit-logs',
             {
                 search,
                 module: selectedModule,
@@ -83,7 +83,7 @@ export default function AuditLogsIndex({ logs, filters, modules = [] }: Props) {
         setStartDate(today);
         setEndDate(today);
         router.get(
-            '/admin/audit-logs',
+            '/administration-control/audit-logs',
             {
                 search,
                 module: selectedModule,
@@ -100,13 +100,13 @@ export default function AuditLogsIndex({ logs, filters, modules = [] }: Props) {
         setSelectedModule('');
         setStartDate('');
         setEndDate('');
-        router.get('/admin/audit-logs', { per_page: perPage }, { preserveState: true, preserveScroll: true });
+        router.get('/administration-control/audit-logs', { per_page: perPage }, { preserveState: true, preserveScroll: true });
     };
 
     const handlePerPageChange = (newPerPage: number) => {
         setPerPage(newPerPage);
         router.get(
-            '/admin/audit-logs',
+            '/administration-control/audit-logs',
             {
                 search,
                 module: selectedModule,
@@ -126,7 +126,7 @@ export default function AuditLogsIndex({ logs, filters, modules = [] }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="System Security Audit Trail Logs" />
 
-            <div className="flex min-h-screen flex-col gap-6 bg-slate-50 p-4 text-slate-900 transition-colors md:p-6 dark:bg-slate-950 dark:text-slate-100">
+            <div className="flex min-h-screen w-full max-w-full min-w-0 flex-col gap-6 bg-slate-50 p-3 sm:p-4 md:p-6 text-slate-900 transition-colors overflow-x-hidden dark:bg-slate-950 dark:text-slate-100">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
@@ -145,7 +145,7 @@ export default function AuditLogsIndex({ logs, filters, modules = [] }: Props) {
                                 if (selectedModule) params.set('module', selectedModule);
                                 if (startDate) params.set('start_date', startDate);
                                 if (endDate) params.set('end_date', endDate);
-                                window.location.href = `/admin/audit-logs/export-excel?${params.toString()}`;
+                                window.location.href = `/administration-control/audit-logs/export-excel?${params.toString()}`;
                             }}
                             className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-200 px-4 py-2 text-xs font-bold text-slate-800 transition-all hover:bg-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                         >
@@ -261,7 +261,7 @@ export default function AuditLogsIndex({ logs, filters, modules = [] }: Props) {
                 {/* Audit Log Table */}
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+                        <table className="w-full min-w-[750px] text-left text-xs text-slate-700 dark:text-slate-300">
                             <thead className="bg-slate-100 text-[10px] font-semibold uppercase text-slate-500 dark:bg-slate-950 dark:text-slate-400">
                                 <tr>
                                     <th className="p-3.5">Timestamp</th>

@@ -10,6 +10,19 @@ interface Category {
     name: string;
 }
 
+interface InventoryMovement {
+    id: number;
+    inventory_item_id: number;
+    type: string;
+    quantity: number;
+    unit: string;
+    cost_per_unit?: number;
+    reference_type?: string;
+    reference_id?: number;
+    notes?: string;
+    created_at?: string;
+}
+
 interface InventoryItem {
     id: number;
     name: string;
@@ -22,6 +35,7 @@ interface InventoryItem {
     expiry_date?: string;
     notes?: string;
     category?: Category;
+    movements?: InventoryMovement[];
 }
 
 interface Props {
@@ -40,8 +54,8 @@ interface Props {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/admin/dashboard' },
-    { title: 'Inventory & Stock Master', href: '/admin/inventory' },
+    { title: 'Dashboard', href: '/administration-control/dashboard' },
+    { title: 'Inventory & Stock Master', href: '/administration-control/inventory' },
 ];
 
 export default function InventoryIndex({ items, categories, currency, filters }: Props) {
@@ -75,7 +89,7 @@ export default function InventoryIndex({ items, categories, currency, filters }:
 
     const handleFilter = () => {
         router.get(
-            '/admin/inventory',
+            '/administration-control/inventory',
             {
                 search,
                 category_id: selectedCategory,
@@ -121,14 +135,14 @@ export default function InventoryIndex({ items, categories, currency, filters }:
     const submitItemForm = (e: React.FormEvent) => {
         e.preventDefault();
         if (editingItem) {
-            itemForm.put(`/admin/inventory/${editingItem.id}`, {
+            itemForm.put(`/administration-control/inventory/${editingItem.id}`, {
                 onSuccess: () => {
                     setShowModal(false);
                     showToast('Inventory item updated successfully!', 'success');
                 },
             });
         } else {
-            itemForm.post('/admin/inventory', {
+            itemForm.post('/administration-control/inventory', {
                 onSuccess: () => {
                     setShowModal(false);
                     showToast('New ingredient item created!', 'success');
@@ -140,7 +154,7 @@ export default function InventoryIndex({ items, categories, currency, filters }:
     const handleDelete = async (item: InventoryItem) => {
         const confirmed = await showConfirm(`Delete "${item.name}"?`, 'This action cannot be undone.');
         if (confirmed) {
-            router.delete(`/admin/inventory/${item.id}`, {
+            router.delete(`/administration-control/inventory/${item.id}`, {
                 onSuccess: () => showToast(`Inventory item "${item.name}" deleted`, 'success'),
             });
         }
@@ -161,7 +175,7 @@ export default function InventoryIndex({ items, categories, currency, filters }:
         e.preventDefault();
         if (!adjustingItem) return;
 
-        adjustForm.post(`/admin/inventory/${adjustingItem.id}/adjust`, {
+        adjustForm.post(`/administration-control/inventory/${adjustingItem.id}/adjust`, {
             onSuccess: () => {
                 setAdjustingItem(null);
                 showToast(`Stock updated for ${adjustingItem.name}`, 'success');
@@ -173,7 +187,7 @@ export default function InventoryIndex({ items, categories, currency, filters }:
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Inventory & Raw Stock Master" />
 
-            <div className="flex min-h-screen flex-col gap-6 bg-slate-50 p-4 text-slate-900 transition-colors md:p-6 dark:bg-slate-950 dark:text-slate-100">
+            <div className="flex min-h-screen w-full max-w-full min-w-0 flex-col gap-6 bg-slate-50 p-3 sm:p-4 md:p-6 text-slate-900 transition-colors overflow-x-hidden dark:bg-slate-950 dark:text-slate-100">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
@@ -242,7 +256,7 @@ export default function InventoryIndex({ items, categories, currency, filters }:
                 {/* Stock Table */}
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+                        <table className="w-full min-w-[850px] text-left text-xs text-slate-700 dark:text-slate-300">
                             <thead className="bg-slate-100 text-[10px] font-semibold text-slate-500 uppercase dark:bg-slate-950 dark:text-slate-400">
                                 <tr>
                                     <th className="p-3.5">Ingredient & SKU</th>
@@ -336,7 +350,7 @@ export default function InventoryIndex({ items, categories, currency, filters }:
                 {/* Create / Edit Modal */}
                 {showModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                        <div className="w-full max-w-lg space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+                        <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
                             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
                                 {editingItem ? 'Edit Ingredient Item' : 'Add New Inventory Ingredient'}
                             </h3>
@@ -481,7 +495,7 @@ export default function InventoryIndex({ items, categories, currency, filters }:
                 {/* Stock Adjustment Modal */}
                 {adjustingItem && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                        <div className="w-full max-w-md space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+                        <div className="w-full max-w-md max-h-[90vh] overflow-y-auto space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
                             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Adjust Stock: {adjustingItem.name}</h3>
                             <p className="text-xs text-slate-500 dark:text-slate-400">
                                 Current Stock:{' '}

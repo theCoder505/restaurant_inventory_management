@@ -28,6 +28,20 @@ class ProfileUpdateRequest extends FormRequest
                 Rule::unique(Admin::class)->ignore($this->user()->id),
             ],
             'phone' => ['nullable', 'string', 'max:30'],
+            'otp_code' => ['required', 'string', 'digits:6'],
+        ];
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'otp_code.required' => 'The 6-digit OTP verification code is required.',
+            'otp_code.digits' => 'The verification code must be exactly 6 digits.',
         ];
     }
 }

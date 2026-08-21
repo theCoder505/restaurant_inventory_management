@@ -11,6 +11,10 @@ use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
 
+use App\Services\AuditLogService;
+use App\Services\OtpService;
+use Illuminate\Validation\ValidationException;
+
 class PasswordController extends Controller
 {
     /**
@@ -32,12 +36,24 @@ class PasswordController extends Controller
         $validated = $request->validate([
             'current_password' => ['required', 'current_password'],
             'password' => ['required', Password::defaults(), 'confirmed'],
+            'otp_code' => ['required', 'string', 'digits:6'],
+        ], [
+            'otp_code.required' => 'The 6-digit OTP verification code is required.',
+            'otp_code.digits' => 'The verification code must be exactly 6 digits.',
         ]);
+
+        if (!OtpService::verify($request->user(), 'password_update', $validated['otp_code'] ?? null)) {
+            throw ValidationException::withMessages([
+                'otp_code' => 'The verification code provided is invalid or has expired. Please request a new code.',
+            ]);
+        }
 
         $request->user()->update([
             'password' => Hash::make($validated['password']),
         ]);
 
-        return back()->with('success', 'Password updated successfully.');
+        AuditLogService::log("Updated admin password credentials", 'security');
+
+        return back()->with('success', 'Admin password updated successfully.');
     }
 }

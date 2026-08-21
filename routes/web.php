@@ -24,7 +24,7 @@ Route::get('/recipe/{menuItem}/{slug?}', [PublicController::class, 'recipeDetail
 Route::get('/recipes/{menuItem}/{slug?}', [PublicController::class, 'recipeDetail']);
 
 // Authenticated Admin Panel
-Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth'])->prefix('administration-control')->name('admin.')->group(function () {
     // Root Admin redirect
     Route::get('/', function () {
         return redirect()->route('admin.dashboard');
@@ -118,7 +118,15 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/settings/backup-db', [SettingController::class, 'backupDatabase'])->name('settings.backup-db');
 });
 
-// Also alias /dashboard to /admin/dashboard for Inertia auth redirect fallback
+// Legacy redirects from /admin to /administration-control
+Route::get('/admin', function () {
+    return redirect('/administration-control/dashboard');
+});
+Route::get('/admin/{any}', function ($any) {
+    return redirect('/administration-control/' . $any);
+})->where('any', '.*');
+
+// Also alias /dashboard to /administration-control/dashboard for Inertia auth redirect fallback
 Route::get('/dashboard', function () {
     return redirect()->route('admin.dashboard');
 })->middleware(['auth']);

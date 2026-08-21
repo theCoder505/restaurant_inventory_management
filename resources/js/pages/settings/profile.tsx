@@ -1,3 +1,4 @@
+import OtpModal from '@/components/otp-modal';
 import { useAppearance } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 import { showToast } from '@/lib/swal';
@@ -8,6 +9,7 @@ import {
     Eye,
     EyeOff,
     KeyRound,
+    LoaderCircle,
     Lock,
     Mail,
     Monitor,
@@ -24,13 +26,27 @@ import React, { FormEventHandler, useRef, useState } from 'react';
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard',
-        href: '/admin/dashboard',
+        href: '/administration-control/dashboard',
     },
     {
         title: 'Admin Profile Settings',
         href: '/settings/profile',
     },
 ];
+
+type ProfileFormData = {
+    name: string;
+    email: string;
+    phone: string;
+    otp_code: string;
+};
+
+type PasswordFormData = {
+    current_password: string;
+    password: string;
+    password_confirmation: string;
+    otp_code: string;
+};
 
 export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail?: boolean; status?: string }) {
     const { auth } = usePage<SharedData>().props;
@@ -40,56 +56,192 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail?:
     const [showNewPass, setShowNewPass] = useState(false);
     const [showConfirmPass, setShowConfirmPass] = useState(false);
 
+    // OTP Modal states
+    const [otpModalAction, setOtpModalAction] = useState<'profile' | 'password' | null>(null);
+    const [otpLoadingAction, setOtpLoadingAction] = useState<'profile' | 'password' | null>(null);
+    const [otpServerError, setOtpServerError] = useState<string | undefined>(undefined);
+    const [cooldown, setCooldown] = useState<number>(60);
+
     const passwordInput = useRef<HTMLInputElement>(null);
     const currentPasswordInput = useRef<HTMLInputElement>(null);
 
     // Profile Info Form
-    const profileForm = useForm({
+    const profileForm = useForm<ProfileFormData>({
         name: auth.user.name || '',
         email: auth.user.email || '',
         phone: (auth.user as any).phone || '',
+        otp_code: '',
     });
 
     // Password Update Form
-    const passwordForm = useForm({
+    const passwordForm = useForm<PasswordFormData>({
         current_password: '',
         password: '',
         password_confirmation: '',
+        otp_code: '',
     });
 
-    const handleProfileSubmit: FormEventHandler = (e) => {
-        e.preventDefault();
-        profileForm.patch(route('profile.update'), {
-            preserveScroll: true,
-            onSuccess: () => {
-                showToast('Admin profile details updated successfully!', 'success');
-            },
-            onError: () => {
-                showToast('Please check the form for errors.', 'error');
-            },
-        });
+    // Helper to get CSRF token reliably from meta tag or cookie
+    const getCsrfToken = (): string => {
+        const metaTag = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null;
+        if (metaTag && metaTag.content) {
+            return metaTag.content;
+        }
+
+        const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
+        if (match && match[1]) {
+            return decodeURIComponent(match[1]);
+        }
+
+        return '';
     };
 
-    const handlePasswordSubmit: FormEventHandler = (e) => {
+    // Send OTP Helper
+    const requestOtp = async (action: 'profile_update' | 'password_update', target: 'profile' | 'password'): Promise<boolean> => {
+        setOtpLoadingAction(target);
+        setOtpServerError(undefined);
+        try {
+            const token = getCsrfToken();
+
+            const response = await fetch(route('settings.otp.send'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'X-XSRF-TOKEN': token,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    Accept: 'application/json',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ action }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showToast(data.message || 'Verification code sent to your email', 'info');
+                setCooldown(data.cooldown || 60);
+                return true;
+            } else {
+                showToast(data.message || 'Could not send verification code', 'error');
+                if (data.cooldown) {
+                    setCooldown(data.cooldown);
+                }
+                return false;
+            }
+        } catch {
+            showToast('Failed to send verification code. Please try again.', 'error');
+            return false;
+        } finally {
+            setOtpLoadingAction(null);
+        }
+    };
+
+    const handleProfileSubmit: FormEventHandler = async (e) => {
         e.preventDefault();
-        passwordForm.put(route('password.update'), {
-            preserveScroll: true,
-            onSuccess: () => {
-                showToast('Admin password changed successfully!', 'success');
-                passwordForm.reset();
-            },
-            onError: (errors) => {
-                if (errors.password) {
-                    passwordForm.reset('password', 'password_confirmation');
-                    passwordInput.current?.focus();
-                }
-                if (errors.current_password) {
-                    passwordForm.reset('current_password');
-                    currentPasswordInput.current?.focus();
-                }
-                showToast('Could not update password. Check errors below.', 'error');
-            },
-        });
+        profileForm.clearErrors();
+
+        if (!profileForm.data.name.trim()) {
+            profileForm.setError('name', 'Name is required');
+            return;
+        }
+        if (!profileForm.data.email.trim()) {
+            profileForm.setError('email', 'Email address is required');
+            return;
+        }
+
+        const sent = await requestOtp('profile_update', 'profile');
+        if (sent) {
+            setOtpModalAction('profile');
+        }
+    };
+
+    const handlePasswordSubmit: FormEventHandler = async (e) => {
+        e.preventDefault();
+        passwordForm.clearErrors();
+
+        if (!passwordForm.data.current_password) {
+            passwordForm.setError('current_password', 'Current password is required');
+            return;
+        }
+        if (!passwordForm.data.password || passwordForm.data.password.length < 8) {
+            passwordForm.setError('password', 'Password must be at least 8 characters');
+            return;
+        }
+        if (passwordForm.data.password !== passwordForm.data.password_confirmation) {
+            passwordForm.setError('password_confirmation', 'Passwords do not match');
+            return;
+        }
+
+        const sent = await requestOtp('password_update', 'password');
+        if (sent) {
+            setOtpModalAction('password');
+        }
+    };
+
+    const handleOtpConfirm = (otp: string) => {
+        setOtpServerError(undefined);
+
+        if (otpModalAction === 'profile') {
+            profileForm.setData('otp_code', otp);
+            profileForm.transform((data) => ({
+                ...data,
+                otp_code: otp,
+            }));
+
+            profileForm.patch(route('profile.update'), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setOtpModalAction(null);
+                    showToast('Admin profile details updated successfully!', 'success');
+                },
+                onError: (errors) => {
+                    if (errors.otp_code) {
+                        setOtpServerError(errors.otp_code);
+                    } else {
+                        setOtpModalAction(null);
+                        showToast('Please check the form for errors.', 'error');
+                    }
+                },
+            });
+        } else if (otpModalAction === 'password') {
+            passwordForm.setData('otp_code', otp);
+            passwordForm.transform((data) => ({
+                ...data,
+                otp_code: otp,
+            }));
+
+            passwordForm.put(route('password.update'), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setOtpModalAction(null);
+                    showToast('Admin password changed successfully!', 'success');
+                    passwordForm.reset();
+                },
+                onError: (errors) => {
+                    if (errors.otp_code) {
+                        setOtpServerError(errors.otp_code);
+                    } else {
+                        setOtpModalAction(null);
+                        if (errors.password) {
+                            passwordForm.reset('password', 'password_confirmation');
+                            passwordInput.current?.focus();
+                        }
+                        if (errors.current_password) {
+                            passwordForm.reset('current_password');
+                            currentPasswordInput.current?.focus();
+                        }
+                        showToast('Could not update password. Check errors below.', 'error');
+                    }
+                },
+            });
+        }
+    };
+
+    const handleResendOtp = async () => {
+        if (!otpModalAction) return;
+        const action = otpModalAction === 'profile' ? 'profile_update' : 'password_update';
+        await requestOtp(action, otpModalAction);
     };
 
     const handleThemeSelect = (mode: 'light' | 'dark' | 'system') => {
@@ -104,9 +256,37 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail?:
         .substring(0, 2)
         .toUpperCase();
 
+    // Isolated loading flags
+    const isProfileOtpSending = otpLoadingAction === 'profile';
+    const isProfileBusy = isProfileOtpSending || profileForm.processing;
+
+    const isPasswordOtpSending = otpLoadingAction === 'password';
+    const isPasswordBusy = isPasswordOtpSending || passwordForm.processing;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin Profile & Account Settings" />
+
+            {/* OTP Verification Modal */}
+            <OtpModal
+                isOpen={otpModalAction !== null}
+                onClose={() => {
+                    setOtpModalAction(null);
+                    setOtpServerError(undefined);
+                }}
+                onConfirm={handleOtpConfirm}
+                onResend={handleResendOtp}
+                targetEmail={auth.user.email || ''}
+                actionTitle={otpModalAction === 'password' ? 'Password Change' : 'Profile Update'}
+                actionDescription={
+                    otpModalAction === 'password'
+                        ? 'For security, enter the 6-digit code sent to your registered email to confirm changing your password.'
+                        : 'Enter the 6-digit code sent to your registered email to confirm your profile changes.'
+                }
+                isSubmitting={otpModalAction === 'profile' ? profileForm.processing : passwordForm.processing}
+                serverError={otpServerError}
+                initialCooldown={cooldown}
+            />
 
             <div className="min-h-[calc(100vh-73px)] space-y-6 bg-slate-50/50 p-4 md:p-8 dark:bg-slate-950 dark:text-slate-100">
                 {/* Header Profile Identity Card */}
@@ -139,10 +319,10 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail?:
 
                         <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4 sm:border-t-0 sm:pt-0 dark:border-slate-800">
                             <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-3.5 py-2 text-center dark:border-slate-800 dark:bg-slate-950/60">
-                                <span className="text-[10px] font-medium uppercase tracking-wider text-slate-400">Role Status</span>
+                                <span className="text-[10px] font-medium uppercase tracking-wider text-slate-400">Security Status</span>
                                 <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    Active & Secure
+                                    Email OTP Protected
                                 </div>
                             </div>
                         </div>
@@ -158,7 +338,7 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail?:
                             </div>
                             <div>
                                 <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">Profile Information</h2>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">Update your personal account credentials and details</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Updates require 6-digit email OTP verification</p>
                             </div>
                         </div>
 
@@ -225,11 +405,25 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail?:
                             <div className="pt-2">
                                 <button
                                     type="submit"
-                                    disabled={profileForm.processing}
+                                    disabled={isProfileBusy || isPasswordBusy}
                                     className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-amber-500/20 transition hover:bg-amber-600 disabled:opacity-50 cursor-pointer"
                                 >
-                                    <Save className="h-4 w-4" />
-                                    {profileForm.processing ? 'Saving Changes...' : 'Save Profile Changes'}
+                                    {isProfileOtpSending ? (
+                                        <>
+                                            <LoaderCircle className="h-4 w-4 animate-spin" />
+                                            <span>Sending Verification Code...</span>
+                                        </>
+                                    ) : profileForm.processing ? (
+                                        <>
+                                            <LoaderCircle className="h-4 w-4 animate-spin" />
+                                            <span>Saving Changes...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save className="h-4 w-4" />
+                                            <span>Save Profile Changes</span>
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </form>
@@ -243,11 +437,12 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail?:
                             </div>
                             <div>
                                 <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">Security & Password</h2>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">Ensure your administrator account uses a strong credentials password</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Password change requires 6-digit email OTP verification</p>
                             </div>
                         </div>
 
                         <form onSubmit={handlePasswordSubmit} className="mt-6 space-y-4">
+                            {/* Current Password Field with Toggle */}
                             <div>
                                 <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
                                     Current Password <span className="text-rose-500">*</span>
@@ -261,12 +456,14 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail?:
                                         onChange={(e) => passwordForm.setData('current_password', e.target.value)}
                                         required
                                         placeholder="••••••••"
-                                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-10 text-xs text-slate-900 outline-none transition focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:focus:bg-slate-900"
+                                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-11 text-xs text-slate-900 outline-none transition focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:focus:bg-slate-900"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowCurrentPass(!showCurrentPass)}
-                                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                        className="absolute right-0 top-0 flex h-full items-center px-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer"
+                                        aria-label={showCurrentPass ? 'Hide current password' : 'Show current password'}
+                                        tabIndex={-1}
                                     >
                                         {showCurrentPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                     </button>
@@ -276,6 +473,7 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail?:
                                 )}
                             </div>
 
+                            {/* New Password Field with Toggle */}
                             <div>
                                 <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
                                     New Password <span className="text-rose-500">*</span>
@@ -289,12 +487,14 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail?:
                                         onChange={(e) => passwordForm.setData('password', e.target.value)}
                                         required
                                         placeholder="Min. 8 characters"
-                                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-10 text-xs text-slate-900 outline-none transition focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:focus:bg-slate-900"
+                                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-11 text-xs text-slate-900 outline-none transition focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:focus:bg-slate-900"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowNewPass(!showNewPass)}
-                                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                        className="absolute right-0 top-0 flex h-full items-center px-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer"
+                                        aria-label={showNewPass ? 'Hide new password' : 'Show new password'}
+                                        tabIndex={-1}
                                     >
                                         {showNewPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                     </button>
@@ -304,6 +504,7 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail?:
                                 )}
                             </div>
 
+                            {/* Confirm Password Field with Toggle */}
                             <div>
                                 <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
                                     Confirm New Password <span className="text-rose-500">*</span>
@@ -316,12 +517,14 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail?:
                                         onChange={(e) => passwordForm.setData('password_confirmation', e.target.value)}
                                         required
                                         placeholder="Repeat new password"
-                                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-10 text-xs text-slate-900 outline-none transition focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:focus:bg-slate-900"
+                                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-11 text-xs text-slate-900 outline-none transition focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:focus:bg-slate-900"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowConfirmPass(!showConfirmPass)}
-                                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                        className="absolute right-0 top-0 flex h-full items-center px-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer"
+                                        aria-label={showConfirmPass ? 'Hide password confirmation' : 'Show password confirmation'}
+                                        tabIndex={-1}
                                     >
                                         {showConfirmPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                     </button>
@@ -334,11 +537,25 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail?:
                             <div className="pt-2">
                                 <button
                                     type="submit"
-                                    disabled={passwordForm.processing}
+                                    disabled={isPasswordBusy || isProfileBusy}
                                     className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-slate-800 disabled:opacity-50 dark:bg-amber-500 dark:hover:bg-amber-600 cursor-pointer"
                                 >
-                                    <Lock className="h-4 w-4" />
-                                    {passwordForm.processing ? 'Updating Password...' : 'Update Password'}
+                                    {isPasswordOtpSending ? (
+                                        <>
+                                            <LoaderCircle className="h-4 w-4 animate-spin" />
+                                            <span>Sending Verification Code...</span>
+                                        </>
+                                    ) : passwordForm.processing ? (
+                                        <>
+                                            <LoaderCircle className="h-4 w-4 animate-spin" />
+                                            <span>Updating Password...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Lock className="h-4 w-4" />
+                                            <span>Update Password</span>
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </form>
@@ -438,4 +655,3 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail?:
         </AppLayout>
     );
 }
-

@@ -53,8 +53,8 @@ interface Props {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/admin/dashboard' },
-    { title: 'Menu Catalog', href: '/admin/menu' },
+    { title: 'Dashboard', href: '/administration-control/dashboard' },
+    { title: 'Menu Catalog', href: '/administration-control/menu' },
 ];
 
 export default function MenuIndex({ menuItems, categories, currency, filters }: Props) {
@@ -143,7 +143,7 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
         e.preventDefault();
         if (editingDish) {
             router.post(
-                `/admin/menu/${editingDish.id}`,
+                `/administration-control/menu/${editingDish.id}`,
                 {
                     _method: 'put',
                     ...dishForm.data,
@@ -156,7 +156,7 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
                 },
             );
         } else {
-            dishForm.post('/admin/menu', {
+            dishForm.post('/administration-control/menu', {
                 onSuccess: () => {
                     setShowDishModal(false);
                     showToast(`New menu dish "${dishForm.data.name}" created!`, 'success');
@@ -167,7 +167,7 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
 
     const toggleAvailability = (dish: MenuItem) => {
         router.post(
-            `/admin/menu/${dish.id}/toggle-availability`,
+            `/administration-control/menu/${dish.id}/toggle-availability`,
             {},
             {
                 onSuccess: () => showToast(`Dish "${dish.name}" availability toggled`, 'info'),
@@ -178,20 +178,20 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
     const handleDeleteDish = async (dish: MenuItem) => {
         const confirmed = await showConfirm(`Delete menu item "${dish.name}"?`, 'Action cannot be undone.');
         if (confirmed) {
-            router.delete(`/admin/menu/${dish.id}`, {
+            router.delete(`/administration-control/menu/${dish.id}`, {
                 onSuccess: () => showToast(`Dish "${dish.name}" deleted`, 'success'),
             });
         }
     };
 
     const applySearchFilters = () => {
-        router.get('/admin/menu', { search, category_id: categoryId }, { preserveState: true });
+        router.get('/administration-control/menu', { search, category_id: categoryId }, { preserveState: true });
     };
 
     const resetSearchFilters = () => {
         setSearch('');
         setCategoryId('');
-        router.get('/admin/menu', {}, { preserveState: true });
+        router.get('/administration-control/menu', {}, { preserveState: true });
     };
 
     // Helper to render plain-text excerpt of HTML details
@@ -206,7 +206,7 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Menu Catalog & Recipes" />
 
-            <div className="flex min-h-screen flex-col gap-6 bg-slate-50 p-4 text-slate-900 transition-colors md:p-6 dark:bg-slate-950 dark:text-slate-100">
+            <div className="flex min-h-screen w-full max-w-full min-w-0 flex-col gap-6 bg-slate-50 p-3 sm:p-4 md:p-6 text-slate-900 transition-colors overflow-x-hidden dark:bg-slate-950 dark:text-slate-100">
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -276,7 +276,7 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
                 {/* Dish Table */}
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+                        <table className="w-full min-w-[700px] text-left text-xs text-slate-700 dark:text-slate-300">
                             <thead className="bg-slate-100 text-[10px] font-semibold text-slate-500 uppercase dark:bg-slate-950 dark:text-slate-400">
                                 <tr>
                                     <th className="p-3.5">Dish Name & Category</th>
@@ -594,7 +594,7 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
                 {/* View Full Details Modal */}
                 {viewingDetailsDish && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                        <div className="max-h-[85vh] w-full max-w-2xl space-y-4 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                        <div className="max-h-[85vh] w-full max-w-2xl space-y-4 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
                             <div className="flex items-center justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
                                 <div className="flex items-center gap-3">
                                     <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-800">

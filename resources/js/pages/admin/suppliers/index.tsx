@@ -32,8 +32,8 @@ interface Props {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/admin/dashboard' },
-    { title: 'Suppliers & Vendors', href: '/admin/suppliers' },
+    { title: 'Dashboard', href: '/administration-control/dashboard' },
+    { title: 'Suppliers & Vendors', href: '/administration-control/suppliers' },
 ];
 
 export default function SuppliersIndex({ suppliers, currency, filters }: Props) {
@@ -74,14 +74,14 @@ export default function SuppliersIndex({ suppliers, currency, filters }: Props) 
     const submitForm = (e: React.FormEvent) => {
         e.preventDefault();
         if (editingSupplier) {
-            form.put(`/admin/suppliers/${editingSupplier.id}`, {
+            form.put(`/administration-control/suppliers/${editingSupplier.id}`, {
                 onSuccess: () => {
                     setShowModal(false);
                     showToast('Supplier details updated!', 'success');
                 },
             });
         } else {
-            form.post('/admin/suppliers', {
+            form.post('/administration-control/suppliers', {
                 onSuccess: () => {
                     setShowModal(false);
                     showToast('New vendor / supplier registered!', 'success');
@@ -93,32 +93,32 @@ export default function SuppliersIndex({ suppliers, currency, filters }: Props) 
     const handleDelete = async (supplier: Supplier) => {
         const confirmed = await showConfirm(`Delete supplier "${supplier.name}"?`, 'Action cannot be undone.');
         if (confirmed) {
-            router.delete(`/admin/suppliers/${supplier.id}`, {
+            router.delete(`/administration-control/suppliers/${supplier.id}`, {
                 onSuccess: () => showToast(`Supplier deleted`, 'success'),
             });
         }
     };
 
     const applySearch = () => {
-        router.get('/admin/suppliers', { search }, { preserveState: true });
+        router.get('/administration-control/suppliers', { search }, { preserveState: true });
     };
 
     const resetSearch = () => {
         setSearch('');
-        router.get('/admin/suppliers', {}, { preserveState: true });
+        router.get('/administration-control/suppliers', {}, { preserveState: true });
     };
 
     const handleExport = () => {
         const params = new URLSearchParams();
         if (search) params.set('search', search);
-        window.location.href = `/admin/suppliers/export-excel?${params.toString()}`;
+        window.location.href = `/administration-control/suppliers/export-excel?${params.toString()}`;
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Supplier Directory & Vendor History" />
 
-            <div className="flex min-h-screen flex-col gap-6 bg-slate-50 p-4 text-slate-900 transition-colors md:p-6 dark:bg-slate-950 dark:text-slate-100">
+            <div className="flex min-h-screen w-full max-w-full min-w-0 flex-col gap-6 bg-slate-50 p-3 sm:p-4 md:p-6 text-slate-900 transition-colors overflow-x-hidden dark:bg-slate-950 dark:text-slate-100">
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -178,7 +178,7 @@ export default function SuppliersIndex({ suppliers, currency, filters }: Props) 
                 {/* Supplier Table */}
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+                        <table className="w-full min-w-[650px] text-left text-xs text-slate-700 dark:text-slate-300">
                             <thead className="bg-slate-100 text-[10px] font-semibold text-slate-500 uppercase dark:bg-slate-950 dark:text-slate-400">
                                 <tr>
                                     <th className="p-3.5">Vendor Name</th>
@@ -239,7 +239,7 @@ export default function SuppliersIndex({ suppliers, currency, filters }: Props) 
                 {/* Create / Edit Supplier Modal */}
                 {showModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                        <div className="w-full max-w-lg space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+                        <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
                             <h3 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">
                                 {editingSupplier ? 'Edit Vendor Supplier' : 'Register New Vendor Supplier'}
                             </h3>

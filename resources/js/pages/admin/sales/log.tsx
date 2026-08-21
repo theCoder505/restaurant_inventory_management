@@ -56,8 +56,8 @@ interface Props {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/admin/dashboard' },
-    { title: 'Sales Log', href: '/admin/sales/log' },
+    { title: 'Dashboard', href: '/administration-control/dashboard' },
+    { title: 'Sales Log', href: '/administration-control/sales/log' },
 ];
 
 export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal = 0, totalDiscount = 0, totalTax = 0, currency, filters }: Props) {
@@ -122,7 +122,7 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
             order_type: orderType,
             ...overrideParams,
         };
-        router.get('/admin/sales/log', params, { preserveState: true });
+        router.get('/administration-control/sales/log', params, { preserveState: true });
     };
 
     const resetFilters = () => {
@@ -132,7 +132,7 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
         setPaymentMethod('');
         setOrderType('');
         setActivePreset('today');
-        router.get('/admin/sales/log', { from_date: todayStr, to_date: todayStr }, { preserveState: true });
+        router.get('/administration-control/sales/log', { from_date: todayStr, to_date: todayStr }, { preserveState: true });
     };
 
     const printReceipt = () => window.print();
@@ -141,7 +141,7 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Sales Orders Log" />
 
-            <div className="flex min-h-screen flex-col gap-6 bg-slate-50 p-4 text-slate-900 transition-colors md:p-6 dark:bg-slate-950 dark:text-slate-100 print:hidden">
+            <div className="flex min-h-screen w-full max-w-full min-w-0 flex-col gap-6 bg-slate-50 p-3 sm:p-4 md:p-6 text-slate-900 transition-colors overflow-x-hidden dark:bg-slate-950 dark:text-slate-100 print:hidden">
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -163,7 +163,7 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
                                 if (paymentMethod) params.set('payment_method', paymentMethod);
                                 if (orderType) params.set('order_type', orderType);
                                 if (activePreset === 'all') params.set('all_time', '1');
-                                window.location.href = `/admin/sales/export-excel?${params.toString()}`;
+                                window.location.href = `/administration-control/sales/export-excel?${params.toString()}`;
                             }}
                             className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-200 px-4 py-2 text-xs font-bold text-slate-800 transition-all hover:bg-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                         >
@@ -317,7 +317,7 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
                 {/* Sales Log Table */}
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 print:border-none print:shadow-none">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+                        <table className="w-full min-w-[750px] text-left text-xs text-slate-700 dark:text-slate-300">
                             <thead className="bg-slate-100 text-[10px] font-semibold uppercase text-slate-500 dark:bg-slate-950 dark:text-slate-400">
                                 <tr>
                                     <th className="p-3.5">Order Number</th>
@@ -405,7 +405,7 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
             {/* Receipt Preview Modal — outside print:hidden so it renders on print */}
             {viewingOrder && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm print:fixed print:inset-0 print:flex print:items-center print:justify-center print:bg-white print:p-6">
-                    <div className="w-full max-w-sm space-y-4 rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-2xl print:border-none print:p-8 print:shadow-none">
+                    <div className="w-full max-w-sm max-h-[90vh] overflow-y-auto space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 text-slate-900 shadow-2xl print:border-none print:p-8 print:shadow-none">
                         <div className="space-y-1 border-b border-dashed border-slate-300 pb-4 text-center">
                             <h2 className="text-lg font-black uppercase">{brandName}</h2>
                             <p className="text-[10px] text-slate-500">Order #{viewingOrder.order_number}</p>

@@ -38,8 +38,8 @@ interface Props {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/admin/dashboard' },
-    { title: 'HR & Employee Roster', href: '/admin/employees' },
+    { title: 'Dashboard', href: '/administration-control/dashboard' },
+    { title: 'HR & Employee Roster', href: '/administration-control/employees' },
 ];
 
 export default function EmployeesIndex({ employees, allSalaries, currency }: Props) {
@@ -239,14 +239,14 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
     const submitStaffForm = (e: React.FormEvent) => {
         e.preventDefault();
         if (editingEmployee) {
-            staffForm.put(`/admin/employees/${editingEmployee.id}`, {
+            staffForm.put(`/administration-control/employees/${editingEmployee.id}`, {
                 onSuccess: () => {
                     setShowStaffModal(false);
                     showToast(`Staff member "${staffForm.data.name}" updated!`, 'success');
                 },
             });
         } else {
-            staffForm.post('/admin/employees', {
+            staffForm.post('/administration-control/employees', {
                 onSuccess: () => {
                     setShowStaffModal(false);
                     showToast(`New staff member "${staffForm.data.name}" added!`, 'success');
@@ -258,7 +258,7 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
     const handleDeleteStaff = async (emp: Employee) => {
         const confirmed = await showConfirm(`Delete staff member "${emp.name}"?`, 'Action cannot be undone.');
         if (confirmed) {
-            router.delete(`/admin/employees/${emp.id}`, {
+            router.delete(`/administration-control/employees/${emp.id}`, {
                 onSuccess: () => showToast(`Staff member "${emp.name}" removed`, 'success'),
             });
         }
@@ -267,7 +267,7 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
     const submitSalaryForm = (e: React.FormEvent) => {
         e.preventDefault();
         if (editingSalary) {
-            salaryForm.put(`/admin/employees/salary/${editingSalary.id}`, {
+            salaryForm.put(`/administration-control/employees/salary/${editingSalary.id}`, {
                 preserveScroll: true,
                 onSuccess: () => {
                     setShowSalaryModal(false);
@@ -276,7 +276,7 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
                 },
             });
         } else {
-            salaryForm.post('/admin/employees/generate-salary', {
+            salaryForm.post('/administration-control/employees/generate-salary', {
                 preserveScroll: true,
                 onSuccess: () => {
                     setShowSalaryModal(false);
@@ -293,7 +293,7 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
             'Action cannot be undone.'
         );
         if (confirmed) {
-            router.delete(`/admin/employees/salary/${sal.id}`, {
+            router.delete(`/administration-control/employees/salary/${sal.id}`, {
                 onSuccess: () => showToast(`Salary voucher for ${empName} deleted`, 'success'),
             });
         }
@@ -305,7 +305,7 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="HR & Monthly Salary Management" />
 
-            <div className="flex min-h-screen flex-col gap-6 bg-slate-50 p-4 text-slate-900 transition-colors md:p-6 dark:bg-slate-950 dark:text-slate-100">
+            <div className="flex min-h-screen w-full max-w-full min-w-0 flex-col gap-6 bg-slate-50 p-3 sm:p-4 md:p-6 text-slate-900 transition-colors overflow-x-hidden dark:bg-slate-950 dark:text-slate-100">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
@@ -319,7 +319,7 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => {
-                                window.location.href = '/admin/employees/export-excel';
+                                window.location.href = '/administration-control/employees/export-excel';
                             }}
                             className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-200 px-4 py-2 text-xs font-bold text-slate-800 transition-all hover:bg-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                         >
@@ -386,7 +386,7 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+                        <table className="w-full min-w-[700px] text-left text-xs text-slate-700 dark:text-slate-300">
                             <thead className="bg-slate-100 text-[10px] font-semibold text-slate-500 uppercase dark:bg-slate-950 dark:text-slate-400">
                                 <tr>
                                     <th className="p-3.5">Staff Name</th>
@@ -688,7 +688,7 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+                        <table className="w-full min-w-[750px] text-left text-xs text-slate-700 dark:text-slate-300">
                             <thead className="bg-slate-100 text-[10px] font-semibold text-slate-500 uppercase dark:bg-slate-950 dark:text-slate-400">
                                 <tr>
                                     <th className="p-3.5">Month</th>
@@ -877,7 +877,7 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
                 {/* Create / Edit Staff Modal */}
                 {showStaffModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                        <div className="w-full max-w-lg space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+                        <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
                             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
                                 {editingEmployee ? 'Edit Staff Details' : 'Add New Staff Member'}
                             </h3>
@@ -966,7 +966,7 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
                 {/* Generate Monthly Salary Modal */}
                 {showSalaryModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                        <div className="w-full max-w-lg space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+                        <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
                             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
                                 {editingSalary ? 'Edit Monthly Salary Voucher' : 'Generate Monthly Salary Voucher'}
                             </h3>
@@ -1099,7 +1099,7 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
                 {/* Payslip Modal */}
                 {viewingPayslip && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                        <div className="w-full max-w-sm space-y-4 rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-2xl print:p-0">
+                        <div className="w-full max-w-sm max-h-[90vh] overflow-y-auto space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 text-slate-900 shadow-2xl print:p-0">
                             <div className="space-y-1 border-b border-dashed border-slate-300 pb-4 text-center">
                                 <h2 className="text-lg font-black">SALARY PAYSLIP VOUCHER</h2>
                                 <p className="text-[10px] text-slate-500">Le Gourmet Bistro Restaurant</p>

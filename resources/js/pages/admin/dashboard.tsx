@@ -88,7 +88,7 @@ interface Props {
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard Overview',
-        href: '/admin/dashboard',
+        href: '/administration-control/dashboard',
     },
 ];
 
@@ -133,13 +133,13 @@ export default function Dashboard({
     const handlePeriodChange = (selectedPeriod: string) => {
         filterForm.setData('period', selectedPeriod);
         if (selectedPeriod !== 'custom') {
-            router.get('/admin/dashboard', { period: selectedPeriod }, { preserveState: true });
+            router.get('/administration-control/dashboard', { period: selectedPeriod }, { preserveState: true });
         }
     };
 
     const handleFilterSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        router.get('/admin/dashboard', filterForm.data, { preserveState: true });
+        router.get('/administration-control/dashboard', filterForm.data, { preserveState: true });
     };
 
     const profitCards = [
@@ -173,7 +173,7 @@ export default function Dashboard({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Restaurant Operations Dashboard" />
 
-            <div className="flex min-h-screen flex-col gap-6 bg-slate-50 p-4 text-slate-900 transition-colors md:p-6 dark:bg-slate-950 dark:text-slate-100">
+            <div className="flex min-h-screen w-full max-w-full min-w-0 flex-col gap-6 bg-slate-50 p-3 sm:p-4 md:p-6 text-slate-900 transition-colors overflow-x-hidden dark:bg-slate-950 dark:text-slate-100">
                 {/* Dashboard Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>

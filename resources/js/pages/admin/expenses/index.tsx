@@ -44,8 +44,8 @@ interface Props {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/admin/dashboard' },
-    { title: 'Bills & Expenses', href: '/admin/expenses' },
+    { title: 'Dashboard', href: '/administration-control/dashboard' },
+    { title: 'Bills & Expenses', href: '/administration-control/expenses' },
 ];
 
 export default function ExpensesIndex({ expenses, categories, currency, totalCost, totalExpensesThisMonth, filters }: Props) {
@@ -91,14 +91,14 @@ export default function ExpensesIndex({ expenses, categories, currency, totalCos
     const submitForm = (e: React.FormEvent) => {
         e.preventDefault();
         if (editingExpense) {
-            form.put(`/admin/expenses/${editingExpense.id}`, {
+            form.put(`/administration-control/expenses/${editingExpense.id}`, {
                 onSuccess: () => {
                     setShowModal(false);
                     showToast('Operational expense updated!', 'success');
                 },
             });
         } else {
-            form.post('/admin/expenses', {
+            form.post('/administration-control/expenses', {
                 onSuccess: () => {
                     setShowModal(false);
                     showToast('New operational expense logged!', 'success');
@@ -110,7 +110,7 @@ export default function ExpensesIndex({ expenses, categories, currency, totalCos
     const handleDelete = async (expense: Expense) => {
         const confirmed = await showConfirm(`Delete expense "${expense.title}"?`, 'Action cannot be undone.');
         if (confirmed) {
-            router.delete(`/admin/expenses/${expense.id}`, {
+            router.delete(`/administration-control/expenses/${expense.id}`, {
                 onSuccess: () => showToast('Expense deleted', 'success'),
             });
         }
@@ -118,7 +118,7 @@ export default function ExpensesIndex({ expenses, categories, currency, totalCos
 
     const applySearchFilters = () => {
         router.get(
-            '/admin/expenses',
+            '/administration-control/expenses',
             {
                 search,
                 category_id: categoryId,
@@ -134,14 +134,14 @@ export default function ExpensesIndex({ expenses, categories, currency, totalCos
         setCategoryId('');
         setFromDate('');
         setToDate('');
-        router.get('/admin/expenses', {}, { preserveState: true });
+        router.get('/administration-control/expenses', {}, { preserveState: true });
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Bills & Expenses" />
 
-            <div className="flex min-h-screen flex-col gap-6 bg-slate-50 p-4 text-slate-900 transition-colors md:p-6 dark:bg-slate-950 dark:text-slate-100">
+            <div className="flex min-h-screen w-full max-w-full min-w-0 flex-col gap-6 bg-slate-50 p-3 sm:p-4 md:p-6 text-slate-900 transition-colors overflow-x-hidden dark:bg-slate-950 dark:text-slate-100">
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -161,7 +161,7 @@ export default function ExpensesIndex({ expenses, categories, currency, totalCos
                                 if (categoryId) params.set('category_id', categoryId);
                                 if (fromDate) params.set('from_date', fromDate);
                                 if (toDate) params.set('to_date', toDate);
-                                window.location.href = `/admin/expenses/export-excel?${params.toString()}`;
+                                window.location.href = `/administration-control/expenses/export-excel?${params.toString()}`;
                             }}
                             className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-200 px-4 py-2 text-xs font-bold text-slate-800 transition-all hover:bg-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                         >
@@ -262,7 +262,7 @@ export default function ExpensesIndex({ expenses, categories, currency, totalCos
                 {/* Expense Table */}
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+                        <table className="w-full min-w-[650px] text-left text-xs text-slate-700 dark:text-slate-300">
                             <thead className="bg-slate-100 text-[10px] font-semibold text-slate-500 uppercase dark:bg-slate-950 dark:text-slate-400">
                                 <tr>
                                     <th className="p-3.5">Expense Description</th>
@@ -326,7 +326,7 @@ export default function ExpensesIndex({ expenses, categories, currency, totalCos
                 {/* Create / Edit Expense Modal */}
                 {showModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                        <div className="w-full max-w-lg space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+                        <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
                             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
                                 {editingExpense ? 'Edit Operational Expense' : 'Log New Operational Expense'}
                             </h3>

@@ -17,20 +17,30 @@ interface ReviewItem {
     order_index: number;
 }
 
+type ReviewFormData = {
+    customer_name: string;
+    customer_title: string;
+    avatar_initials: string;
+    rating: number;
+    comment: string;
+    is_active: boolean;
+    order_index: number;
+};
+
 interface Props {
     reviews: ReviewItem[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/admin/dashboard' },
-    { title: 'Customer Reviews Management', href: '/admin/reviews' },
+    { title: 'Dashboard', href: '/administration-control/dashboard' },
+    { title: 'Customer Reviews Management', href: '/administration-control/reviews' },
 ];
 
 export default function ReviewsIndex({ reviews }: Props) {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editingReview, setEditingReview] = useState<ReviewItem | null>(null);
 
-    const createForm = useForm({
+    const createForm = useForm<ReviewFormData>({
         customer_name: '',
         customer_title: 'Verified Diner • Night Owl',
         avatar_initials: '',
@@ -40,7 +50,7 @@ export default function ReviewsIndex({ reviews }: Props) {
         order_index: 0,
     });
 
-    const editForm = useForm({
+    const editForm = useForm<ReviewFormData>({
         customer_name: '',
         customer_title: '',
         avatar_initials: '',
@@ -52,7 +62,7 @@ export default function ReviewsIndex({ reviews }: Props) {
 
     const handleCreate = (e: React.FormEvent) => {
         e.preventDefault();
-        createForm.post('/admin/reviews', {
+        createForm.post('/administration-control/reviews', {
             onSuccess: () => {
                 showToast('Review created successfully!', 'success');
                 setIsCreateOpen(false);
@@ -77,7 +87,7 @@ export default function ReviewsIndex({ reviews }: Props) {
     const handleUpdate = (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingReview) return;
-        editForm.put(`/admin/reviews/${editingReview.id}`, {
+        editForm.put(`/administration-control/reviews/${editingReview.id}`, {
             onSuccess: () => {
                 showToast('Review updated successfully!', 'success');
                 setEditingReview(null);
@@ -91,7 +101,7 @@ export default function ReviewsIndex({ reviews }: Props) {
             'This action will permanently remove this customer feedback from the website.',
             'Yes, Delete',
             () => {
-                createForm.delete(`/admin/reviews/${review.id}`, {
+                createForm.delete(`/administration-control/reviews/${review.id}`, {
                     onSuccess: () => showToast('Review deleted!', 'success'),
                 });
             },
@@ -99,7 +109,7 @@ export default function ReviewsIndex({ reviews }: Props) {
     };
 
     const handleToggleActive = (review: ReviewItem) => {
-        createForm.post(`/admin/reviews/${review.id}/toggle-active`, {
+        createForm.post(`/administration-control/reviews/${review.id}/toggle-active`, {
             onSuccess: () => showToast('Review status updated!', 'success'),
         });
     };
@@ -108,7 +118,7 @@ export default function ReviewsIndex({ reviews }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Manage Customer Reviews" />
 
-            <div className="flex min-h-screen flex-col gap-6 bg-slate-50 p-4 text-slate-900 md:p-6 dark:bg-slate-950 dark:text-slate-100">
+            <div className="flex min-h-screen w-full max-w-full min-w-0 flex-col gap-6 bg-slate-50 p-3 sm:p-4 md:p-6 text-slate-900 overflow-x-hidden dark:bg-slate-950 dark:text-slate-100">
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -131,7 +141,7 @@ export default function ReviewsIndex({ reviews }: Props) {
                 {/* Create Modal */}
                 {isCreateOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-                        <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 space-y-4">
+                        <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 space-y-4">
                             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
                                 <h3 className="text-base font-bold text-slate-900 dark:text-white">Add Customer Review</h3>
                                 <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-slate-600">
@@ -223,7 +233,7 @@ export default function ReviewsIndex({ reviews }: Props) {
                 {/* Edit Modal */}
                 {editingReview && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-                        <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 space-y-4">
+                        <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 space-y-4">
                             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
                                 <h3 className="text-base font-bold text-slate-900 dark:text-white">Edit Customer Review</h3>
                                 <button onClick={() => setEditingReview(null)} className="text-slate-400 hover:text-slate-600">

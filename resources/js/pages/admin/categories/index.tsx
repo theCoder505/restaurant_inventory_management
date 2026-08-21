@@ -32,8 +32,8 @@ interface Props {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/admin/dashboard' },
-    { title: 'Categories', href: '/admin/categories' },
+    { title: 'Dashboard', href: '/administration-control/dashboard' },
+    { title: 'Categories', href: '/administration-control/categories' },
 ];
 
 export default function CategoriesIndex({ categories = [] }: Props) {
@@ -93,14 +93,14 @@ export default function CategoriesIndex({ categories = [] }: Props) {
     const submitForm = (e: React.FormEvent) => {
         e.preventDefault();
         if (editingCategory) {
-            form.put(`/admin/categories/${editingCategory.id}`, {
+            form.put(`/administration-control/categories/${editingCategory.id}`, {
                 onSuccess: () => {
                     setShowModal(false);
                     showToast('Category updated successfully!', 'success');
                 },
             });
         } else {
-            form.post('/admin/categories', {
+            form.post('/administration-control/categories', {
                 onSuccess: () => {
                     setShowModal(false);
                     showToast('New category created successfully!', 'success');
@@ -122,7 +122,7 @@ export default function CategoriesIndex({ categories = [] }: Props) {
         );
 
         if (confirmed) {
-            router.delete(`/admin/categories/${cat.id}`, {
+            router.delete(`/administration-control/categories/${cat.id}`, {
                 onSuccess: () => showToast('Category deleted', 'success'),
             });
         }
@@ -190,7 +190,7 @@ export default function CategoriesIndex({ categories = [] }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Category Management" />
 
-            <div className="flex min-h-screen flex-col gap-6 bg-slate-50 p-4 text-slate-900 transition-colors md:p-6 dark:bg-slate-950 dark:text-slate-100">
+            <div className="flex min-h-screen w-full max-w-full min-w-0 flex-col gap-6 bg-slate-50 p-3 sm:p-4 md:p-6 text-slate-900 transition-colors overflow-x-hidden dark:bg-slate-950 dark:text-slate-100">
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -306,7 +306,7 @@ export default function CategoriesIndex({ categories = [] }: Props) {
                 {/* Categories Table */}
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+                        <table className="w-full min-w-[600px] text-left text-xs text-slate-700 dark:text-slate-300">
                             <thead className="bg-slate-100 text-[10px] font-semibold uppercase text-slate-500 dark:bg-slate-950 dark:text-slate-400">
                                 <tr>
                                     <th className="p-3.5">Category Name</th>
@@ -435,7 +435,7 @@ export default function CategoriesIndex({ categories = [] }: Props) {
                 {/* Create / Edit Category Modal */}
                 {showModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                        <div className="w-full max-w-lg space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+                        <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
                             <div className="flex items-center justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
                                 <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
                                     {editingCategory ? 'Edit Category' : 'Create New Category'}
