@@ -27,6 +27,11 @@
         <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
         @routes
+        <script type="text/javascript">
+            if (typeof Ziggy !== 'undefined') {
+                window.Ziggy = Ziggy;
+            }
+        </script>
         @viteReactRefresh
         @vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
         @inertiaHead

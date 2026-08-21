@@ -10,6 +10,7 @@ declare global {
     const route: typeof routeFn;
     interface Window {
         __APP_BRAND_NAME?: string;
+        Ziggy?: any;
     }
 }
 
@@ -22,6 +23,9 @@ router.on('navigate', (event) => {
     const dynamicBrandName = pageProps?.name || pageProps?.branding?.brand_name;
     if (dynamicBrandName) {
         window.__APP_BRAND_NAME = dynamicBrandName;
+    }
+    if (pageProps?.ziggy) {
+        window.Ziggy = pageProps.ziggy;
     }
 });
 
@@ -36,6 +40,9 @@ createInertiaApp({
         const initialBrandName = initialProps?.name || initialProps?.branding?.brand_name;
         if (initialBrandName) {
             window.__APP_BRAND_NAME = initialBrandName;
+        }
+        if (initialProps?.ziggy) {
+            window.Ziggy = initialProps.ziggy;
         }
 
         const root = createRoot(el);

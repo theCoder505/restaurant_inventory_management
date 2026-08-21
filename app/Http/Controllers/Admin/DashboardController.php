@@ -186,7 +186,7 @@ class DashboardController extends Controller
             $notifications = [];
         }
 
-        return Inertia::render('admin/dashboard', [
+        return Inertia::render('admin/dashboard/index', [
             'period' => $period,
             'startDate' => $startDate ? $startDate->format('Y-m-d') : '',
             'endDate' => $endDate ? $endDate->format('Y-m-d') : '',
