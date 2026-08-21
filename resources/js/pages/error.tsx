@@ -99,7 +99,7 @@ export default function ErrorPage({ status = 404, message }: Props) {
                                 <div className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-1.5 text-xs font-bold text-amber-400 mb-3">
                                     <UtensilsCrossed className="h-4 w-4" /> {errorTitle}
                                 </div>
-                                <h1 className="text-3xl font-extrabold tracking-tight text-amber-100 sm:text-4xl">
+                                <h1 className="font-display text-3xl font-extrabold tracking-tight text-amber-100 sm:text-4xl">
                                     Plate Broken, Page Missing
                                 </h1>
                                 <p className="mt-3 text-xs leading-relaxed text-amber-200/70 sm:text-sm">

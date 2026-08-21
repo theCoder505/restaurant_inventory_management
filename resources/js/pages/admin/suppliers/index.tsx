@@ -3,7 +3,7 @@ import Pagination from '@/components/pagination';
 import { showConfirm, showToast } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { Edit, Plus, Search, Trash2, Truck } from 'lucide-react';
+import { Download, Edit, Plus, Search, Trash2, Truck } from 'lucide-react';
 import { useState } from 'react';
 
 interface Supplier {
@@ -108,6 +108,12 @@ export default function SuppliersIndex({ suppliers, currency, filters }: Props) 
         router.get('/admin/suppliers', {}, { preserveState: true });
     };
 
+    const handleExport = () => {
+        const params = new URLSearchParams();
+        if (search) params.set('search', search);
+        window.location.href = `/admin/suppliers/export-excel?${params.toString()}`;
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Supplier Directory & Vendor History" />
@@ -116,20 +122,28 @@ export default function SuppliersIndex({ suppliers, currency, filters }: Props) 
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                        <h1 className="flex items-center gap-2 font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                             <Truck className="h-6 w-6 text-amber-500" /> Supplier Directory & Vendor Management
                         </h1>
-                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        <p className="mt-1 font-sans text-xs text-slate-500 dark:text-slate-400">
                             Registered raw food suppliers, contact info, and purchase order histories
                         </p>
                     </div>
 
-                    <button
-                        onClick={openCreateModal}
-                        className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400"
-                    >
-                        <Plus className="h-4 w-4" /> Add New Supplier
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleExport}
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-200 px-4 py-2 font-sans text-xs font-bold text-slate-800 transition-all hover:bg-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+                        >
+                            <Download className="h-4 w-4" /> Export Excel (.xlsx)
+                        </button>
+                        <button
+                            onClick={openCreateModal}
+                            className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 font-sans text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400 cursor-pointer"
+                        >
+                            <Plus className="h-4 w-4" /> Add New Supplier
+                        </button>
+                    </div>
                 </div>
 
                 {/* Search Bar */}
@@ -185,7 +199,7 @@ export default function SuppliersIndex({ suppliers, currency, filters }: Props) 
                                 ) : (
                                     suppliers.data.map((s) => (
                                         <tr key={s.id} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                                            <td className="p-3.5 font-bold text-slate-900 dark:text-slate-100">{s.name}</td>
+                                            <td className="p-3.5 font-display font-bold text-slate-900 dark:text-slate-100">{s.name}</td>
                                             <td className="p-3.5">{s.contact_person || '-'}</td>
                                             <td className="p-3.5">
                                                 <div>{s.phone || '-'}</div>
@@ -226,7 +240,7 @@ export default function SuppliersIndex({ suppliers, currency, filters }: Props) 
                 {showModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
                         <div className="w-full max-w-lg space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                            <h3 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">
                                 {editingSupplier ? 'Edit Vendor Supplier' : 'Register New Vendor Supplier'}
                             </h3>
 

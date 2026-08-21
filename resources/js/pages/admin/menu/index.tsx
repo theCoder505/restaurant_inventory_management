@@ -210,7 +210,7 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                        <h1 className="flex items-center gap-2 font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                             <UtensilsCrossed className="h-6 w-6 text-amber-500" /> Menu Catalog & Recipes
                         </h1>
                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -408,7 +408,7 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
                         <div className="max-h-[92vh] w-full max-w-3xl space-y-4 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
                             <div className="flex items-center justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
-                                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                                <h3 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">
                                     {editingDish ? 'Edit Menu Dish & Details' : 'Create New Menu Dish'}
                                 </h3>
                                 <button
@@ -607,7 +607,7 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
                                         )}
                                     </div>
                                     <div>
-                                        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                                        <h3 className="font-display text-base font-bold text-slate-900 dark:text-slate-100">
                                             {viewingDetailsDish.name}
                                         </h3>
                                         <p className="text-[10px] text-slate-500">

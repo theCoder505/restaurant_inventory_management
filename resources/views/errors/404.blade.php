@@ -4,6 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>404 - Page Not Found</title>
+    <!-- Restaurant & Culinary Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600;1,700&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.tsx'])
 </head>
 <body class="bg-[#0d0906] text-slate-100 font-sans antialiased min-h-screen overflow-x-hidden flex items-center justify-center p-4 md:p-8">
@@ -56,7 +60,7 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                         Page Not Found in the Pantry
                     </div>
-                    <h1 class="text-3xl font-extrabold tracking-tight text-amber-100 sm:text-4xl">
+                    <h1 class="text-3xl font-display font-extrabold tracking-tight text-amber-100 sm:text-4xl">
                         Plate Broken, Page Missing
                     </h1>
                     <p class="mt-3 text-xs leading-relaxed text-amber-200/70 sm:text-sm">

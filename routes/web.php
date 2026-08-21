@@ -74,6 +74,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     // Suppliers / Vendors
     Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
     Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
+    Route::get('/suppliers/export-excel', [SupplierController::class, 'exportExcel'])->name('suppliers.export-excel');
     Route::put('/suppliers/{supplier}', [SupplierController::class, 'update'])->name('suppliers.update');
     Route::delete('/suppliers/{supplier}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
 

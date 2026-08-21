@@ -91,14 +91,14 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                             </div>
                         )}
                         <div>
-                            <span className="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 bg-clip-text text-xl font-bold tracking-tight text-transparent dark:from-amber-200 dark:via-amber-400 dark:to-orange-400">
+                            <span className="font-display bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 bg-clip-text text-xl font-bold tracking-tight text-transparent dark:from-amber-200 dark:via-amber-400 dark:to-orange-400">
                                 {settings.brand_name}
                             </span>
-                            <p className="hidden text-xs text-slate-500 sm:block dark:text-slate-400">{settings.tagline}</p>
+                            <p className="hidden font-sans text-xs text-slate-500 sm:block dark:text-slate-400">{settings.tagline}</p>
                         </div>
                     </div>
 
-                    <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex dark:text-slate-300">
+                    <nav className="hidden items-center gap-8 font-sans text-sm font-medium text-slate-600 md:flex dark:text-slate-300">
                         <a href="#about" className="transition-colors hover:text-amber-500">
                             About Us
                         </a>
@@ -146,17 +146,19 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
             <section className="relative overflow-hidden bg-gradient-to-b from-white via-slate-100 to-slate-50 pt-12 pb-24 lg:pt-20 lg:pb-32 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
                 <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="mx-auto max-w-3xl space-y-6 text-center">
-                        <span className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-1.5 text-xs font-semibold tracking-wider text-amber-600 uppercase dark:text-amber-400">
-                            <Award className="h-3.5 w-3.5" /> Culinary Excellence & Fresh Quality
-                        </span>
-                        <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-6xl dark:text-slate-100">
+                        <div className="inline-flex flex-col items-center gap-1.5">
+                            <span className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-1.5 font-sans text-xs font-semibold tracking-wider text-amber-600 uppercase dark:text-amber-400">
+                                <Award className="h-3.5 w-3.5" /> Culinary Excellence & Fresh Quality
+                            </span>
+                        </div>
+                        <h1 className="font-display text-4xl font-extrabold tracking-tight text-slate-900 sm:text-6xl dark:text-slate-100">
                             Taste the Passion in Every{' '}
-                            <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 bg-clip-text text-transparent dark:from-amber-400 dark:via-orange-400 dark:to-amber-500">
+                            <span className="font-serif italic font-normal bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 bg-clip-text text-transparent dark:from-amber-400 dark:via-orange-400 dark:to-amber-500">
                                 Artisan Bite
                             </span>
                         </h1>
-                        <p className="text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">{settings.about_text}</p>
-                        <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+                        <p className="font-sans text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">{settings.about_text}</p>
+                        <div className="flex flex-wrap items-center justify-center gap-4 pt-4 font-sans">
                             <a
                                 href="#menu"
                                 className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-3.5 text-sm font-bold text-slate-950 shadow-xl shadow-amber-500/20 transition-all hover:scale-105 hover:from-amber-400 hover:to-orange-400 active:scale-95"
@@ -183,10 +185,11 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <div className="mb-8 flex items-center justify-between">
                             <div>
-                                <h2 className="flex items-center gap-2 text-2xl font-bold text-amber-600 dark:text-amber-400">
+                                <span className="font-script text-2xl text-amber-600 dark:text-amber-400">Handcrafted Specialties</span>
+                                <h2 className="flex items-center gap-2 font-display text-2xl font-bold text-slate-900 sm:text-3xl dark:text-slate-100">
                                     <Star className="h-5 w-5 fill-amber-500 text-amber-500" /> Chef's Signature Specials
                                 </h2>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">Our most celebrated dishes handcrafted with care</p>
+                                <p className="font-culinary italic text-base text-slate-500 dark:text-slate-400">Our most celebrated dishes handcrafted with care</p>
                             </div>
                         </div>
 
@@ -209,21 +212,21 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                                                     <Utensils className="h-12 w-12" />
                                                 </div>
                                             )}
-                                            <span className="absolute top-3 right-3 rounded-full bg-amber-500 px-3 py-1 text-xs font-bold text-slate-950 shadow">
+                                            <span className="absolute top-3 right-3 rounded-full bg-amber-500 px-3 py-1 font-sans text-xs font-bold text-slate-950 shadow">
                                                 Featured
                                             </span>
                                         </div>
 
                                         <div>
                                             <div className="flex items-center justify-between">
-                                                <h3 className="text-lg font-bold text-slate-900 transition-colors group-hover:text-amber-500 dark:text-slate-100">
+                                                <h3 className="font-display text-lg font-bold text-slate-900 transition-colors group-hover:text-amber-500 dark:text-slate-100">
                                                     {dish.name}
                                                 </h3>
-                                                <span className="text-lg font-extrabold text-amber-600 dark:text-amber-400">
+                                                <span className="font-sans text-lg font-extrabold text-amber-600 dark:text-amber-400">
                                                     {formatCurrency(dish.price, settings.default_currency)}
                                                 </span>
                                             </div>
-                                            <p className="mt-2 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
+                                            <p className="mt-2 line-clamp-2 font-sans text-xs text-slate-500 dark:text-slate-400">
                                                 {dish.description || 'Delicious gourmet chef preparation.'}
                                             </p>
                                         </div>
@@ -252,11 +255,12 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
             {/* Digital Menu Catalog */}
             <section id="menu" className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
                 <div className="mx-auto mb-12 max-w-2xl space-y-4 text-center">
-                    <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">Interactive Digital Menu</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Browse categories or search for your favorite gourmet dishes</p>
+                    <span className="font-script text-2xl text-amber-600 dark:text-amber-400">Fresh Flavors & Daily Delights</span>
+                    <h2 className="font-display text-3xl font-extrabold text-slate-900 sm:text-4xl dark:text-slate-100">Interactive Digital Menu</h2>
+                    <p className="font-culinary italic text-base sm:text-lg text-slate-500 dark:text-slate-400">Browse categories or search for your favorite gourmet dishes</p>
 
                     {/* Search Input */}
-                    <div className="relative mx-auto max-w-md">
+                    <div className="relative mx-auto max-w-md font-sans">
                         <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
                             type="text"
@@ -268,7 +272,7 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                     </div>
 
                     {/* Category Tabs */}
-                    <div className="flex flex-wrap items-center justify-center gap-2 pt-4">
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-4 font-sans">
                         <button
                             onClick={() => setActiveTab('all')}
                             className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
@@ -299,7 +303,7 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                 {filteredDishes.length === 0 ? (
                     <div className="rounded-2xl border border-slate-200 bg-white py-16 text-center dark:border-slate-800 dark:bg-slate-900/40">
                         <Utensils className="mx-auto mb-3 h-12 w-12 text-slate-400 dark:text-slate-600" />
-                        <p className="font-medium text-slate-500 dark:text-slate-400">No dishes found matching your search criteria.</p>
+                        <p className="font-sans font-medium text-slate-500 dark:text-slate-400">No dishes found matching your search criteria.</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -310,23 +314,23 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                             >
                                 <div>
                                     <div className="mb-2 flex items-start justify-between gap-4">
-                                        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{dish.name}</h3>
-                                        <span className="font-extrabold whitespace-nowrap text-amber-600 dark:text-amber-400">
+                                        <h3 className="font-display text-base font-bold text-slate-900 dark:text-slate-100 sm:text-lg">{dish.name}</h3>
+                                        <span className="font-sans font-extrabold whitespace-nowrap text-amber-600 dark:text-amber-400">
                                             {formatCurrency(dish.price, settings.default_currency)}
                                         </span>
                                     </div>
-                                    <p className="mb-4 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                                    <p className="mb-4 font-sans text-xs leading-relaxed text-slate-500 dark:text-slate-400">
                                         {dish.description || 'Artisan culinary dish prepared with fresh ingredients.'}
                                     </p>
                                 </div>
 
                                 <div className="flex items-center justify-between border-t border-slate-200 pt-3 text-xs dark:border-slate-800">
-                                    <span className="font-medium text-slate-400 dark:text-slate-500">{dish.category?.name ?? 'General'}</span>
+                                    <span className="font-sans font-medium text-slate-400 dark:text-slate-500">{dish.category?.name ?? 'General'}</span>
                                     <a
                                         href={generateWhatsAppLink(dish.name)}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center gap-1.5 rounded-lg bg-emerald-600/10 px-3 py-1.5 font-medium text-emerald-700 transition-all hover:bg-emerald-600 hover:text-white dark:text-emerald-400"
+                                        className="flex items-center gap-1.5 rounded-lg bg-emerald-600/10 px-3 py-1.5 font-sans font-medium text-emerald-700 transition-all hover:bg-emerald-600 hover:text-white dark:text-emerald-400"
                                     >
                                         <MessageCircle className="h-3.5 w-3.5" /> Order
                                     </a>
@@ -341,8 +345,8 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
             <section className="border-t border-slate-200 bg-slate-100/50 py-20 dark:border-slate-800 dark:bg-slate-900/30">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="mx-auto mb-12 max-w-2xl text-center">
-                        <span className="text-xs font-semibold tracking-wider text-amber-600 uppercase dark:text-amber-400">Testimonials</span>
-                        <h2 className="mt-1 text-2xl font-extrabold text-slate-900 sm:text-3xl dark:text-slate-100">Loved by Food Enthusiasts</h2>
+                        <span className="font-script text-2xl text-amber-600 dark:text-amber-400">Guest Experience & Praise</span>
+                        <h2 className="font-display mt-1 text-2xl font-extrabold text-slate-900 sm:text-3xl dark:text-slate-100">Loved by Food Enthusiasts</h2>
                     </div>
 
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -372,10 +376,10 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                                         <Star key={i} className="h-4 w-4 fill-amber-500" />
                                     ))}
                                 </div>
-                                <p className="text-xs text-slate-600 italic dark:text-slate-300">"{item.comment}"</p>
+                                <p className="font-serif text-sm italic leading-relaxed text-slate-600 dark:text-slate-300">"{item.comment}"</p>
                                 <div className="border-t border-slate-200 pt-2 dark:border-slate-800/80">
-                                    <p className="text-xs font-bold text-slate-900 dark:text-slate-200">{item.name}</p>
-                                    <p className="text-[10px] text-slate-400 dark:text-slate-500">Verified Diner</p>
+                                    <p className="font-display text-xs font-bold text-slate-900 dark:text-slate-200">{item.name}</p>
+                                    <p className="font-sans text-[10px] text-slate-400 dark:text-slate-500">Verified Diner</p>
                                 </div>
                             </div>
                         ))}
@@ -387,8 +391,9 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
             <section id="contact" className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
                     <div className="space-y-6">
-                        <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">Visit Us & Order Direct</h2>
-                        <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                        <span className="font-script text-2xl text-amber-600 dark:text-amber-400">Warm Hospitality</span>
+                        <h2 className="font-display text-3xl font-extrabold text-slate-900 dark:text-slate-100">Visit Us & Order Direct</h2>
+                        <p className="font-sans text-sm leading-relaxed text-slate-600 dark:text-slate-400">
                             Have questions or want to make a group reservation? Reach out via WhatsApp or visit our location.
                         </p>
 
@@ -396,24 +401,24 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                             <div className="flex items-start gap-3">
                                 <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
                                 <div>
-                                    <span className="block font-semibold text-slate-900 dark:text-slate-200">Location Address</span>
-                                    <span className="text-xs text-slate-500 dark:text-slate-400">{settings.address}</span>
+                                    <span className="font-display block font-bold text-slate-900 dark:text-slate-200">Location Address</span>
+                                    <span className="font-sans text-xs text-slate-500 dark:text-slate-400">{settings.address}</span>
                                 </div>
                             </div>
 
                             <div className="flex items-start gap-3">
                                 <Clock className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
                                 <div>
-                                    <span className="block font-semibold text-slate-900 dark:text-slate-200">Opening Hours</span>
-                                    <span className="text-xs text-slate-500 dark:text-slate-400">{settings.opening_hours}</span>
+                                    <span className="font-display block font-bold text-slate-900 dark:text-slate-200">Opening Hours</span>
+                                    <span className="font-sans text-xs text-slate-500 dark:text-slate-400">{settings.opening_hours}</span>
                                 </div>
                             </div>
 
                             <div className="flex items-start gap-3">
                                 <Phone className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
                                 <div>
-                                    <span className="block font-semibold text-slate-900 dark:text-slate-200">Phone & WhatsApp</span>
-                                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                                    <span className="font-display block font-bold text-slate-900 dark:text-slate-200">Phone & WhatsApp</span>
+                                    <span className="font-sans text-xs text-slate-500 dark:text-slate-400">
                                         {settings.phone} ({settings.email})
                                     </span>
                                 </div>
@@ -425,7 +430,7 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                                 href={generateWhatsAppLink()}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-900/30 transition-all hover:bg-emerald-500"
+                                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 font-sans text-sm font-bold text-white shadow-lg shadow-emerald-900/30 transition-all hover:bg-emerald-500"
                             >
                                 <MessageCircle className="h-4 w-4" /> Direct WhatsApp Chat
                             </a>
@@ -440,7 +445,7 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
                                 className="h-80 w-full overflow-hidden rounded-xl"
                             />
                         ) : (
-                            <div className="flex h-80 w-full items-center justify-center rounded-xl bg-slate-100 text-xs text-slate-400 dark:bg-slate-800">
+                            <div className="flex h-80 w-full items-center justify-center rounded-xl bg-slate-100 font-sans text-xs text-slate-400 dark:bg-slate-800">
                                 <MapPin className="mx-auto mb-2 block h-8 w-8 text-slate-400" />
                                 Google Maps Embed Placeholder
                             </div>
@@ -450,14 +455,14 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
             </section>
 
             {/* Footer */}
-            <footer className="border-t border-slate-200 bg-white py-12 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-950">
+            <footer className="border-t border-slate-200 bg-white py-12 font-sans text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-950">
                 <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 sm:flex-row sm:px-6 lg:px-8">
                     <div className="flex items-center gap-3">
                         {settings.brand_icon && (
                             <img src={settings.brand_icon} alt={settings.brand_name} className="h-8 w-8 rounded-lg object-contain" />
                         )}
                         <div>
-                            <p className="font-semibold text-slate-700 dark:text-slate-300">{settings.brand_name}</p>
+                            <p className="font-display font-bold text-slate-700 dark:text-slate-300">{settings.brand_name}</p>
                             <p className="mt-0.5 text-xs text-slate-500">{settings.footer_text}</p>
                         </div>
                     </div>
@@ -486,14 +491,14 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
             {showTermsModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
                     <div className="w-full max-w-lg space-y-4 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Terms & Conditions</h3>
-                        <div className="max-h-60 overflow-y-auto text-xs leading-relaxed whitespace-pre-wrap text-slate-600 dark:text-slate-300">
+                        <h3 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">Terms & Conditions</h3>
+                        <div className="max-h-60 overflow-y-auto font-sans text-xs leading-relaxed whitespace-pre-wrap text-slate-600 dark:text-slate-300">
                             {settings.terms_conditions}
                         </div>
                         <div className="pt-2 text-right">
                             <button
                                 onClick={() => setShowTermsModal(false)}
-                                className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-200"
+                                className="rounded-xl bg-slate-100 px-4 py-2 font-sans text-xs font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-200"
                             >
                                 Close
                             </button>
@@ -506,14 +511,14 @@ export default function Welcome({ settings, menuCategories, featuredItems }: Pro
             {showPrivacyModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
                     <div className="w-full max-w-lg space-y-4 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Privacy Policy</h3>
-                        <div className="max-h-60 overflow-y-auto text-xs leading-relaxed whitespace-pre-wrap text-slate-600 dark:text-slate-300">
+                        <h3 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">Privacy Policy</h3>
+                        <div className="max-h-60 overflow-y-auto font-sans text-xs leading-relaxed whitespace-pre-wrap text-slate-600 dark:text-slate-300">
                             {settings.privacy_policy}
                         </div>
                         <div className="pt-2 text-right">
                             <button
                                 onClick={() => setShowPrivacyModal(false)}
-                                className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-200"
+                                className="rounded-xl bg-slate-100 px-4 py-2 font-sans text-xs font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-200"
                             >
                                 Close
                             </button>
