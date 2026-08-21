@@ -2,7 +2,7 @@ import AppLayout from '@/layouts/app-layout';
 import { formatCurrency, formatDateTime, showAlert, showToast } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { CreditCard, DollarSign, Minus, Plus, Printer, Receipt, Search, ShoppingCart, Trash2, Utensils } from 'lucide-react';
+import { CreditCard, DollarSign, Loader2, Minus, Plus, Printer, Receipt, Search, ShoppingCart, Trash2, Utensils } from 'lucide-react';
 import { useState } from 'react';
 
 interface Category {
@@ -39,16 +39,16 @@ interface Order {
     subtotal: number;
     tax_amount: number;
     discount_amount: number;
-    total_amount: number;
+    grand_total: number;
     payment_method: string;
     notes?: string;
     created_at: string;
-    items: {
-        item_name: string;
+    items?: Array<{
+        name: string;
         quantity: number;
         unit_price: number;
         total_price: number;
-    }[];
+    }>;
 }
 
 interface Props {
@@ -68,6 +68,7 @@ export default function SalesPOS({ categories, allMenuItems, currency, taxPercen
     const [selectedCategory, setSelectedCategory] = useState<number | 'all'>('all');
     const [search, setSearch] = useState('');
     const [cart, setCart] = useState<CartItem[]>([]);
+    const [isCheckingOut, setIsCheckingOut] = useState(false);
 
     // Completed Order Modal / Receipt Modal
     const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
@@ -152,6 +153,7 @@ export default function SalesPOS({ categories, allMenuItems, currency, taxPercen
             return;
         }
 
+        setIsCheckingOut(true);
         const payload = {
             ...orderForm.data,
             items: cart.map((i) => ({
@@ -170,6 +172,12 @@ export default function SalesPOS({ categories, allMenuItems, currency, taxPercen
                 if (latestOrder) {
                     setCompletedOrder(latestOrder);
                 }
+            },
+            onError: () => {
+                showToast('Failed to process sale. Please check details.', 'error');
+            },
+            onFinish: () => {
+                setIsCheckingOut(false);
             },
         });
     };
@@ -451,10 +459,20 @@ export default function SalesPOS({ categories, allMenuItems, currency, taxPercen
 
                         <button
                             type="submit"
-                            disabled={cart.length === 0 || orderForm.processing}
-                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-black text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400 disabled:opacity-50"
+                            disabled={cart.length === 0 || orderForm.processing || isCheckingOut}
+                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-black text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                         >
-                            <Printer className="h-4 w-4" /> Complete Sale & Print Receipt
+                            {isCheckingOut || orderForm.processing ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <span>Completing Sale & Deducting Stock...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Printer className="h-4 w-4" />
+                                    <span>Complete Sale & Print Receipt</span>
+                                </>
+                            )}
                         </button>
                     </form>
                 </div>

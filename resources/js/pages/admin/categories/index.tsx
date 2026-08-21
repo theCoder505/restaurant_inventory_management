@@ -8,6 +8,7 @@ import {
     DollarSign,
     Edit,
     FolderTree,
+    Loader2,
     Plus,
     Search,
     Tag,
@@ -41,6 +42,7 @@ export default function CategoriesIndex({ categories = [] }: Props) {
 
     const [showModal, setShowModal] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
 
     // Filters and Pagination
     const [searchTerm, setSearchTerm] = useState('');
@@ -122,8 +124,10 @@ export default function CategoriesIndex({ categories = [] }: Props) {
         );
 
         if (confirmed) {
+            setDeletingId(cat.id);
             router.delete(`/administration-control/categories/${cat.id}`, {
                 onSuccess: () => showToast('Category deleted', 'success'),
+                onFinish: () => setDeletingId(null),
             });
         }
     };
@@ -347,10 +351,15 @@ export default function CategoriesIndex({ categories = [] }: Props) {
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(cat)}
-                                                        className="rounded-lg bg-rose-500/10 p-1.5 text-rose-500 hover:bg-rose-500 hover:text-white transition-colors"
+                                                        disabled={deletingId === cat.id}
+                                                        className="rounded-lg bg-rose-500/10 p-1.5 text-rose-500 hover:bg-rose-500 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                                         title="Delete Category"
                                                     >
-                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                        {deletingId === cat.id ? (
+                                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                        ) : (
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        )}
                                                     </button>
                                                 </div>
                                             </td>
@@ -492,16 +501,24 @@ export default function CategoriesIndex({ categories = [] }: Props) {
                                     <button
                                         type="button"
                                         onClick={() => setShowModal(false)}
-                                        className="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-800 transition-all hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                                        disabled={form.processing}
+                                        className="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-800 transition-all hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 cursor-pointer"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={form.processing}
-                                        className="rounded-xl bg-amber-500 px-5 py-2 font-bold text-slate-950 shadow-md shadow-amber-500/20 transition-all hover:bg-amber-400 disabled:opacity-50"
+                                        className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2 font-bold text-slate-950 shadow-md shadow-amber-500/20 transition-all hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                                     >
-                                        {editingCategory ? 'Update Category' : 'Save Category'}
+                                        {form.processing ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                <span>{editingCategory ? 'Updating Category...' : 'Saving Category...'}</span>
+                                            </>
+                                        ) : (
+                                            <span>{editingCategory ? 'Update Category' : 'Save Category'}</span>
+                                        )}
                                     </button>
                                 </div>
                             </form>

@@ -10,6 +10,7 @@ import {
     Eye,
     Filter,
     Image as ImageIcon,
+    Loader2,
     Plus,
     Search,
     Trash2,
@@ -54,16 +55,19 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/administration-control/dashboard' },
-    { title: 'Menu Catalog', href: '/administration-control/menu' },
+    { title: 'Menu Items', href: '/administration-control/menu' },
 ];
 
 export default function MenuIndex({ menuItems, categories, currency, filters }: Props) {
     const [showDishModal, setShowDishModal] = useState(false);
     const [editingDish, setEditingDish] = useState<MenuItem | null>(null);
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [viewingDetailsDish, setViewingDetailsDish] = useState<MenuItem | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [isSubmittingDish, setIsSubmittingDish] = useState(false);
+    const [togglingId, setTogglingId] = useState<number | null>(null);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
 
-    // Search and filter states
+    // Search and filter state
     const [search, setSearch] = useState(filters.search || '');
     const [categoryId, setCategoryId] = useState(filters.category_id || '');
 
@@ -141,6 +145,7 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
 
     const submitDishForm = (e: React.FormEvent) => {
         e.preventDefault();
+        setIsSubmittingDish(true);
         if (editingDish) {
             router.post(
                 `/administration-control/menu/${editingDish.id}`,
@@ -153,6 +158,7 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
                         setShowDishModal(false);
                         showToast(`Menu dish "${dishForm.data.name}" updated!`, 'success');
                     },
+                    onFinish: () => setIsSubmittingDish(false),
                 },
             );
         } else {
@@ -161,16 +167,19 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
                     setShowDishModal(false);
                     showToast(`New menu dish "${dishForm.data.name}" created!`, 'success');
                 },
+                onFinish: () => setIsSubmittingDish(false),
             });
         }
     };
 
     const toggleAvailability = (dish: MenuItem) => {
+        setTogglingId(dish.id);
         router.post(
             `/administration-control/menu/${dish.id}/toggle-availability`,
             {},
             {
                 onSuccess: () => showToast(`Dish "${dish.name}" availability toggled`, 'info'),
+                onFinish: () => setTogglingId(null),
             },
         );
     };
@@ -178,8 +187,10 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
     const handleDeleteDish = async (dish: MenuItem) => {
         const confirmed = await showConfirm(`Delete menu item "${dish.name}"?`, 'Action cannot be undone.');
         if (confirmed) {
+            setDeletingId(dish.id);
             router.delete(`/administration-control/menu/${dish.id}`, {
                 onSuccess: () => showToast(`Dish "${dish.name}" deleted`, 'success'),
+                onFinish: () => setDeletingId(null),
             });
         }
     };
@@ -354,12 +365,16 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
                                                 <td className="p-3.5 text-center whitespace-nowrap">
                                                     <button
                                                         onClick={() => toggleAvailability(dish)}
-                                                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold cursor-pointer ${
+                                                        disabled={togglingId === dish.id}
+                                                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
                                                             dish.is_available
                                                                 ? 'border border-emerald-500/30 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
                                                                 : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
                                                         }`}
                                                     >
+                                                        {togglingId === dish.id ? (
+                                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                                        ) : null}
                                                         {dish.is_available ? 'Available' : 'Out of Stock'}
                                                     </button>
                                                 </td>
@@ -384,10 +399,15 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
                                                         </button>
                                                         <button
                                                             onClick={() => handleDeleteDish(dish)}
+                                                            disabled={deletingId === dish.id}
                                                             title="Delete Dish"
-                                                            className="rounded-lg bg-rose-500/10 p-1.5 text-rose-500 hover:bg-rose-500 hover:text-white cursor-pointer"
+                                                            className="rounded-lg bg-rose-500/10 p-1.5 text-rose-500 hover:bg-rose-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                                         >
-                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                            {deletingId === dish.id ? (
+                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                            ) : (
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                            )}
                                                         </button>
                                                     </div>
                                                 </td>
@@ -574,16 +594,24 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
                                     <button
                                         type="button"
                                         onClick={() => setShowDishModal(false)}
+                                        disabled={isSubmittingDish || dishForm.processing}
                                         className="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-800 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 cursor-pointer"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={dishForm.processing}
-                                        className="rounded-xl bg-amber-500 px-5 py-2 font-bold text-slate-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 cursor-pointer"
+                                        disabled={isSubmittingDish || dishForm.processing}
+                                        className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2 font-bold text-slate-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                                     >
-                                        Save Dish
+                                        {isSubmittingDish || dishForm.processing ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                <span>{editingDish ? 'Updating Dish...' : 'Saving Dish...'}</span>
+                                            </>
+                                        ) : (
+                                            <span>{editingDish ? 'Update Dish' : 'Save Dish'}</span>
+                                        )}
                                     </button>
                                 </div>
                             </form>

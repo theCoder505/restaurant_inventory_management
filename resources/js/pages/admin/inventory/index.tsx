@@ -2,7 +2,7 @@ import AppLayout from '@/layouts/app-layout';
 import { formatCurrency, formatHumanDate, showConfirm, showToast } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { AlertTriangle, Boxes, Edit, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { AlertTriangle, Boxes, Edit, Loader2, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 interface Category {
@@ -64,6 +64,7 @@ export default function InventoryIndex({ items, categories, currency, filters }:
     const [lowStockOnly, setLowStockOnly] = useState(filters.low_stock === 'true');
     const [showModal, setShowModal] = useState(false);
     const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
 
     // Stock Adjustment Modal
     const [adjustingItem, setAdjustingItem] = useState<InventoryItem | null>(null);
@@ -154,8 +155,10 @@ export default function InventoryIndex({ items, categories, currency, filters }:
     const handleDelete = async (item: InventoryItem) => {
         const confirmed = await showConfirm(`Delete "${item.name}"?`, 'This action cannot be undone.');
         if (confirmed) {
+            setDeletingId(item.id);
             router.delete(`/administration-control/inventory/${item.id}`, {
                 onSuccess: () => showToast(`Inventory item "${item.name}" deleted`, 'success'),
+                onFinish: () => setDeletingId(null),
             });
         }
     };
@@ -332,9 +335,14 @@ export default function InventoryIndex({ items, categories, currency, filters }:
                                                         </button>
                                                         <button
                                                             onClick={() => handleDelete(item)}
-                                                            className="rounded-lg bg-rose-500/10 p-1.5 text-rose-500 hover:bg-rose-500 hover:text-white"
+                                                            disabled={deletingId === item.id}
+                                                            className="rounded-lg bg-rose-500/10 p-1.5 text-rose-500 hover:bg-rose-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                                         >
-                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                            {deletingId === item.id ? (
+                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                            ) : (
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                            )}
                                                         </button>
                                                     </div>
                                                 </td>
@@ -475,16 +483,24 @@ export default function InventoryIndex({ items, categories, currency, filters }:
                                     <button
                                         type="button"
                                         onClick={() => setShowModal(false)}
-                                        className="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-300"
+                                        disabled={itemForm.processing}
+                                        className="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-300 cursor-pointer"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={itemForm.processing}
-                                        className="rounded-xl bg-amber-500 px-5 py-2 font-bold text-slate-950 hover:bg-amber-400"
+                                        className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2 font-bold text-slate-950 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                                     >
-                                        Save Item
+                                        {itemForm.processing ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                <span>{editingItem ? 'Updating Item...' : 'Saving Item...'}</span>
+                                            </>
+                                        ) : (
+                                            <span>{editingItem ? 'Update Item' : 'Save Item'}</span>
+                                        )}
                                     </button>
                                 </div>
                             </form>
@@ -574,16 +590,24 @@ export default function InventoryIndex({ items, categories, currency, filters }:
                                     <button
                                         type="button"
                                         onClick={() => setAdjustingItem(null)}
-                                        className="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-300"
+                                        disabled={adjustForm.processing}
+                                        className="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-300 cursor-pointer"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={adjustForm.processing}
-                                        className="rounded-xl bg-amber-500 px-5 py-2 font-bold text-slate-950 hover:bg-amber-400"
+                                        className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2 font-bold text-slate-950 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                                     >
-                                        Confirm Adjustment
+                                        {adjustForm.processing ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                <span>Updating Stock...</span>
+                                            </>
+                                        ) : (
+                                            <span>Confirm Adjustment</span>
+                                        )}
                                     </button>
                                 </div>
                             </form>

@@ -2,7 +2,7 @@ import AppLayout from '@/layouts/app-layout';
 import { formatDateTime } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { Calendar, Download, FilterX, History, RotateCcw, Search, Shield } from 'lucide-react';
+import { Calendar, Download, FilterX, History, Loader2, RotateCcw, Search, Shield } from 'lucide-react';
 import { useState } from 'react';
 
 interface AuditLogItem {
@@ -55,6 +55,7 @@ export default function AuditLogsIndex({ logs, filters, modules = [] }: Props) {
     const [startDate, setStartDate] = useState(filters?.start_date || '');
     const [endDate, setEndDate] = useState(filters?.end_date || '');
     const [perPage, setPerPage] = useState(filters?.per_page || 20);
+    const [isFiltering, setIsFiltering] = useState(false);
 
     const getTodayString = () => {
         const d = new Date();
@@ -65,6 +66,7 @@ export default function AuditLogsIndex({ logs, filters, modules = [] }: Props) {
     };
 
     const handleFilter = () => {
+        setIsFiltering(true);
         router.get(
             '/administration-control/audit-logs',
             {
@@ -74,7 +76,11 @@ export default function AuditLogsIndex({ logs, filters, modules = [] }: Props) {
                 end_date: endDate,
                 per_page: perPage,
             },
-            { preserveState: true, preserveScroll: true }
+            {
+                preserveState: true,
+                preserveScroll: true,
+                onFinish: () => setIsFiltering(false),
+            }
         );
     };
 
@@ -82,6 +88,7 @@ export default function AuditLogsIndex({ logs, filters, modules = [] }: Props) {
         const today = getTodayString();
         setStartDate(today);
         setEndDate(today);
+        setIsFiltering(true);
         router.get(
             '/administration-control/audit-logs',
             {
@@ -91,7 +98,11 @@ export default function AuditLogsIndex({ logs, filters, modules = [] }: Props) {
                 end_date: today,
                 per_page: perPage,
             },
-            { preserveState: true, preserveScroll: true }
+            {
+                preserveState: true,
+                preserveScroll: true,
+                onFinish: () => setIsFiltering(false),
+            }
         );
     };
 
@@ -100,7 +111,16 @@ export default function AuditLogsIndex({ logs, filters, modules = [] }: Props) {
         setSelectedModule('');
         setStartDate('');
         setEndDate('');
-        router.get('/administration-control/audit-logs', { per_page: perPage }, { preserveState: true, preserveScroll: true });
+        setIsFiltering(true);
+        router.get(
+            '/administration-control/audit-logs',
+            { per_page: perPage },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                onFinish: () => setIsFiltering(false),
+            }
+        );
     };
 
     const handlePerPageChange = (newPerPage: number) => {
@@ -250,9 +270,17 @@ export default function AuditLogsIndex({ logs, filters, modules = [] }: Props) {
                             )}
                             <button
                                 onClick={handleFilter}
-                                className="rounded-xl bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white transition-all hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+                                disabled={isFiltering}
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white transition-all hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white cursor-pointer"
                             >
-                                Apply Filters
+                                {isFiltering ? (
+                                    <>
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        <span>Applying...</span>
+                                    </>
+                                ) : (
+                                    <span>Apply Filters</span>
+                                )}
                             </button>
                         </div>
                     </div>

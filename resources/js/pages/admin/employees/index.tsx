@@ -2,7 +2,7 @@ import AppLayout from '@/layouts/app-layout';
 import { formatCurrency, formatDate, showConfirm, showToast } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { ChevronLeft, ChevronRight, DollarSign, Download, Edit, Plus, Printer, Search, Trash2, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, DollarSign, Download, Edit, Loader2, Plus, Printer, Search, Trash2, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 interface Employee {
@@ -48,6 +48,8 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
     const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
     const [editingSalary, setEditingSalary] = useState<Salary | null>(null);
     const [viewingPayslip, setViewingPayslip] = useState<Salary | null>(null);
+    const [deletingStaffId, setDeletingStaffId] = useState<number | null>(null);
+    const [deletingSalaryId, setDeletingSalaryId] = useState<number | null>(null);
 
     // Roster Pagination & Search State
     const [searchTerm, setSearchTerm] = useState('');
@@ -258,8 +260,10 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
     const handleDeleteStaff = async (emp: Employee) => {
         const confirmed = await showConfirm(`Delete staff member "${emp.name}"?`, 'Action cannot be undone.');
         if (confirmed) {
+            setDeletingStaffId(emp.id);
             router.delete(`/administration-control/employees/${emp.id}`, {
                 onSuccess: () => showToast(`Staff member "${emp.name}" removed`, 'success'),
+                onFinish: () => setDeletingStaffId(null),
             });
         }
     };
@@ -293,8 +297,10 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
             'Action cannot be undone.'
         );
         if (confirmed) {
+            setDeletingSalaryId(sal.id);
             router.delete(`/administration-control/employees/salary/${sal.id}`, {
                 onSuccess: () => showToast(`Salary voucher for ${empName} deleted`, 'success'),
+                onFinish: () => setDeletingSalaryId(null),
             });
         }
     };
@@ -443,9 +449,14 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
                                                     </button>
                                                     <button
                                                         onClick={() => handleDeleteStaff(emp)}
-                                                        className="rounded-lg bg-rose-500/10 p-1.5 text-rose-500 hover:bg-rose-500 hover:text-white"
+                                                        disabled={deletingStaffId === emp.id}
+                                                        className="rounded-lg bg-rose-500/10 p-1.5 text-rose-500 hover:bg-rose-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                                     >
-                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                        {deletingStaffId === emp.id ? (
+                                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                        ) : (
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        )}
                                                     </button>
                                                 </div>
                                             </td>
@@ -745,10 +756,15 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
                                                      </button>
                                                     <button
                                                         onClick={() => handleDeleteSalary(sal)}
+                                                        disabled={deletingSalaryId === sal.id}
                                                         title="Delete Salary Voucher"
-                                                        className="rounded-lg bg-rose-500/10 p-1.5 text-rose-500 hover:bg-rose-500 hover:text-white"
+                                                        className="rounded-lg bg-rose-500/10 p-1.5 text-rose-500 hover:bg-rose-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                                     >
-                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                        {deletingSalaryId === sal.id ? (
+                                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                        ) : (
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        )}
                                                     </button>
                                                 </div>
                                             </td>
@@ -946,16 +962,24 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
                                     <button
                                         type="button"
                                         onClick={() => setShowStaffModal(false)}
-                                        className="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-300"
+                                        disabled={staffForm.processing}
+                                        className="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-300 cursor-pointer"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={staffForm.processing}
-                                        className="rounded-xl bg-amber-500 px-5 py-2 font-bold text-slate-950 hover:bg-amber-400"
+                                        className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2 font-bold text-slate-950 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                                     >
-                                        Save Staff
+                                        {staffForm.processing ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                <span>{editingEmployee ? 'Updating Staff...' : 'Saving Staff...'}</span>
+                                            </>
+                                        ) : (
+                                            <span>{editingEmployee ? 'Update Staff' : 'Save Staff'}</span>
+                                        )}
                                     </button>
                                 </div>
                             </form>
@@ -1079,16 +1103,24 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
                                     <button
                                         type="button"
                                         onClick={() => setShowSalaryModal(false)}
-                                        className="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-300"
+                                        disabled={salaryForm.processing}
+                                        className="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-300 cursor-pointer"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={salaryForm.processing}
-                                        className="rounded-xl bg-emerald-600 px-5 py-2 font-bold text-white hover:bg-emerald-500"
+                                        className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2 font-bold text-white hover:bg-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                                     >
-                                        {editingSalary ? 'Update Salary Voucher' : 'Disburse Salary'}
+                                        {salaryForm.processing ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                <span>{editingSalary ? 'Updating Salary Voucher...' : 'Disbursing Salary...'}</span>
+                                            </>
+                                        ) : (
+                                            <span>{editingSalary ? 'Update Salary Voucher' : 'Disburse Salary'}</span>
+                                        )}
                                     </button>
                                 </div>
                             </form>

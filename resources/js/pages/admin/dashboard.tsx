@@ -9,6 +9,7 @@ import {
     Filter,
     Layers,
     LayoutDashboard,
+    Loader2,
     ShoppingBag,
     TrendingDown,
     TrendingUp,
@@ -246,9 +247,20 @@ export default function Dashboard({
                             </div>
                             <button
                                 type="submit"
-                                className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-1.5 font-bold text-slate-950 hover:bg-amber-400"
+                                disabled={filterForm.processing}
+                                className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-1.5 font-bold text-slate-950 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                             >
-                                <Filter className="h-3.5 w-3.5" /> Apply Custom Range
+                                {filterForm.processing ? (
+                                    <>
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        <span>Applying...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Filter className="h-3.5 w-3.5" />
+                                        <span>Apply Custom Range</span>
+                                    </>
+                                )}
                             </button>
                         </form>
                     )}

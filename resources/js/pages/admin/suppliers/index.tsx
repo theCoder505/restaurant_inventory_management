@@ -3,7 +3,7 @@ import Pagination from '@/components/pagination';
 import { showConfirm, showToast } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { Download, Edit, Plus, Search, Trash2, Truck } from 'lucide-react';
+import { Download, Edit, Loader2, Plus, Search, Trash2, Truck } from 'lucide-react';
 import { useState } from 'react';
 
 interface Supplier {
@@ -39,6 +39,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function SuppliersIndex({ suppliers, currency, filters }: Props) {
     const [showModal, setShowModal] = useState(false);
     const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
 
     // Search filter state
     const [search, setSearch] = useState(filters.search || '');
@@ -93,8 +94,10 @@ export default function SuppliersIndex({ suppliers, currency, filters }: Props) 
     const handleDelete = async (supplier: Supplier) => {
         const confirmed = await showConfirm(`Delete supplier "${supplier.name}"?`, 'Action cannot be undone.');
         if (confirmed) {
+            setDeletingId(supplier.id);
             router.delete(`/administration-control/suppliers/${supplier.id}`, {
                 onSuccess: () => showToast(`Supplier deleted`, 'success'),
+                onFinish: () => setDeletingId(null),
             });
         }
     };
@@ -219,9 +222,15 @@ export default function SuppliersIndex({ suppliers, currency, filters }: Props) 
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(s)}
-                                                        className="rounded-lg bg-rose-500/10 p-1.5 text-rose-500 hover:bg-rose-500 hover:text-white"
+                                                        disabled={deletingId === s.id}
+                                                        className="rounded-lg bg-rose-500/10 p-1.5 text-rose-500 hover:bg-rose-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                                        title="Delete supplier"
                                                     >
-                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                        {deletingId === s.id ? (
+                                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                        ) : (
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        )}
                                                     </button>
                                                 </div>
                                             </td>
@@ -301,16 +310,24 @@ export default function SuppliersIndex({ suppliers, currency, filters }: Props) 
                                     <button
                                         type="button"
                                         onClick={() => setShowModal(false)}
-                                        className="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-300"
+                                        disabled={form.processing}
+                                        className="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-300 cursor-pointer"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={form.processing}
-                                        className="rounded-xl bg-amber-500 px-5 py-2 font-bold text-slate-950 hover:bg-amber-400"
+                                        className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2 font-bold text-slate-950 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                                     >
-                                        Save Supplier
+                                        {form.processing ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                <span>{editingSupplier ? 'Updating Supplier...' : 'Saving Supplier...'}</span>
+                                            </>
+                                        ) : (
+                                            <span>{editingSupplier ? 'Update Supplier' : 'Save Supplier'}</span>
+                                        )}
                                     </button>
                                 </div>
                             </form>

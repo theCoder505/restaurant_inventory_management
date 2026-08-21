@@ -298,28 +298,69 @@ class ReportController extends Controller
     public function triggerDailyEmail(Request $request)
     {
         $today = now()->format('Y-m-d');
-        $salesToday = Order::whereDate('created_at', $today)->where('payment_status', 'paid')->sum('total_amount');
-        $purchasesToday = self::calculatePurchaseForRange(now()->startOfDay(), now()->endOfDay());
-        $expensesToday = self::calculateExpenseForRange(now()->startOfDay(), now()->endOfDay());
-        $salaryToday = self::calculateSalaryForRange(now()->startOfDay(), now()->endOfDay());
+        $startOfDay = now()->startOfDay();
+        $endOfDay = now()->endOfDay();
+
+        $salesToday = (float) Order::whereDate('created_at', $today)->where('payment_status', 'paid')->sum('total_amount');
+        $orderCount = (int) Order::whereDate('created_at', $today)->where('payment_status', 'paid')->count();
+        $purchasesToday = self::calculatePurchaseForRange($startOfDay, $endOfDay);
+        $expensesToday = self::calculateExpenseForRange($startOfDay, $endOfDay);
+        $salaryToday = self::calculateSalaryForRange($startOfDay, $endOfDay);
         $netProfitToday = $salesToday - ($purchasesToday + $expensesToday + $salaryToday);
 
-        $alerts = NotificationService::checkAlerts();
+        // Top 5 dishes sold today
+        $topDishes = OrderItem::select('item_name as name', DB::raw('SUM(quantity) as qty'), DB::raw('SUM(total_price) as revenue'))
+            ->whereHas('order', function ($q) use ($startOfDay, $endOfDay) {
+                $q->whereBetween('created_at', [$startOfDay, $endOfDay])->where('payment_status', 'paid');
+            })
+            ->groupBy('item_name')
+            ->orderByDesc('qty')
+            ->limit(5)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'name' => $item->name,
+                    'qty' => (int)$item->qty,
+                    'revenue' => (float)$item->revenue,
+                ];
+            })
+            ->toArray();
+
+        $alertsData = NotificationService::checkAlerts();
+        $expiringItems = [];
+        if (!empty($alertsData['expiring'])) {
+            foreach ($alertsData['expiring'] as $exp) {
+                $expiringItems[] = [
+                    'ingredient_name' => $exp->ingredient_name,
+                    'quantity' => $exp->quantity,
+                    'used_amount' => $exp->used_amount,
+                    'unit' => $exp->unit,
+                ];
+            }
+        }
+
+        $currency = AppSetting::getByKey('default_currency', '৳');
+        $brandName = AppSetting::getByKey('brand_name', 'NOCTURNE');
 
         $sent = NotificationService::sendDailySummaryEmail([
+            'brand_name' => $brandName,
+            'currency' => $currency,
+            'date' => now()->format('l, F d, Y'),
             'total_sales' => $salesToday,
+            'order_count' => $orderCount,
             'total_purchases' => $purchasesToday,
             'total_expenses' => $expensesToday,
             'total_salaries' => $salaryToday,
             'net_profit' => $netProfitToday,
-            'low_stock' => $alerts['low_stock'],
+            'top_dishes' => $topDishes,
+            'alerts' => $expiringItems,
         ]);
 
         if ($sent) {
-            return redirect()->back()->with('success', 'Daily closing summary email sent to admin.');
+            return redirect()->back()->with('success', 'Daily closing summary email sent to admin successfully.');
         }
 
-        return redirect()->back()->with('error', 'Could not send email. Please check notification email setting.');
+        return redirect()->back()->with('error', 'Could not send daily closing email. Please verify notification email settings and mail configuration.');
     }
 
     public function exportCsv(Request $request): StreamedResponse

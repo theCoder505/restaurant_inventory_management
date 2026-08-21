@@ -2,7 +2,7 @@ import AppLayout from '@/layouts/app-layout';
 import { showToast } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
-import { Calendar, Clock, Download, Globe, Image as ImageIcon, MessageCircle, Save, Settings, Sparkles, Upload } from 'lucide-react';
+import { Calendar, Clock, Download, Globe, Image as ImageIcon, Loader2, MessageCircle, Save, Settings, Sparkles, Upload } from 'lucide-react';
 import { useState } from 'react';
 
 interface SettingsData {
@@ -658,9 +658,19 @@ export default function SettingsIndex({ settings }: Props) {
                         <button
                             type="submit"
                             disabled={form.processing}
-                            className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-8 py-3 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/25 transition-all hover:bg-amber-400 active:scale-95 disabled:opacity-50"
+                            className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-8 py-3 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/25 transition-all hover:bg-amber-400 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                         >
-                            <Save className="h-4 w-4" /> {form.processing ? 'Saving Configurations...' : 'Save All Settings'}
+                            {form.processing ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <span>Saving Configurations...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="h-4 w-4" />
+                                    <span>Save All Settings</span>
+                                </>
+                            )}
                         </button>
                     </div>
                 </form>

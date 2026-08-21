@@ -9,6 +9,7 @@ import {
     ChevronLeft,
     ChevronRight,
     Download,
+    Loader2,
     Mail,
     PieChart as PieChartIcon,
     Search,
@@ -110,6 +111,9 @@ export default function ReportsIndex({
         end_date: endDate || '',
     });
 
+    const [isSendingEmail, setIsSendingEmail] = useState(false);
+    const [isFiltering, setIsFiltering] = useState(false);
+
     // Frontend Dish Insights Pagination & Search
     const [dishSearch, setDishSearch] = useState('');
     const [dishPage, setDishPage] = useState(1);
@@ -144,15 +148,29 @@ export default function ReportsIndex({
 
     const handleFilterSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        router.get('/administration-control/reports', filterForm.data, { preserveState: true });
+        setIsFiltering(true);
+        router.get('/administration-control/reports', filterForm.data, {
+            preserveState: true,
+            onFinish: () => setIsFiltering(false),
+        });
     };
 
     const handleSendDailyEmail = () => {
+        if (isSendingEmail) return;
+        setIsSendingEmail(true);
         router.post(
             '/administration-control/reports/send-daily-summary',
             {},
             {
-                onSuccess: () => showToast('Daily Closing P&L Summary email sent to admin!', 'success'),
+                onSuccess: () => {
+                    showToast('Daily Closing P&L Summary email sent to admin successfully!', 'success');
+                },
+                onError: (errors) => {
+                    showToast('Failed to send daily summary email. Please check mail settings.', 'error');
+                },
+                onFinish: () => {
+                    setIsSendingEmail(false);
+                },
             },
         );
     };
@@ -187,18 +205,30 @@ export default function ReportsIndex({
                     <div className="flex items-center gap-3">
                         <button
                             onClick={handleSendDailyEmail}
-                            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-emerald-900/20 transition-all hover:bg-emerald-500"
+                            disabled={isSendingEmail}
+                            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-emerald-900/20 transition-all hover:bg-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                         >
-                            <Mail className="h-4 w-4" /> Trigger Daily Closing Email
+                            {isSendingEmail ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <span>Sending Daily Email...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Mail className="h-4 w-4" />
+                                    <span>Trigger Daily Closing Email</span>
+                                </>
+                            )}
                         </button>
                         <button
                             onClick={handleExportExcel}
-                            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-200 px-4 py-2 text-xs font-bold text-slate-800 transition-all hover:bg-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-200 px-4 py-2 text-xs font-bold text-slate-800 transition-all hover:bg-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 cursor-pointer"
                         >
                             <Download className="h-4 w-4" /> Export Excel (.xlsx)
                         </button>
                     </div>
                 </div>
+
 
                 {/* Profit & Loss Calculation Overview Grid (Formula: Sales - (Purchases + Salaries + Bills)) */}
                 <div className="space-y-3">
@@ -308,9 +338,17 @@ export default function ReportsIndex({
 
                     <button
                         type="submit"
-                        className="w-full rounded-xl bg-amber-500 px-5 py-2 text-xs font-bold text-slate-950 transition-all hover:bg-amber-400 md:w-auto"
+                        disabled={isFiltering}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-5 py-2 text-xs font-bold text-slate-950 transition-all hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed md:w-auto cursor-pointer"
                     >
-                        Apply Report Filters
+                        {isFiltering ? (
+                            <>
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                <span>Applying Filters...</span>
+                            </>
+                        ) : (
+                            <span>Apply Report Filters</span>
+                        )}
                     </button>
                 </form>
 
