@@ -1,5 +1,7 @@
 import AppLayout from '@/layouts/app-layout';
 import Pagination from '@/components/pagination';
+import PosReceipt from '@/components/receipt/pos-receipt';
+import { printReceipt } from '@/lib/print-receipt';
 import { formatCurrency, formatDateTime } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
@@ -402,70 +404,16 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
                 </div>
             </div>
 
-            {/* Receipt Preview Modal — outside print:hidden so it renders on print */}
+            {/* Receipt Preview Modal */}
             {viewingOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm print:fixed print:inset-0 print:flex print:items-center print:justify-center print:bg-white print:p-6">
-                    <div className="w-full max-w-sm max-h-[90vh] overflow-y-auto space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 text-slate-900 shadow-2xl print:border-none print:p-8 print:shadow-none">
-                        <div className="space-y-1 border-b border-dashed border-slate-300 pb-4 text-center">
-                            <h2 className="text-lg font-black uppercase">{brandName}</h2>
-                            <p className="text-[10px] text-slate-500">Order #{viewingOrder.order_number}</p>
-                            <p className="text-[10px] text-slate-400">{formatDateTime(viewingOrder.created_at)}</p>
-                        </div>
-
-                        <div className="space-y-2 divide-y divide-slate-100 text-xs">
-                            {viewingOrder.items.map((item, idx) => (
-                                <div key={idx} className="flex justify-between pt-1.5">
-                                    <span>
-                                        {item.item_name} x {item.quantity}
-                                    </span>
-                                    <span className="font-bold">{formatCurrency(item.total_price, currency)}</span>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="space-y-1 border-t border-dashed border-slate-300 pt-3 text-xs">
-                            <div className="flex justify-between">
-                                <span>Subtotal</span>
-                                <span>{formatCurrency(viewingOrder.subtotal ?? 0, currency)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span>Tax / VAT</span>
-                                <span>{formatCurrency(viewingOrder.tax_amount ?? 0, currency)}</span>
-                            </div>
-                            {viewingOrder.discount_amount > 0 && (
-                                <div className="flex justify-between text-rose-600">
-                                    <span>Discount</span>
-                                    <span>-{formatCurrency(viewingOrder.discount_amount, currency)}</span>
-                                </div>
-                            )}
-                            <div className="flex justify-between border-t border-slate-300 pt-2 text-sm font-black">
-                                <span>Total Paid</span>
-                                <span>{formatCurrency(viewingOrder.total_amount, currency)}</span>
-                            </div>
-                            <div className="pt-1 text-center text-[10px] text-slate-500">
-                                Payment Method: {viewingOrder.payment_method.toUpperCase()}
-                            </div>
-                            {viewingOrder.notes && (
-                                <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/50 p-2 text-center text-[10px] text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-                                    <span className="font-bold">Note:</span> {viewingOrder.notes}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex justify-between gap-3 pt-2 text-center print:hidden">
-                            <button
-                                onClick={() => setViewingOrder(null)}
-                                className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700"
-                            >
-                                Close
-                            </button>
-                            <button
-                                onClick={printReceipt}
-                                className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-xs font-bold text-slate-950"
-                            >
-                                <Printer className="h-4 w-4" /> Print Receipt
-                            </button>
-                        </div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+                    <div className="relative max-h-[95vh] overflow-y-auto w-full max-w-[360px]">
+                        <PosReceipt
+                            order={viewingOrder as any}
+                            branding={branding as any}
+                            currency={currency}
+                            onClose={() => setViewingOrder(null)}
+                        />
                     </div>
                 </div>
             )}

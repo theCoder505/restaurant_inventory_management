@@ -35,7 +35,18 @@ class SalesController extends Controller
         $currency = AppSetting::getByKey('default_currency', '৳');
         $taxPercentage = (float)AppSetting::getByKey('tax_percentage', '5.0');
 
-        $recentOrders = Order::with('items')->orderByDesc('created_at')->limit(10)->get();
+        $recentOrders = Order::with(['items', 'creator'])->orderByDesc('created_at')->limit(10)->get();
+
+        $settings = [
+            'brand_name' => AppSetting::getByKey('brand_name', config('app.name', 'Restaurant')),
+            'brand_logo' => AppSetting::getByKey('brand_logo', '/uploads/branding/logo.svg'),
+            'brand_icon' => AppSetting::getByKey('brand_icon', '/uploads/branding/icon.svg'),
+            'address' => AppSetting::getByKey('address', '889 Midnight Ave, Suite B, Downtown District'),
+            'phone' => AppSetting::getByKey('phone', '+8801700000000'),
+            'email' => AppSetting::getByKey('email', 'contact@restaurant.com'),
+            'default_currency' => $currency,
+            'tax_percentage' => $taxPercentage,
+        ];
 
         return Inertia::render('admin/sales/index', [
             'categories' => $categories,
@@ -43,6 +54,7 @@ class SalesController extends Controller
             'currency' => $currency,
             'taxPercentage' => $taxPercentage,
             'recentOrders' => $recentOrders,
+            'settings' => $settings,
         ]);
     }
 
@@ -117,7 +129,7 @@ class SalesController extends Controller
 
             AuditLogService::log("Created sale invoice {$orderNumber} total: {$totalAmount}", "sales");
 
-            return $newOrder->load('items');
+            return $newOrder->load(['items', 'creator']);
         });
 
         return redirect()->back()->with([

@@ -1,8 +1,10 @@
 import AppLayout from '@/layouts/app-layout';
+import PosReceipt from '@/components/receipt/pos-receipt';
+import { printReceipt } from '@/lib/print-receipt';
 import { formatCurrency, formatDateTime, showAlert, showToast } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
-import { CreditCard, DollarSign, Loader2, Minus, Plus, Printer, Receipt, Search, ShoppingCart, Trash2, Utensils } from 'lucide-react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { CreditCard, DollarSign, History, Loader2, Minus, Plus, Printer, Receipt, Search, ShoppingCart, Trash2, Utensils, X } from 'lucide-react';
 import { useState } from 'react';
 
 interface Category {
@@ -39,12 +41,20 @@ interface Order {
     subtotal: number;
     tax_amount: number;
     discount_amount: number;
-    grand_total: number;
+    total_amount?: number;
+    grand_total?: number;
     payment_method: string;
+    payment_status?: string;
+    transaction_id?: string;
     notes?: string;
     created_at: string;
+    creator?: {
+        name?: string;
+    };
     items?: Array<{
-        name: string;
+        id?: number;
+        item_name?: string;
+        name?: string;
         quantity: number;
         unit_price: number;
         total_price: number;
@@ -56,7 +66,15 @@ interface Props {
     allMenuItems: MenuItem[];
     currency: string;
     taxPercentage: number;
-    recentOrders: Order[];
+    recentOrders?: Order[];
+    settings?: {
+        brand_name?: string;
+        brand_logo?: string;
+        brand_icon?: string;
+        address?: string;
+        phone?: string;
+        email?: string;
+    };
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -64,11 +82,15 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'POS Billing & Sales', href: '/administration-control/sales' },
 ];
 
-export default function SalesPOS({ categories, allMenuItems, currency, taxPercentage }: Props) {
+export default function SalesPOS({ categories, allMenuItems, currency, taxPercentage, recentOrders = [], settings = {} }: Props) {
+    const { branding } = usePage<{ branding?: any }>().props;
+    const activeBranding = { ...settings, ...(branding || {}) };
+
     const [selectedCategory, setSelectedCategory] = useState<number | 'all'>('all');
     const [search, setSearch] = useState('');
     const [cart, setCart] = useState<CartItem[]>([]);
     const [isCheckingOut, setIsCheckingOut] = useState(false);
+    const [showRecentOrders, setShowRecentOrders] = useState(false);
 
     // Completed Order Modal / Receipt Modal
     const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
@@ -168,9 +190,13 @@ export default function SalesPOS({ categories, allMenuItems, currency, taxPercen
                 showToast('Sale Order Completed & Stock Deducted!', 'success');
                 clearCart();
                 orderForm.reset();
-                const latestOrder = (page.props as any).flash?.order;
+                const latestOrder = (page.props as any).flash?.lastOrder || (page.props as any).flash?.order;
                 if (latestOrder) {
                     setCompletedOrder(latestOrder);
+                    // Automatically trigger money receipt print for POS machine
+                    setTimeout(() => {
+                        printReceipt(latestOrder, activeBranding, currency);
+                    }, 250);
                 }
             },
             onError: () => {
@@ -180,10 +206,6 @@ export default function SalesPOS({ categories, allMenuItems, currency, taxPercen
                 setIsCheckingOut(false);
             },
         });
-    };
-
-    const printReceipt = () => {
-        window.print();
     };
 
     return (
@@ -199,9 +221,18 @@ export default function SalesPOS({ categories, allMenuItems, currency, taxPercen
                                 <ShoppingCart className="h-6 w-6 text-amber-500" /> POS Billing Terminal
                             </h1>
                             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                                Fast order creation with auto-ingredient recipe stock deduction
+                                Fast order creation with auto-ingredient recipe stock deduction & instant money receipt printing
                             </p>
                         </div>
+                        {recentOrders.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => setShowRecentOrders(true)}
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm transition-all hover:border-amber-500/50 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer self-start sm:self-auto"
+                            >
+                                <History className="h-4 w-4 text-amber-500" /> Recent Receipts ({recentOrders.length})
+                            </button>
+                        )}
                     </div>
 
                     {/* Search & Category Filter */}
@@ -477,69 +508,90 @@ export default function SalesPOS({ categories, allMenuItems, currency, taxPercen
                     </form>
                 </div>
 
-                {/* Printable Receipt Modal */}
+                {/* Printable Money Receipt Modal (Reference Design) */}
                 {completedOrder && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                        <div className="w-full max-w-sm max-h-[90vh] overflow-y-auto space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 text-slate-900 shadow-2xl print:border-none print:p-0 print:shadow-none">
-                            <div className="space-y-1 border-b border-dashed border-slate-300 pb-4 text-center">
-                                <h2 className="text-lg font-black">LE GOURMET BISTRO</h2>
-                                <p className="text-[10px] text-slate-500">45 Artisan Boulevard, Gulshan 2, Dhaka</p>
-                                <p className="text-[10px] text-slate-500">Order #{completedOrder.order_number}</p>
-                                <p className="text-[10px] text-slate-400">{formatDateTime(completedOrder.created_at)}</p>
-                            </div>
+                        <div className="relative max-h-[95vh] overflow-y-auto w-full max-w-[360px]">
+                            <PosReceipt
+                                order={completedOrder as any}
+                                branding={activeBranding}
+                                currency={currency}
+                                onClose={() => setCompletedOrder(null)}
+                            />
+                        </div>
+                    </div>
+                )}
 
-                            <div className="space-y-2 divide-y divide-slate-100 text-xs">
-                                {completedOrder.items.map((item, idx) => (
-                                    <div key={idx} className="flex justify-between pt-1.5">
-                                        <span>
-                                            {item.item_name} x {item.quantity}
-                                        </span>
-                                        <span className="font-bold">{formatCurrency(item.total_price, currency)}</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="space-y-1 border-t border-dashed border-slate-300 pt-3 text-xs">
-                                <div className="flex justify-between">
-                                    <span>Subtotal</span>
-                                    <span>{formatCurrency(completedOrder.subtotal, currency)}</span>
+                {/* Recent Orders Modal / Drawer */}
+                {showRecentOrders && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+                        <div className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                            <div className="flex items-center justify-between border-b border-slate-200 p-4 dark:border-slate-800">
+                                <div className="flex items-center gap-2">
+                                    <History className="h-5 w-5 text-amber-500" />
+                                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                                        Recent POS Sales & Receipts
+                                    </h3>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span>Tax / VAT</span>
-                                    <span>{formatCurrency(completedOrder.tax_amount, currency)}</span>
-                                </div>
-                                {completedOrder.discount_amount > 0 && (
-                                    <div className="flex justify-between text-rose-600">
-                                        <span>Discount</span>
-                                        <span>-{formatCurrency(completedOrder.discount_amount, currency)}</span>
-                                    </div>
-                                )}
-                                <div className="flex justify-between border-t border-slate-300 pt-2 text-sm font-black">
-                                    <span>Total Paid</span>
-                                    <span>{formatCurrency(completedOrder.total_amount, currency)}</span>
-                                </div>
-                                <div className="pt-1 text-center text-[10px] text-slate-500">
-                                    Payment Method: {completedOrder.payment_method.toUpperCase()}
-                                </div>
-                                {completedOrder.notes && (
-                                    <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/50 p-2 text-center text-[10px] text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-                                        <span className="font-bold">Note:</span> {completedOrder.notes}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="flex justify-between gap-3 pt-2 text-center print:hidden">
                                 <button
-                                    onClick={() => setCompletedOrder(null)}
-                                    className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700"
+                                    onClick={() => setShowRecentOrders(false)}
+                                    className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 cursor-pointer"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                                {recentOrders.length === 0 ? (
+                                    <p className="py-8 text-center text-xs text-slate-500">
+                                        No recent orders found.
+                                    </p>
+                                ) : (
+                                    recentOrders.map((ro) => (
+                                        <div
+                                            key={ro.id}
+                                            className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-800 dark:bg-slate-950"
+                                        >
+                                            <div className="space-y-0.5">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                                                        {ro.order_number}
+                                                    </span>
+                                                    <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                                        {ro.table_number || ro.order_type.toUpperCase()}
+                                                    </span>
+                                                </div>
+                                                <p className="text-[10px] text-slate-500">
+                                                    {formatDateTime(ro.created_at)} • {ro.items?.length || 0} items
+                                                </p>
+                                            </div>
+
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xs font-black text-slate-900 dark:text-slate-100">
+                                                    {formatCurrency(ro.total_amount ?? ro.grand_total ?? 0, currency)}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setShowRecentOrders(false);
+                                                        setCompletedOrder(ro);
+                                                    }}
+                                                    className="flex items-center gap-1 rounded-lg bg-amber-500 px-2.5 py-1 text-[11px] font-bold text-slate-950 shadow hover:bg-amber-400 cursor-pointer"
+                                                >
+                                                    <Printer className="h-3.5 w-3.5" /> Receipt
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            <div className="border-t border-slate-200 p-3 text-right dark:border-slate-800">
+                                <button
+                                    onClick={() => setShowRecentOrders(false)}
+                                    className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 cursor-pointer"
                                 >
                                     Close
-                                </button>
-                                <button
-                                    onClick={printReceipt}
-                                    className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-xs font-bold text-slate-950"
-                                >
-                                    <Printer className="h-4 w-4" /> Print
                                 </button>
                             </div>
                         </div>

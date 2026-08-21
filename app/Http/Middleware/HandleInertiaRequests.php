@@ -50,6 +50,19 @@ class HandleInertiaRequests extends Middleware
                 'brand_name' => $brandName,
                 'brand_logo' => AppSetting::getByKey('brand_logo', '/uploads/branding/logo.svg'),
                 'brand_icon' => AppSetting::getByKey('brand_icon', '/uploads/branding/icon.svg'),
+                'address' => AppSetting::getByKey('address', '889 Midnight Ave, Suite B, Downtown District'),
+                'phone' => AppSetting::getByKey('phone', '+8801700000000'),
+                'email' => AppSetting::getByKey('email', 'contact@restaurant.com'),
+                'tagline' => AppSetting::getByKey('tagline', 'Exquisite Culinary Excellence & Artisan Cuisine'),
+                'default_currency' => AppSetting::getByKey('default_currency', '৳'),
+                'tax_percentage' => (float)AppSetting::getByKey('tax_percentage', '5.0'),
+            ],
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+                'warning' => fn () => $request->session()->get('warning'),
+                'info' => fn () => $request->session()->get('info'),
+                'lastOrder' => fn () => $request->session()->get('lastOrder'),
             ],
         ]);
     }
