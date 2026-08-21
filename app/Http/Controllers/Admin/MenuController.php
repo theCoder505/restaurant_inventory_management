@@ -17,7 +17,7 @@ class MenuController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = MenuItem::with(['category', 'recipes.inventoryItem']);
+        $query = MenuItem::with(['category']);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -30,13 +30,11 @@ class MenuController extends Controller
 
         $menuItems = $query->orderBy('name')->paginate(15)->withQueryString();
         $categories = Category::where('type', 'menu')->orderBy('name')->get();
-        $inventoryItems = InventoryItem::orderBy('name')->get();
         $currency = AppSetting::getByKey('default_currency', '৳');
 
         return Inertia::render('admin/menu/index', [
             'menuItems' => $menuItems,
             'categories' => $categories,
-            'inventoryItems' => $inventoryItems,
             'currency' => $currency,
             'filters' => $request->only(['search', 'category_id']),
         ]);
@@ -48,6 +46,7 @@ class MenuController extends Controller
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'description' => 'nullable|string',
+            'details' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'image_path' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp,svg|max:5120',
@@ -77,6 +76,7 @@ class MenuController extends Controller
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'description' => 'nullable|string',
+            'details' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'image_path' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp,svg|max:5120',

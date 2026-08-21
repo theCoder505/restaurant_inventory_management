@@ -1,9 +1,21 @@
 import AppLayout from '@/layouts/app-layout';
 import Pagination from '@/components/pagination';
+import RichTextEditor from '@/components/rich-text-editor';
 import { formatCurrency, showConfirm, showToast } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { Edit, Filter, Image as ImageIcon, Plus, Search, Trash2, UtensilsCrossed, X } from 'lucide-react';
+import {
+    BookOpen,
+    Edit,
+    Eye,
+    Filter,
+    Image as ImageIcon,
+    Plus,
+    Search,
+    Trash2,
+    UtensilsCrossed,
+    X,
+} from 'lucide-react';
 import { useState } from 'react';
 
 interface Category {
@@ -11,32 +23,17 @@ interface Category {
     name: string;
 }
 
-interface InventoryItem {
-    id: number;
-    name: string;
-    unit: string;
-    cost_per_unit: number;
-}
-
-interface Recipe {
-    id?: number;
-    inventory_item_id: number;
-    inventoryItem?: InventoryItem;
-    quantity: number;
-    unit: string;
-}
-
 interface MenuItem {
     id: number;
     name: string;
     category_id: number;
     description?: string;
+    details?: string;
     price: number;
     image_path?: string;
     is_available: boolean;
     is_featured: boolean;
     category?: Category;
-    recipes: Recipe[];
 }
 
 interface Props {
@@ -48,7 +45,6 @@ interface Props {
         total: number;
     };
     categories: Category[];
-    inventoryItems: InventoryItem[];
     currency: string;
     filters: {
         search?: string;
@@ -58,26 +54,25 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/admin/dashboard' },
-    { title: 'Menu & Recipes', href: '/admin/menu' },
+    { title: 'Menu Catalog', href: '/admin/menu' },
 ];
 
-export default function MenuIndex({ menuItems, categories, inventoryItems, currency, filters }: Props) {
+export default function MenuIndex({ menuItems, categories, currency, filters }: Props) {
     const [showDishModal, setShowDishModal] = useState(false);
     const [editingDish, setEditingDish] = useState<MenuItem | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [viewingDetailsDish, setViewingDetailsDish] = useState<MenuItem | null>(null);
 
     // Search and filter states
     const [search, setSearch] = useState(filters.search || '');
     const [categoryId, setCategoryId] = useState(filters.category_id || '');
-
-    // Recipe Builder Modal State
-    const [recipeDish, setRecipeDish] = useState<MenuItem | null>(null);
 
     // Dish Form
     const dishForm = useForm<{
         name: string;
         category_id: number | string;
         description: string;
+        details: string;
         price: number;
         image_path: string;
         image: File | null;
@@ -87,16 +82,12 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
         name: '',
         category_id: categories[0]?.id || '',
         description: '',
+        details: '',
         price: 0,
         image_path: '',
         image: null,
         is_available: true,
         is_featured: false,
-    });
-
-    // Recipe Builder Form
-    const recipeForm = useForm({
-        ingredients: [] as { inventory_item_id: number; quantity: number; unit: string }[],
     });
 
     const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,6 +107,17 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
     const openCreateDish = () => {
         setEditingDish(null);
         dishForm.reset();
+        dishForm.setData({
+            name: '',
+            category_id: categories[0]?.id || '',
+            description: '',
+            details: '',
+            price: 0,
+            image_path: '',
+            image: null,
+            is_available: true,
+            is_featured: false,
+        });
         setImagePreview(null);
         setShowDishModal(true);
     };
@@ -126,6 +128,7 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
             name: dish.name,
             category_id: dish.category_id,
             description: dish.description || '',
+            details: dish.details || '',
             price: dish.price,
             image_path: dish.image_path || '',
             image: null,
@@ -181,61 +184,6 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
         }
     };
 
-    // Recipe Builder Handlers
-    const openRecipeBuilder = (dish: MenuItem) => {
-        setRecipeDish(dish);
-        recipeForm.setData({
-            ingredients: dish.recipes.map((r) => ({
-                inventory_item_id: r.inventory_item_id,
-                quantity: r.quantity,
-                unit: r.unit,
-            })),
-        });
-    };
-
-    const addIngredientRow = () => {
-        const firstInv = inventoryItems[0];
-        recipeForm.setData('ingredients', [
-            ...recipeForm.data.ingredients,
-            {
-                inventory_item_id: firstInv?.id || 0,
-                quantity: 100,
-                unit: firstInv?.unit || 'g',
-            },
-        ]);
-    };
-
-    const removeIngredientRow = (index: number) => {
-        const newIngs = [...recipeForm.data.ingredients];
-        newIngs.splice(index, 1);
-        recipeForm.setData('ingredients', newIngs);
-    };
-
-    const handleIngredientChange = (index: number, field: string, value: any) => {
-        const newIngs = [...recipeForm.data.ingredients];
-        newIngs[index] = { ...newIngs[index], [field]: value };
-
-        if (field === 'inventory_item_id') {
-            const selectedInv = inventoryItems.find((i) => i.id === Number(value));
-            if (selectedInv) {
-                newIngs[index].unit = selectedInv.unit;
-            }
-        }
-        recipeForm.setData('ingredients', newIngs);
-    };
-
-    const submitRecipe = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!recipeDish) return;
-
-        recipeForm.post(`/admin/menu/${recipeDish.id}/recipe`, {
-            onSuccess: () => {
-                setRecipeDish(null);
-                showToast(`Recipe saved for "${recipeDish.name}"`, 'success');
-            },
-        });
-    };
-
     const applySearchFilters = () => {
         router.get('/admin/menu', { search, category_id: categoryId }, { preserveState: true });
     };
@@ -246,9 +194,17 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
         router.get('/admin/menu', {}, { preserveState: true });
     };
 
+    // Helper to render plain-text excerpt of HTML details
+    const getExcerpt = (html?: string) => {
+        if (!html) return '';
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        return temp.textContent || temp.innerText || '';
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Menu & Recipes Management" />
+            <Head title="Menu Catalog & Recipes" />
 
             <div className="flex min-h-screen flex-col gap-6 bg-slate-50 p-4 text-slate-900 transition-colors md:p-6 dark:bg-slate-950 dark:text-slate-100">
                 {/* Header */}
@@ -258,13 +214,13 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                             <UtensilsCrossed className="h-6 w-6 text-amber-500" /> Menu Catalog & Recipes
                         </h1>
                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            Dish pricing, image management, and ingredient recipe builder
+                            Dish pricing, image management, and rich recipe details
                         </p>
                     </div>
 
                     <button
                         onClick={openCreateDish}
-                        className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400"
+                        className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400 cursor-pointer"
                     >
                         <Plus className="h-4 w-4" /> Add New Menu Dish
                     </button>
@@ -281,7 +237,7 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && applySearchFilters()}
-                                className="w-full rounded-xl border border-slate-300 bg-slate-100 py-2 pr-3 pl-10 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                className="w-full rounded-xl border border-slate-300 bg-slate-100 py-2 pr-3 pl-10 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
                             />
                         </div>
 
@@ -289,7 +245,7 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                             <select
                                 value={categoryId}
                                 onChange={(e) => setCategoryId(e.target.value)}
-                                className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
                             >
                                 <option value="">All Categories</option>
                                 {categories.map((c) => (
@@ -304,13 +260,13 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                     <div className="flex items-center gap-2">
                         <button
                             onClick={resetSearchFilters}
-                            className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 font-semibold text-slate-700 hover:bg-slate-200 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300"
+                            className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 font-semibold text-slate-700 hover:bg-slate-200 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300 cursor-pointer"
                         >
                             Reset
                         </button>
                         <button
                             onClick={applySearchFilters}
-                            className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 font-bold text-slate-950 hover:bg-amber-400"
+                            className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 font-bold text-slate-950 hover:bg-amber-400 cursor-pointer"
                         >
                             <Filter className="h-3.5 w-3.5" /> Search
                         </button>
@@ -324,9 +280,9 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                             <thead className="bg-slate-100 text-[10px] font-semibold text-slate-500 uppercase dark:bg-slate-950 dark:text-slate-400">
                                 <tr>
                                     <th className="p-3.5">Dish Name & Category</th>
+                                    <th className="p-3.5">Recipe & Details</th>
                                     <th className="p-3.5 text-right">Selling Price</th>
                                     <th className="p-3.5 text-center">In-Stock Toggle</th>
-                                    <th className="p-3.5 text-center">Recipe Ingredients</th>
                                     <th className="p-3.5 text-right">Actions</th>
                                 </tr>
                             </thead>
@@ -339,6 +295,7 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                                     </tr>
                                 ) : (
                                     menuItems.data.map((dish) => {
+                                        const excerpt = getExcerpt(dish.details);
                                         return (
                                             <tr key={dish.id} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
                                                 <td className="p-3.5">
@@ -367,13 +324,37 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="p-3.5 text-right font-extrabold text-slate-900 dark:text-slate-100">
+                                                <td className="p-3.5 max-w-xs">
+                                                    {dish.details ? (
+                                                        <div className="flex flex-col gap-1">
+                                                            <p className="line-clamp-2 text-[11px] text-slate-600 dark:text-slate-400">
+                                                                {excerpt}
+                                                            </p>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setViewingDetailsDish(dish)}
+                                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 hover:text-amber-500 dark:text-amber-400 dark:hover:text-amber-300 w-fit cursor-pointer"
+                                                            >
+                                                                <BookOpen className="h-3 w-3" /> View Full Details
+                                                            </button>
+                                                        </div>
+                                                    ) : dish.description ? (
+                                                        <p className="line-clamp-2 text-[11px] text-slate-500 italic">
+                                                            {dish.description}
+                                                        </p>
+                                                    ) : (
+                                                        <span className="text-[10px] text-slate-400 italic">
+                                                            No details added yet
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="p-3.5 text-right font-extrabold text-slate-900 dark:text-slate-100 whitespace-nowrap">
                                                     {formatCurrency(dish.price, currency)}
                                                 </td>
-                                                <td className="p-3.5 text-center">
+                                                <td className="p-3.5 text-center whitespace-nowrap">
                                                     <button
                                                         onClick={() => toggleAvailability(dish)}
-                                                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold ${
+                                                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold cursor-pointer ${
                                                             dish.is_available
                                                                 ? 'border border-emerald-500/30 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
                                                                 : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
@@ -382,25 +363,29 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                                                         {dish.is_available ? 'Available' : 'Out of Stock'}
                                                     </button>
                                                 </td>
-                                                <td className="p-3.5 text-center">
-                                                    <button
-                                                        onClick={() => openRecipeBuilder(dish)}
-                                                        className="rounded-xl bg-slate-100 px-3 py-1 text-xs font-bold text-amber-600 transition-all hover:bg-slate-200 dark:bg-slate-800 dark:text-amber-400 dark:hover:bg-slate-700"
-                                                    >
-                                                        Recipe Builder ({(dish.recipes || []).length})
-                                                    </button>
-                                                </td>
-                                                <td className="p-3.5 text-right">
+                                                <td className="p-3.5 text-right whitespace-nowrap">
                                                     <div className="flex items-center justify-end gap-2">
+                                                        {dish.details && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setViewingDetailsDish(dish)}
+                                                                title="View Details"
+                                                                className="rounded-lg bg-amber-500/10 p-1.5 text-amber-600 hover:bg-amber-500/20 dark:text-amber-400 cursor-pointer"
+                                                            >
+                                                                <Eye className="h-3.5 w-3.5" />
+                                                            </button>
+                                                        )}
                                                         <button
                                                             onClick={() => openEditDish(dish)}
-                                                            className="rounded-lg bg-slate-100 p-1.5 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                                                            title="Edit Dish"
+                                                            className="rounded-lg bg-slate-100 p-1.5 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 cursor-pointer"
                                                         >
                                                             <Edit className="h-3.5 w-3.5" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleDeleteDish(dish)}
-                                                            className="rounded-lg bg-rose-500/10 p-1.5 text-rose-500 hover:bg-rose-500 hover:text-white"
+                                                            title="Delete Dish"
+                                                            className="rounded-lg bg-rose-500/10 p-1.5 text-rose-500 hover:bg-rose-500 hover:text-white cursor-pointer"
                                                         >
                                                             <Trash2 className="h-3.5 w-3.5" />
                                                         </button>
@@ -421,10 +406,19 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                 {/* Create / Edit Dish Modal */}
                 {showDishModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                        <div className="w-full max-w-lg space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                                {editingDish ? 'Edit Menu Dish' : 'Create New Menu Dish'}
-                            </h3>
+                        <div className="max-h-[92vh] w-full max-w-3xl space-y-4 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                            <div className="flex items-center justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
+                                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                                    {editingDish ? 'Edit Menu Dish & Details' : 'Create New Menu Dish'}
+                                </h3>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowDishModal(false)}
+                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300 cursor-pointer"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
 
                             <form onSubmit={submitDishForm} className="space-y-4 text-xs">
                                 <div>
@@ -432,19 +426,20 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                                     <input
                                         type="text"
                                         required
+                                        placeholder="e.g. Grilled Ribeye Steak"
                                         value={dishForm.data.name}
                                         onChange={(e) => dishForm.setData('name', e.target.value)}
-                                        className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                        className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <div>
                                         <label className="mb-1 block font-medium text-slate-600 dark:text-slate-400">Category *</label>
                                         <select
                                             value={dishForm.data.category_id}
                                             onChange={(e) => dishForm.setData('category_id', parseInt(e.target.value))}
-                                            className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                            className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
                                         >
                                             {categories.map((c) => (
                                                 <option key={c.id} value={c.id}>
@@ -463,14 +458,14 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                                             required
                                             value={dishForm.data.price}
                                             onChange={(e) => dishForm.setData('price', parseFloat(e.target.value) || 0)}
-                                            className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 font-bold text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                            className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 font-bold text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
                                         />
                                     </div>
                                 </div>
 
                                 <div>
                                     <label className="mb-1 block font-medium text-slate-600 dark:text-slate-400">
-                                        Dish / Recipe Image
+                                        Dish Image
                                     </label>
                                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                                         {/* Image Preview Box */}
@@ -481,7 +476,7 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                                                     <button
                                                         type="button"
                                                         onClick={removeImage}
-                                                        className="absolute top-1 right-1 rounded-full bg-rose-500 p-1 text-white shadow hover:bg-rose-600"
+                                                        className="absolute top-1 right-1 rounded-full bg-rose-500 p-1 text-white shadow hover:bg-rose-600 cursor-pointer"
                                                         title="Remove image"
                                                     >
                                                         <X className="h-3 w-3" />
@@ -516,7 +511,7 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                                                         dishForm.setData('image_path', e.target.value);
                                                         if (e.target.value) setImagePreview(e.target.value);
                                                     }}
-                                                    className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                                    className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
                                                 />
                                             </div>
                                         </div>
@@ -524,22 +519,43 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                                 </div>
 
                                 <div>
-                                    <label className="mb-1 block font-medium text-slate-600 dark:text-slate-400">Description</label>
-                                    <textarea
-                                        rows={2}
+                                    <label className="mb-1 block font-medium text-slate-600 dark:text-slate-400">
+                                        Short Summary / Subtitle (Optional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Brief 1-line description displayed on cards..."
                                         value={dishForm.data.description}
                                         onChange={(e) => dishForm.setData('description', e.target.value)}
-                                        className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                        className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
                                     />
                                 </div>
 
-                                <div className="flex items-center gap-6 pt-2">
+                                {/* Rich Text Editor for Details */}
+                                <div>
+                                    <div className="mb-1 flex items-center justify-between">
+                                        <label className="font-semibold text-slate-700 dark:text-slate-300">
+                                            Dish Details, Recipe & Ingredients (Rich Text)
+                                        </label>
+                                        <span className="text-[10px] text-slate-400">
+                                            Formatted recipes, ingredients list, cooking directions & allergen info
+                                        </span>
+                                    </div>
+                                    <RichTextEditor
+                                        value={dishForm.data.details}
+                                        onChange={(val) => dishForm.setData('details', val)}
+                                        placeholder="Enter full recipe details, ingredients list, step-by-step cooking directions, allergy warnings, etc..."
+                                        minHeight="220px"
+                                    />
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-6 pt-2">
                                     <label className="flex cursor-pointer items-center gap-2">
                                         <input
                                             type="checkbox"
                                             checked={dishForm.data.is_available}
                                             onChange={(e) => dishForm.setData('is_available', e.target.checked)}
-                                            className="rounded border-slate-300 bg-slate-100 text-amber-500 dark:border-slate-800 dark:bg-slate-950"
+                                            className="rounded border-slate-300 bg-slate-100 text-amber-500 dark:border-slate-800 dark:bg-slate-950 focus:ring-amber-500"
                                         />
                                         <span>Available for Order</span>
                                     </label>
@@ -548,7 +564,7 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                                             type="checkbox"
                                             checked={dishForm.data.is_featured}
                                             onChange={(e) => dishForm.setData('is_featured', e.target.checked)}
-                                            className="rounded border-slate-300 bg-slate-100 text-amber-500 dark:border-slate-800 dark:bg-slate-950"
+                                            className="rounded border-slate-300 bg-slate-100 text-amber-500 dark:border-slate-800 dark:bg-slate-950 focus:ring-amber-500"
                                         />
                                         <span>Featured Special Dish</span>
                                     </label>
@@ -558,14 +574,14 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                                     <button
                                         type="button"
                                         onClick={() => setShowDishModal(false)}
-                                        className="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-300"
+                                        className="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-800 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 cursor-pointer"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={dishForm.processing}
-                                        className="rounded-xl bg-amber-500 px-5 py-2 font-bold text-slate-950 hover:bg-amber-400"
+                                        className="rounded-xl bg-amber-500 px-5 py-2 font-bold text-slate-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 cursor-pointer"
                                     >
                                         Save Dish
                                     </button>
@@ -575,103 +591,76 @@ export default function MenuIndex({ menuItems, categories, inventoryItems, curre
                     </div>
                 )}
 
-                {/* Recipe Builder Modal */}
-                {recipeDish && (
+                {/* View Full Details Modal */}
+                {viewingDetailsDish && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                        <div className="max-h-[90vh] w-full max-w-xl space-y-4 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Recipe Builder for "{recipeDish.name}"</h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                                Link raw ingredients & quantities for this menu dish.
-                            </p>
-
-                            <form onSubmit={submitRecipe} className="space-y-4 text-xs">
-                                <div className="flex items-center justify-between">
-                                    <span className="font-bold text-slate-800 dark:text-slate-200">Ingredients Breakdown</span>
-                                    <button
-                                        type="button"
-                                        onClick={addIngredientRow}
-                                        className="flex items-center gap-1 rounded-lg bg-amber-500/10 px-2.5 py-1 font-bold text-amber-600 hover:bg-amber-500 hover:text-slate-950 dark:text-amber-400"
-                                    >
-                                        <Plus className="h-3.5 w-3.5" /> Add Ingredient
-                                    </button>
+                        <div className="max-h-[85vh] w-full max-w-2xl space-y-4 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                            <div className="flex items-center justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
+                                <div className="flex items-center gap-3">
+                                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-800">
+                                        {viewingDetailsDish.image_path ? (
+                                            <img src={viewingDetailsDish.image_path} alt={viewingDetailsDish.name} className="h-full w-full object-cover" />
+                                        ) : (
+                                            <div className="flex h-full w-full items-center justify-center text-amber-500">
+                                                <UtensilsCrossed className="h-5 w-5" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                                            {viewingDetailsDish.name}
+                                        </h3>
+                                        <p className="text-[10px] text-slate-500">
+                                            {viewingDetailsDish.category?.name} • {formatCurrency(viewingDetailsDish.price, currency)}
+                                        </p>
+                                    </div>
                                 </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewingDetailsDish(null)}
+                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300 cursor-pointer"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
 
-                                {recipeForm.data.ingredients.length === 0 ? (
-                                    <p className="rounded-xl bg-slate-100 py-6 text-center text-slate-500 dark:bg-slate-950">
-                                        No ingredients linked yet.
-                                    </p>
-                                ) : (
-                                    recipeForm.data.ingredients.map((row, idx) => (
-                                        <div
-                                            key={idx}
-                                            className="grid grid-cols-12 items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 p-3 dark:border-slate-800 dark:bg-slate-950"
-                                        >
-                                            <div className="col-span-6">
-                                                <label className="mb-1 block text-[10px] text-slate-500">Ingredient</label>
-                                                <select
-                                                    value={row.inventory_item_id}
-                                                    onChange={(e) => handleIngredientChange(idx, 'inventory_item_id', e.target.value)}
-                                                    className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                                                >
-                                                    {inventoryItems.map((inv) => (
-                                                        <option key={inv.id} value={inv.id}>
-                                                            {inv.name} ({inv.unit})
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-
-                                            <div className="col-span-3">
-                                                <label className="mb-1 block text-[10px] text-slate-500">Quantity</label>
-                                                <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    value={row.quantity}
-                                                    onChange={(e) => handleIngredientChange(idx, 'quantity', parseFloat(e.target.value) || 0)}
-                                                    className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                                                />
-                                            </div>
-
-                                            <div className="col-span-2">
-                                                <label className="mb-1 block text-[10px] text-slate-500">Unit</label>
-                                                <input
-                                                    type="text"
-                                                    value={row.unit}
-                                                    onChange={(e) => handleIngredientChange(idx, 'unit', e.target.value)}
-                                                    className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                                                />
-                                            </div>
-
-                                            <div className="col-span-1 pt-3 text-right">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeIngredientRow(idx)}
-                                                    className="text-rose-500 hover:text-rose-400"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-
-                                <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4 dark:border-slate-800">
-                                    <button
-                                        type="button"
-                                        onClick={() => setRecipeDish(null)}
-                                        className="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-300"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={recipeForm.processing}
-                                        className="rounded-xl bg-amber-500 px-5 py-2 font-bold text-slate-950 hover:bg-amber-400"
-                                    >
-                                        Save Recipe
-                                    </button>
+                            {viewingDetailsDish.description && (
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300">
+                                    <span className="font-semibold text-slate-800 dark:text-slate-200">Summary: </span>
+                                    {viewingDetailsDish.description}
                                 </div>
-                            </form>
+                            )}
+
+                            <div className="space-y-2">
+                                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider dark:text-slate-200">
+                                    Recipe & Preparation Details
+                                </h4>
+                                <div
+                                    className="prose prose-sm dark:prose-invert max-w-none rounded-xl border border-slate-200 bg-slate-50/60 p-4 text-xs text-slate-800 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-200 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_blockquote]:border-l-4 [&_blockquote]:border-amber-500 [&_blockquote]:pl-3 [&_blockquote]:italic [&_h2]:text-base [&_h2]:font-bold [&_h3]:text-sm [&_h3]:font-semibold [&_pre]:bg-slate-900 [&_pre]:text-amber-300 [&_pre]:p-2.5 [&_pre]:rounded-lg"
+                                    dangerouslySetInnerHTML={{ __html: viewingDetailsDish.details || '<i>No details recorded.</i>' }}
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-3 dark:border-slate-800">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const dish = viewingDetailsDish;
+                                        setViewingDetailsDish(null);
+                                        openEditDish(dish);
+                                    }}
+                                    className="flex items-center gap-1.5 rounded-xl bg-slate-100 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 cursor-pointer"
+                                >
+                                    <Edit className="h-3.5 w-3.5" /> Edit Details
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewingDetailsDish(null)}
+                                    className="rounded-xl bg-amber-500 px-4 py-1.5 text-xs font-bold text-slate-950 hover:bg-amber-400 cursor-pointer"
+                                >
+                                    Close
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
