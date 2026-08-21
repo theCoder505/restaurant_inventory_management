@@ -71,17 +71,31 @@ export default function ExpensesIndex({ expenses, categories, currency, totalCos
 
     const openCreateModal = () => {
         setEditingExpense(null);
-        form.reset();
+        form.clearErrors();
+        form.setData({
+            title: '',
+            category_id: categories[0]?.id || '',
+            amount: 0,
+            expense_date: new Date().toISOString().split('T')[0],
+            payment_method: 'cash',
+            reference_no: '',
+            notes: '',
+        });
         setShowModal(true);
     };
 
     const openEditModal = (expense: Expense) => {
         setEditingExpense(expense);
+        form.clearErrors();
+        const formattedExpenseDate = expense.expense_date
+            ? String(expense.expense_date).split('T')[0].split(' ')[0]
+            : new Date().toISOString().split('T')[0];
+
         form.setData({
             title: expense.title,
             category_id: expense.category_id,
             amount: expense.amount,
-            expense_date: expense.expense_date,
+            expense_date: formattedExpenseDate,
             payment_method: expense.payment_method,
             reference_no: expense.reference_no || '',
             notes: expense.notes || '',
@@ -350,6 +364,7 @@ export default function ExpensesIndex({ expenses, categories, currency, totalCos
                                         onChange={(e) => form.setData('title', e.target.value)}
                                         className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
                                     />
+                                    {form.errors.title && <p className="mt-1 text-xs text-rose-500">{form.errors.title}</p>}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
@@ -366,6 +381,7 @@ export default function ExpensesIndex({ expenses, categories, currency, totalCos
                                                 </option>
                                             ))}
                                         </select>
+                                        {form.errors.category_id && <p className="mt-1 text-xs text-rose-500">{form.errors.category_id}</p>}
                                     </div>
 
                                     <div>
@@ -378,6 +394,7 @@ export default function ExpensesIndex({ expenses, categories, currency, totalCos
                                             onChange={(e) => form.setData('amount', parseFloat(e.target.value) || 0)}
                                             className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 font-bold text-rose-500 text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
                                         />
+                                        {form.errors.amount && <p className="mt-1 text-xs text-rose-500">{form.errors.amount}</p>}
                                     </div>
                                 </div>
 
@@ -391,6 +408,7 @@ export default function ExpensesIndex({ expenses, categories, currency, totalCos
                                             onChange={(e) => form.setData('expense_date', e.target.value)}
                                             className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
                                         />
+                                        {form.errors.expense_date && <p className="mt-1 text-xs text-rose-500">{form.errors.expense_date}</p>}
                                     </div>
 
                                     <div>
@@ -405,6 +423,33 @@ export default function ExpensesIndex({ expenses, categories, currency, totalCos
                                             <option value="bkash">bKash</option>
                                             <option value="nagad">Nagad</option>
                                         </select>
+                                        {form.errors.payment_method && <p className="mt-1 text-xs text-rose-500">{form.errors.payment_method}</p>}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <label className="mb-1 block font-medium text-slate-600 dark:text-slate-400">Reference / Invoice No. (Optional)</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. INV-2026-001"
+                                            value={form.data.reference_no}
+                                            onChange={(e) => form.setData('reference_no', e.target.value)}
+                                            className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                        />
+                                        {form.errors.reference_no && <p className="mt-1 text-xs text-rose-500">{form.errors.reference_no}</p>}
+                                    </div>
+
+                                    <div>
+                                        <label className="mb-1 block font-medium text-slate-600 dark:text-slate-400">Notes / Description (Optional)</label>
+                                        <textarea
+                                            rows={2}
+                                            placeholder="Additional notes about this expense..."
+                                            value={form.data.notes}
+                                            onChange={(e) => form.setData('notes', e.target.value)}
+                                            className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                        />
+                                        {form.errors.notes && <p className="mt-1 text-xs text-rose-500">{form.errors.notes}</p>}
                                     </div>
                                 </div>
 
