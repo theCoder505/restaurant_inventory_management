@@ -11,6 +11,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExpenseController extends Controller
 {
@@ -106,5 +109,94 @@ class ExpenseController extends Controller
         AuditLogService::log("Deleted expense: {$title}", "expenses");
 
         return redirect()->back()->with('success', 'Expense deleted.');
+    }
+
+    public function exportExcel(Request $request): StreamedResponse
+    {
+        $query = Expense::with('category');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('reference_no', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        if ($request->filled('from_date')) {
+            $query->whereDate('expense_date', '>=', $request->from_date);
+        }
+
+        if ($request->filled('to_date')) {
+            $query->whereDate('expense_date', '<=', $request->to_date);
+        }
+
+        $expenses = $query->orderByDesc('expense_date')->orderByDesc('id')->get();
+        $currency = AppSetting::getByKey('default_currency', '৳');
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Bills & Expenses');
+
+        $sheet->setCellValue('A1', 'BILLS & OPERATIONAL EXPENSES');
+        $sheet->mergeCells('A1:F1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+
+        $filters = [];
+        if ($request->filled('from_date')) $filters[] = 'From: ' . $request->from_date;
+        if ($request->filled('to_date'))   $filters[] = 'To: ' . $request->to_date;
+        if ($request->filled('search'))    $filters[] = 'Search: ' . $request->search;
+        $sheet->setCellValue('A2', ($filters ? implode(' | ', $filters) : 'All Expenses') . ' | Exported: ' . now()->format('Y-m-d H:i'));
+        $sheet->mergeCells('A2:F2');
+
+        $cols = ['Date', 'Description', 'Category', 'Payment Method', 'Reference #', 'Amount'];
+        foreach ($cols as $i => $col) {
+            $letter = chr(65 + $i);
+            $sheet->setCellValue($letter . '4', $col);
+            $sheet->getStyle($letter . '4')->getFont()->setBold(true);
+        }
+
+        $row   = 5;
+        $total = 0;
+        foreach ($expenses as $expense) {
+            $sheet->setCellValue('A' . $row, $expense->expense_date);
+            $sheet->setCellValue('B' . $row, $expense->title);
+            $sheet->setCellValue('C' . $row, $expense->category->name ?? 'General');
+            $sheet->setCellValue('D' . $row, strtoupper($expense->payment_method));
+            $sheet->setCellValue('E' . $row, $expense->reference_no ?? '-');
+            $sheet->setCellValue('F' . $row, (float)$expense->amount);
+            $sheet->getStyle('F' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+            $total += (float)$expense->amount;
+            $row++;
+        }
+
+        $row++;
+        $sheet->setCellValue('E' . $row, 'TOTAL:');
+        $sheet->getStyle('E' . $row)->getFont()->setBold(true);
+        $sheet->setCellValue('F' . $row, $total);
+        $sheet->getStyle('F' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+        $sheet->getStyle('F' . $row)->getFont()->setBold(true);
+
+        foreach (range('A', 'F') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $filename = 'Bills_Expenses_' . date('Y-m-d') . '.xlsx';
+        $httpHeaders = [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control' => 'max-age=0',
+        ];
+
+        $callback = function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        };
+
+        return response()->stream($callback, 200, $httpHeaders);
     }
 }

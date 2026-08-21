@@ -2,7 +2,7 @@ import AppLayout from '@/layouts/app-layout';
 import { formatCurrency, formatDate, showConfirm, showToast } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { ChevronLeft, ChevronRight, DollarSign, Edit, Plus, Printer, Search, Trash2, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, DollarSign, Download, Edit, Plus, Printer, Search, Trash2, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 interface Employee {
@@ -317,6 +317,14 @@ export default function EmployeesIndex({ employees, allSalaries, currency }: Pro
                     </div>
 
                     <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => {
+                                window.location.href = '/admin/employees/export-excel';
+                            }}
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-200 px-4 py-2 text-xs font-bold text-slate-800 transition-all hover:bg-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                        >
+                            <Download className="h-4 w-4" /> Export Excel (.xlsx)
+                        </button>
                         <button
                             onClick={() => openSalaryModal()}
                             className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-emerald-900/20 transition-all hover:bg-emerald-500"

@@ -3,7 +3,7 @@ import Pagination from '@/components/pagination';
 import { formatCurrency, formatDateTime } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
-import { Eye, Filter, Printer, Receipt, Search } from 'lucide-react';
+import { Download, Eye, Filter, Printer, Receipt, Search } from 'lucide-react';
 import { useState } from 'react';
 
 interface OrderItem {
@@ -149,6 +149,24 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                             History of all completed POS transactions, receipts, and order billing logs
                         </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => {
+                                const params = new URLSearchParams();
+                                if (search) params.set('search', search);
+                                if (fromDate) params.set('from_date', fromDate);
+                                if (toDate) params.set('to_date', toDate);
+                                if (paymentMethod) params.set('payment_method', paymentMethod);
+                                if (orderType) params.set('order_type', orderType);
+                                if (activePreset === 'all') params.set('all_time', '1');
+                                window.location.href = `/admin/sales/export-excel?${params.toString()}`;
+                            }}
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-200 px-4 py-2 text-xs font-bold text-slate-800 transition-all hover:bg-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                        >
+                            <Download className="h-4 w-4" /> Export Excel (.xlsx)
+                        </button>
                     </div>
                 </div>
 

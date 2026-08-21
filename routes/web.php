@@ -39,6 +39,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::post('/purchases', [PurchaseController::class, 'store'])->name('purchases.store');
     Route::put('/purchases/{purchase}', [PurchaseController::class, 'update'])->name('purchases.update');
     Route::delete('/purchases/{purchase}', [PurchaseController::class, 'destroy'])->name('purchases.destroy');
+    Route::get('/purchases/export-excel', [PurchaseController::class, 'exportExcel'])->name('purchases.export-excel');
 
     // Used Amount Management
     Route::put('/purchases/items/{item}/used-amount', [PurchaseController::class, 'updateUsedAmount'])->name('purchases.items.update-used-amount');
@@ -47,12 +48,14 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/sales', [SalesController::class, 'index'])->name('sales.index');
     Route::post('/sales', [SalesController::class, 'store'])->name('sales.store');
     Route::get('/sales/log', [SalesController::class, 'ordersLog'])->name('sales.log');
+    Route::get('/sales/export-excel', [SalesController::class, 'exportExcel'])->name('sales.export-excel');
 
     // Expense Tracking
     Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
     Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
     Route::put('/expenses/{expense}', [ExpenseController::class, 'update'])->name('expenses.update');
     Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
+    Route::get('/expenses/export-excel', [ExpenseController::class, 'exportExcel'])->name('expenses.export-excel');
 
     // Financial Reports & P&L
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
@@ -84,9 +87,11 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::post('/employees/attendance', [EmployeeController::class, 'logAttendance'])->name('employees.attendance');
     Route::put('/employees/{employee}', [EmployeeController::class, 'updateEmployee'])->name('employees.update');
     Route::delete('/employees/{employee}', [EmployeeController::class, 'destroyEmployee'])->name('employees.destroy');
+    Route::get('/employees/export-excel', [EmployeeController::class, 'exportExcel'])->name('employees.export-excel');
 
     // Audit Logs
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+    Route::get('/audit-logs/export-excel', [AuditLogController::class, 'exportExcel'])->name('audit-logs.export-excel');
 
     // App Settings
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');

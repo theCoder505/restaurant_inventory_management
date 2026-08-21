@@ -412,7 +412,7 @@ export default function SalesPOS({ categories, allMenuItems, currency, taxPercen
                                     min="0"
                                     value={orderForm.data.discount_amount}
                                     onChange={(e) => orderForm.setData('discount_amount', parseFloat(e.target.value) || 0)}
-                                    className="w-24 rounded-lg border border-slate-200 bg-slate-100 px-2 py-1 text-right text-xs font-bold dark:border-slate-800 dark:bg-slate-950"
+                                    className="w-24 text-center rounded-lg border border-slate-200 bg-slate-100 px-2 py-1 text-xs font-bold dark:border-slate-800 dark:bg-slate-950"
                                 />
                             </div>
 

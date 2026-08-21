@@ -17,6 +17,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SalesController extends Controller
 {
@@ -188,5 +191,130 @@ class SalesController extends Controller
                 'to_date' => $toDate,
             ], $request->only(['search', 'order_type', 'payment_method', 'date', 'all_time'])),
         ]);
+    }
+
+    public function exportExcel(Request $request): StreamedResponse
+    {
+        $query = Order::with('items');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('order_number', 'like', "%{$search}%")
+                  ->orWhere('customer_name', 'like', "%{$search}%")
+                  ->orWhere('customer_phone', 'like', "%{$search}%")
+                  ->orWhere('transaction_id', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('order_type')) {
+            $query->where('order_type', $request->order_type);
+        }
+
+        if ($request->filled('payment_method')) {
+            $query->where('payment_method', $request->payment_method);
+        }
+
+        $fromDate = $request->input('from_date');
+        $toDate   = $request->input('to_date');
+
+        if (!empty($fromDate)) {
+            $query->whereDate('created_at', '>=', $fromDate);
+        }
+        if (!empty($toDate)) {
+            $query->whereDate('created_at', '<=', $toDate);
+        }
+
+        if ($request->input('all_time') !== '1' && empty($fromDate) && empty($toDate)) {
+            $fromDate = date('Y-m-d');
+            $toDate   = date('Y-m-d');
+            $query->whereDate('created_at', date('Y-m-d'));
+        }
+
+        $orders   = $query->orderByDesc('created_at')->get();
+        $currency = AppSetting::getByKey('default_currency', '৳');
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Sales Log');
+
+        // Title
+        $sheet->setCellValue('A1', 'SALES ORDERS AUDIT LOG');
+        $sheet->mergeCells('A1:H1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+
+        $rangeLabel = ($fromDate || $toDate)
+            ? (($fromDate ?: 'All') . ' to ' . ($toDate ?: 'Now'))
+            : 'All Time';
+        $sheet->setCellValue('A2', 'Date Range: ' . $rangeLabel . ' | Exported: ' . now()->format('Y-m-d H:i'));
+        $sheet->mergeCells('A2:H2');
+
+        // Column headers
+        $cols = ['Order #', 'Type', 'Table', 'Date & Time', 'Payment Method', 'Subtotal', 'Discount', 'Tax', 'Total Paid'];
+        foreach ($cols as $i => $col) {
+            $letter = chr(65 + $i);
+            $sheet->setCellValue($letter . '4', $col);
+            $sheet->getStyle($letter . '4')->getFont()->setBold(true);
+        }
+
+        $row = 5;
+        $totalSubtotal = 0;
+        $totalDiscount = 0;
+        $totalTax      = 0;
+        $totalPaid     = 0;
+
+        foreach ($orders as $order) {
+            $sheet->setCellValue('A' . $row, '#' . $order->order_number);
+            $sheet->setCellValue('B' . $row, ucfirst(str_replace('_', ' ', $order->order_type)));
+            $sheet->setCellValue('C' . $row, $order->table_number ?? '-');
+            $sheet->setCellValue('D' . $row, $order->created_at ? $order->created_at->format('Y-m-d H:i') : '');
+            $sheet->setCellValue('E' . $row, strtoupper($order->payment_method));
+            $sheet->setCellValue('F' . $row, (float)$order->subtotal);
+            $sheet->setCellValue('G' . $row, (float)$order->discount_amount);
+            $sheet->setCellValue('H' . $row, (float)$order->tax_amount);
+            $sheet->setCellValue('I' . $row, (float)$order->total_amount);
+
+            foreach (['F', 'G', 'H', 'I'] as $numCol) {
+                $sheet->getStyle($numCol . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+            }
+
+            $totalSubtotal += (float)$order->subtotal;
+            $totalDiscount += (float)$order->discount_amount;
+            $totalTax      += (float)$order->tax_amount;
+            $totalPaid     += (float)$order->total_amount;
+
+            $row++;
+        }
+
+        // Totals row
+        $row++;
+        $sheet->setCellValue('E' . $row, 'TOTALS:');
+        $sheet->getStyle('E' . $row)->getFont()->setBold(true);
+        $sheet->setCellValue('F' . $row, $totalSubtotal);
+        $sheet->setCellValue('G' . $row, $totalDiscount);
+        $sheet->setCellValue('H' . $row, $totalTax);
+        $sheet->setCellValue('I' . $row, $totalPaid);
+        foreach (['F', 'G', 'H', 'I'] as $numCol) {
+            $sheet->getStyle($numCol . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->getStyle($numCol . $row)->getFont()->setBold(true);
+        }
+
+        foreach (range('A', 'I') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $filename = 'Sales_Log_' . date('Y-m-d') . '.xlsx';
+        $httpHeaders = [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control' => 'max-age=0',
+        ];
+
+        $callback = function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        };
+
+        return response()->stream($callback, 200, $httpHeaders);
     }
 }

@@ -3,7 +3,7 @@ import Pagination from '@/components/pagination';
 import { formatCurrency, formatDate, showConfirm, showToast } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { AlertTriangle, Calendar, Edit, Eye, Filter, Plus, Search, ShoppingBag, Trash2 } from 'lucide-react';
+import { AlertTriangle, Calendar, Download, Edit, Eye, Filter, Plus, Search, ShoppingBag, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 interface Supplier {
@@ -252,12 +252,27 @@ export default function PurchasesIndex({ purchases, suppliers, currency, totalCo
                         </p>
                     </div>
 
-                    <button
-                        onClick={openCreateModal}
-                        className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400"
-                    >
-                        <Plus className="h-4 w-4" /> Create Purchase Order
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => {
+                                const params = new URLSearchParams();
+                                if (search) params.set('search', search);
+                                if (fromDate) params.set('from_date', fromDate);
+                                if (toDate) params.set('to_date', toDate);
+                                if (status) params.set('status', status);
+                                window.location.href = `/admin/purchases/export-excel?${params.toString()}`;
+                            }}
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-200 px-4 py-2 text-xs font-bold text-slate-800 transition-all hover:bg-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                        >
+                            <Download className="h-4 w-4" /> Export Excel (.xlsx)
+                        </button>
+                        <button
+                            onClick={openCreateModal}
+                            className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400"
+                        >
+                            <Plus className="h-4 w-4" /> Create Purchase Order
+                        </button>
+                    </div>
                 </div>
 
                 {/* Filter & Date Range Search Bar */}

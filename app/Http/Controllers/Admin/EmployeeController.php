@@ -11,6 +11,9 @@ use App\Services\AuditLogService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EmployeeController extends Controller
 {
@@ -199,5 +202,109 @@ class EmployeeController extends Controller
         );
 
         return redirect()->back()->with('success', 'Attendance log updated.');
+    }
+
+    public function exportExcel(Request $request): StreamedResponse
+    {
+        $currency = AppSetting::getByKey('default_currency', '৳');
+
+        $spreadsheet = new Spreadsheet();
+
+        // ── Sheet 1: Employees ──────────────────────────────────────────────
+        $empSheet = $spreadsheet->getActiveSheet();
+        $empSheet->setTitle('Employees');
+
+        $empSheet->setCellValue('A1', 'EMPLOYEES & STAFF ROSTER');
+        $empSheet->mergeCells('A1:G1');
+        $empSheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $empSheet->setCellValue('A2', 'Exported: ' . now()->format('Y-m-d H:i'));
+        $empSheet->mergeCells('A2:G2');
+
+        $empCols = ['Name', 'Role / Title', 'Phone', 'Email', 'Status', 'Joining Date', 'Base Salary'];
+        foreach ($empCols as $i => $col) {
+            $letter = chr(65 + $i);
+            $empSheet->setCellValue($letter . '4', $col);
+            $empSheet->getStyle($letter . '4')->getFont()->setBold(true);
+        }
+
+        $employees = Employee::orderBy('name')->get();
+        $row = 5;
+        foreach ($employees as $emp) {
+            $empSheet->setCellValue('A' . $row, $emp->name);
+            $empSheet->setCellValue('B' . $row, $emp->role_title);
+            $empSheet->setCellValue('C' . $row, $emp->phone ?? '-');
+            $empSheet->setCellValue('D' . $row, $emp->email ?? '-');
+            $empSheet->setCellValue('E' . $row, strtoupper($emp->status));
+            $empSheet->setCellValue('F' . $row, $emp->joining_date ?? '-');
+            $empSheet->setCellValue('G' . $row, (float)$emp->base_salary);
+            $empSheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+            $row++;
+        }
+        foreach (range('A', 'G') as $col) {
+            $empSheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // ── Sheet 2: Salary Records ─────────────────────────────────────────
+        $salarySheet = $spreadsheet->createSheet();
+        $salarySheet->setTitle('Salary Records');
+
+        $salarySheet->setCellValue('A1', 'STAFF SALARY DISBURSEMENT RECORDS');
+        $salarySheet->mergeCells('A1:H1');
+        $salarySheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $salarySheet->setCellValue('A2', 'Exported: ' . now()->format('Y-m-d H:i'));
+        $salarySheet->mergeCells('A2:H2');
+
+        $salCols = ['Employee', 'Role', 'Month / Year', 'Base Salary', 'Bonus', 'Deduction', 'Net Pay', 'Status'];
+        foreach ($salCols as $i => $col) {
+            $letter = chr(65 + $i);
+            $salarySheet->setCellValue($letter . '4', $col);
+            $salarySheet->getStyle($letter . '4')->getFont()->setBold(true);
+        }
+
+        $salaries = Salary::with('employee')->orderByDesc('month_year')->orderByDesc('id')->get();
+        $row = 5;
+        $totalNet = 0;
+        foreach ($salaries as $salary) {
+            $salarySheet->setCellValue('A' . $row, $salary->employee->name ?? 'Unknown');
+            $salarySheet->setCellValue('B' . $row, $salary->employee->role_title ?? '-');
+            $salarySheet->setCellValue('C' . $row, $salary->month_year);
+            $salarySheet->setCellValue('D' . $row, (float)$salary->base_salary);
+            $salarySheet->setCellValue('E' . $row, (float)$salary->bonus);
+            $salarySheet->setCellValue('F' . $row, (float)$salary->deduction);
+            $salarySheet->setCellValue('G' . $row, (float)$salary->net_pay);
+            $salarySheet->setCellValue('H' . $row, strtoupper($salary->payment_status));
+            foreach (['D', 'E', 'F', 'G'] as $numCol) {
+                $salarySheet->getStyle($numCol . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+            }
+            $totalNet += (float)$salary->net_pay;
+            $row++;
+        }
+
+        $row++;
+        $salarySheet->setCellValue('F' . $row, 'TOTAL NET PAY:');
+        $salarySheet->getStyle('F' . $row)->getFont()->setBold(true);
+        $salarySheet->setCellValue('G' . $row, $totalNet);
+        $salarySheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+        $salarySheet->getStyle('G' . $row)->getFont()->setBold(true);
+
+        foreach (range('A', 'H') as $col) {
+            $salarySheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $spreadsheet->setActiveSheetIndex(0);
+
+        $filename = 'Employees_Salaries_' . date('Y-m-d') . '.xlsx';
+        $httpHeaders = [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control' => 'max-age=0',
+        ];
+
+        $callback = function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        };
+
+        return response()->stream($callback, 200, $httpHeaders);
     }
 }

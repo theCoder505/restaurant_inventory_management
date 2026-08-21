@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PurchaseController extends Controller
 {
@@ -230,5 +233,100 @@ class PurchaseController extends Controller
         AuditLogService::log("Updated used amount for {$item->ingredient_name} to {$validated['used_amount']} {$item->unit}", "purchases");
 
         return redirect()->back()->with('success', 'Used amount updated.');
+    }
+
+    public function exportExcel(Request $request): StreamedResponse
+    {
+        $query = Purchase::with(['supplier', 'items']);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('purchase_number', 'like', "%{$search}%")
+                  ->orWhere('supplier_name_text', 'like', "%{$search}%")
+                  ->orWhereHas('supplier', fn($sq) => $sq->where('name', 'like', "%{$search}%"));
+            });
+        }
+
+        if ($request->filled('from_date')) {
+            $query->whereDate('purchase_date', '>=', $request->from_date);
+        }
+
+        if ($request->filled('to_date')) {
+            $query->whereDate('purchase_date', '<=', $request->to_date);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $purchases = $query->orderByDesc('purchase_date')->orderByDesc('id')->get();
+        $currency  = AppSetting::getByKey('default_currency', '৳');
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Purchase Orders');
+
+        $sheet->setCellValue('A1', 'PURCHASES & PURCHASE ORDERS (PO) LOG');
+        $sheet->mergeCells('A1:G1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+
+        $filters = [];
+        if ($request->filled('from_date')) $filters[] = 'From: ' . $request->from_date;
+        if ($request->filled('to_date'))   $filters[] = 'To: ' . $request->to_date;
+        if ($request->filled('status'))    $filters[] = 'Status: ' . strtoupper($request->status);
+        if ($request->filled('search'))    $filters[] = 'Search: ' . $request->search;
+        $sheet->setCellValue('A2', ($filters ? implode(' | ', $filters) : 'All Purchases') . ' | Exported: ' . now()->format('Y-m-d H:i'));
+        $sheet->mergeCells('A2:G2');
+
+        $cols = ['PO #', 'Date', 'Supplier', 'Status', 'Items', 'Notes', 'Total Amount'];
+        foreach ($cols as $i => $col) {
+            $letter = chr(65 + $i);
+            $sheet->setCellValue($letter . '4', $col);
+            $sheet->getStyle($letter . '4')->getFont()->setBold(true);
+        }
+
+        $row   = 5;
+        $total = 0;
+        foreach ($purchases as $purchase) {
+            $supplierName = $purchase->supplier->name ?? $purchase->supplier_name_text ?? 'Unknown';
+            $itemsSummary = $purchase->items->map(fn($i) => $i->ingredient_name . ' (' . $i->quantity . ' ' . $i->unit . ')')->join(', ');
+
+            $sheet->setCellValue('A' . $row, $purchase->purchase_number);
+            $sheet->setCellValue('B' . $row, $purchase->purchase_date);
+            $sheet->setCellValue('C' . $row, $supplierName);
+            $sheet->setCellValue('D' . $row, strtoupper($purchase->status));
+            $sheet->setCellValue('E' . $row, $itemsSummary);
+            $sheet->setCellValue('F' . $row, $purchase->notes ?? '-');
+            $sheet->setCellValue('G' . $row, (float)$purchase->total_amount);
+            $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+            $total += (float)$purchase->total_amount;
+            $row++;
+        }
+
+        $row++;
+        $sheet->setCellValue('F' . $row, 'TOTAL:');
+        $sheet->getStyle('F' . $row)->getFont()->setBold(true);
+        $sheet->setCellValue('G' . $row, $total);
+        $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+        $sheet->getStyle('G' . $row)->getFont()->setBold(true);
+
+        foreach (range('A', 'G') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $filename = 'Purchases_PO_' . date('Y-m-d') . '.xlsx';
+        $httpHeaders = [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control' => 'max-age=0',
+        ];
+
+        $callback = function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        };
+
+        return response()->stream($callback, 200, $httpHeaders);
     }
 }

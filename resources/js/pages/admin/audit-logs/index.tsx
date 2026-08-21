@@ -2,7 +2,7 @@ import AppLayout from '@/layouts/app-layout';
 import { formatDateTime } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { Calendar, FilterX, History, RotateCcw, Search, Shield } from 'lucide-react';
+import { Calendar, Download, FilterX, History, RotateCcw, Search, Shield } from 'lucide-react';
 import { useState } from 'react';
 
 interface AuditLogItem {
@@ -138,6 +138,19 @@ export default function AuditLogsIndex({ logs, filters, modules = [] }: Props) {
                     </div>
 
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => {
+                                const params = new URLSearchParams();
+                                if (search) params.set('search', search);
+                                if (selectedModule) params.set('module', selectedModule);
+                                if (startDate) params.set('start_date', startDate);
+                                if (endDate) params.set('end_date', endDate);
+                                window.location.href = `/admin/audit-logs/export-excel?${params.toString()}`;
+                            }}
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-200 px-4 py-2 text-xs font-bold text-slate-800 transition-all hover:bg-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                        >
+                            <Download className="h-4 w-4" /> Export Excel (.xlsx)
+                        </button>
                         <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                             <Shield className="h-3.5 w-3.5" /> Immutable Security Trail
                         </span>
