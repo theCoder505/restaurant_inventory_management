@@ -2,7 +2,7 @@ import AppLayout from '@/layouts/app-layout';
 import Pagination from '@/components/pagination';
 import { formatCurrency, formatDateTime } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { Eye, Filter, Printer, Receipt, Search } from 'lucide-react';
 import { useState } from 'react';
 
@@ -40,6 +40,9 @@ interface Props {
         total: number;
     };
     totalSalesAmount: number;
+    totalSubtotal?: number;
+    totalDiscount?: number;
+    totalTax?: number;
     currency: string;
     filters: {
         search?: string;
@@ -57,7 +60,9 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Sales Log', href: '/admin/sales/log' },
 ];
 
-export default function SalesLog({ orders, totalSalesAmount = 0, currency, filters }: Props) {
+export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal = 0, totalDiscount = 0, totalTax = 0, currency, filters }: Props) {
+    const { branding } = usePage<{ branding?: { brand_name?: string } }>().props;
+    const brandName = branding?.brand_name || 'Restaurant';
     const todayStr = new Date().toISOString().split('T')[0];
 
     const [search, setSearch] = useState(filters.search || '');
@@ -134,7 +139,7 @@ export default function SalesLog({ orders, totalSalesAmount = 0, currency, filte
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Sales Orders Log" />
 
-            <div className="flex min-h-screen flex-col gap-6 bg-slate-50 p-4 text-slate-900 transition-colors md:p-6 dark:bg-slate-950 dark:text-slate-100">
+            <div className="flex min-h-screen flex-col gap-6 bg-slate-50 p-4 text-slate-900 transition-colors md:p-6 dark:bg-slate-950 dark:text-slate-100 print:hidden">
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -148,57 +153,52 @@ export default function SalesLog({ orders, totalSalesAmount = 0, currency, filte
                 </div>
 
                 {/* Filter and Search Bar */}
-                <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 text-xs shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 text-xs shadow-sm dark:border-slate-800 dark:bg-slate-900 print:hidden">
                     {/* Date Preset Buttons */}
                     <div className="flex flex-wrap items-center gap-2">
                         <span className="font-bold text-slate-700 dark:text-slate-300">Quick Range:</span>
                         <button
                             onClick={() => setPresetRange('today')}
-                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${
-                                activePreset === 'today'
-                                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
-                            }`}
+                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${activePreset === 'today'
+                                ? 'bg-amber-500 text-slate-950 shadow-sm'
+                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                                }`}
                         >
                             Today
                         </button>
                         <button
                             onClick={() => setPresetRange('week')}
-                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${
-                                activePreset === 'week'
-                                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
-                            }`}
+                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${activePreset === 'week'
+                                ? 'bg-amber-500 text-slate-950 shadow-sm'
+                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                                }`}
                         >
                             This Week
                         </button>
                         <button
                             onClick={() => setPresetRange('month')}
-                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${
-                                activePreset === 'month'
-                                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
-                            }`}
+                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${activePreset === 'month'
+                                ? 'bg-amber-500 text-slate-950 shadow-sm'
+                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                                }`}
                         >
                             This Month
                         </button>
                         <button
                             onClick={() => setPresetRange('year')}
-                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${
-                                activePreset === 'year'
-                                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
-                            }`}
+                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${activePreset === 'year'
+                                ? 'bg-amber-500 text-slate-950 shadow-sm'
+                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                                }`}
                         >
                             This Year
                         </button>
                         <button
                             onClick={() => setPresetRange('all')}
-                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${
-                                activePreset === 'all'
-                                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
-                            }`}
+                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${activePreset === 'all'
+                                ? 'bg-amber-500 text-slate-950 shadow-sm'
+                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                                }`}
                         >
                             All Time
                         </button>
@@ -295,23 +295,26 @@ export default function SalesLog({ orders, totalSalesAmount = 0, currency, filte
                 </div>
 
                 {/* Sales Log Table */}
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 print:border-none print:shadow-none">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
-                            <thead className="bg-slate-100 text-[10px] font-semibold text-slate-500 uppercase dark:bg-slate-950 dark:text-slate-400">
+                            <thead className="bg-slate-100 text-[10px] font-semibold uppercase text-slate-500 dark:bg-slate-950 dark:text-slate-400">
                                 <tr>
                                     <th className="p-3.5">Order Number</th>
                                     <th className="p-3.5">Type & Table</th>
                                     <th className="p-3.5">Date & Time</th>
                                     <th className="p-3.5">Payment Method</th>
+                                    <th className="p-3.5 text-right">Subtotal</th>
+                                    <th className="p-3.5 text-right">Discount</th>
+                                    <th className="p-3.5 text-right">Tax</th>
                                     <th className="p-3.5 text-right">Total Paid</th>
-                                    <th className="p-3.5 text-right">Receipt</th>
+                                    <th className="p-3.5 text-right print:hidden">Receipt</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                                 {orders.data.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="py-8 text-center text-slate-500">
+                                        <td colSpan={9} className="py-8 text-center text-slate-500">
                                             No sales order records found matching your date range or filters.
                                         </td>
                                     </tr>
@@ -324,11 +327,20 @@ export default function SalesLog({ orders, totalSalesAmount = 0, currency, filte
                                                 {order.table_number ? ` (${order.table_number})` : ''}
                                             </td>
                                             <td className="p-3.5 text-slate-500 dark:text-slate-400">{formatDateTime(order.created_at)}</td>
-                                            <td className="p-3.5 font-bold text-slate-800 uppercase dark:text-slate-200">{order.payment_method}</td>
+                                            <td className="p-3.5 font-bold uppercase text-slate-800 dark:text-slate-200">{order.payment_method}</td>
+                                            <td className="p-3.5 text-right font-medium text-slate-600 dark:text-slate-400">
+                                                {formatCurrency(order.subtotal ?? 0, currency)}
+                                            </td>
+                                            <td className="p-3.5 text-right font-medium text-rose-600 dark:text-rose-400">
+                                                {order.discount_amount > 0 ? `-${formatCurrency(order.discount_amount, currency)}` : formatCurrency(0, currency)}
+                                            </td>
+                                            <td className="p-3.5 text-right font-medium text-slate-600 dark:text-slate-400">
+                                                {formatCurrency(order.tax_amount ?? 0, currency)}
+                                            </td>
                                             <td className="p-3.5 text-right font-extrabold text-slate-900 dark:text-slate-100">
                                                 {formatCurrency(order.total_amount, currency)}
                                             </td>
-                                            <td className="p-3.5 text-right">
+                                            <td className="p-3.5 text-right print:hidden">
                                                 <button
                                                     onClick={() => setViewingOrder(order)}
                                                     className="rounded-lg bg-slate-100 p-1.5 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
@@ -343,75 +355,100 @@ export default function SalesLog({ orders, totalSalesAmount = 0, currency, filte
                             <tfoot className="border-t-2 border-slate-200 bg-amber-50/50 dark:border-slate-800 dark:bg-amber-950/20">
                                 <tr>
                                     <td colSpan={4} className="p-3.5 text-right text-xs font-bold text-slate-700 dark:text-slate-300">
-                                        Total Sales Revenue (Filtered Search Range):
+                                        Total Sales (Filtered Search Range):
+                                    </td>
+                                    <td className="p-3.5 text-right text-xs font-bold text-slate-700 dark:text-slate-300">
+                                        {formatCurrency(totalSubtotal, currency)}
+                                    </td>
+                                    <td className="p-3.5 text-right text-xs font-bold text-rose-600 dark:text-rose-400">
+                                        -{formatCurrency(totalDiscount, currency)}
+                                    </td>
+                                    <td className="p-3.5 text-right text-xs font-bold text-slate-700 dark:text-slate-300">
+                                        {formatCurrency(totalTax, currency)}
                                     </td>
                                     <td className="p-3.5 text-right text-sm font-black text-amber-600 dark:text-amber-400">
                                         {formatCurrency(totalSalesAmount, currency)}
                                     </td>
-                                    <td></td>
+                                    <td className="print:hidden"></td>
                                 </tr>
                             </tfoot>
                         </table>
                     </div>
 
                     {/* Pagination Controls */}
-                    <Pagination links={orders.links} from={orders.from} to={orders.to} total={orders.total} />
+                    <div className="print:hidden">
+                        <Pagination links={orders.links} from={orders.from} to={orders.to} total={orders.total} />
+                    </div>
                 </div>
+            </div>
 
-                {/* Receipt Preview Modal */}
-                {viewingOrder && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                        <div className="w-full max-w-sm space-y-4 rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-2xl print:p-0">
-                            <div className="space-y-1 border-b border-dashed border-slate-300 pb-4 text-center">
-                                <h2 className="text-lg font-black">LE GOURMET BISTRO</h2>
-                                <p className="text-[10px] text-slate-500">Order #{viewingOrder.order_number}</p>
-                                <p className="text-[10px] text-slate-400">{formatDateTime(viewingOrder.created_at)}</p>
-                            </div>
+            {/* Receipt Preview Modal — outside print:hidden so it renders on print */}
+            {viewingOrder && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm print:fixed print:inset-0 print:flex print:items-center print:justify-center print:bg-white print:p-6">
+                    <div className="w-full max-w-sm space-y-4 rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-2xl print:border-none print:p-8 print:shadow-none">
+                        <div className="space-y-1 border-b border-dashed border-slate-300 pb-4 text-center">
+                            <h2 className="text-lg font-black uppercase">{brandName}</h2>
+                            <p className="text-[10px] text-slate-500">Order #{viewingOrder.order_number}</p>
+                            <p className="text-[10px] text-slate-400">{formatDateTime(viewingOrder.created_at)}</p>
+                        </div>
 
-                            <div className="space-y-2 divide-y divide-slate-100 text-xs">
-                                {viewingOrder.items.map((item, idx) => (
-                                    <div key={idx} className="flex justify-between pt-1.5">
-                                        <span>
-                                            {item.item_name} x {item.quantity}
-                                        </span>
-                                        <span className="font-bold">{formatCurrency(item.total_price, currency)}</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="space-y-1 border-t border-dashed border-slate-300 pt-3 text-xs">
-                                <div className="flex justify-between pt-2 text-sm font-black">
-                                    <span>Total Paid</span>
-                                    <span>{formatCurrency(viewingOrder.total_amount, currency)}</span>
+                        <div className="space-y-2 divide-y divide-slate-100 text-xs">
+                            {viewingOrder.items.map((item, idx) => (
+                                <div key={idx} className="flex justify-between pt-1.5">
+                                    <span>
+                                        {item.item_name} x {item.quantity}
+                                    </span>
+                                    <span className="font-bold">{formatCurrency(item.total_price, currency)}</span>
                                 </div>
-                                <div className="pt-1 text-center text-[10px] text-slate-500">
-                                    Payment Method: {viewingOrder.payment_method.toUpperCase()}
-                                </div>
-                                {viewingOrder.notes && (
-                                    <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/50 p-2 text-center text-[10px] text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-                                        <span className="font-bold">Note:</span> {viewingOrder.notes}
-                                    </div>
-                                )}
-                            </div>
+                            ))}
+                        </div>
 
-                            <div className="flex justify-between gap-3 pt-2 text-center print:hidden">
-                                <button
-                                    onClick={() => setViewingOrder(null)}
-                                    className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700"
-                                >
-                                    Close
-                                </button>
-                                <button
-                                    onClick={printReceipt}
-                                    className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-xs font-bold text-slate-950"
-                                >
-                                    <Printer className="h-4 w-4" /> Print Receipt
-                                </button>
+                        <div className="space-y-1 border-t border-dashed border-slate-300 pt-3 text-xs">
+                            <div className="flex justify-between">
+                                <span>Subtotal</span>
+                                <span>{formatCurrency(viewingOrder.subtotal ?? 0, currency)}</span>
                             </div>
+                            <div className="flex justify-between">
+                                <span>Tax / VAT</span>
+                                <span>{formatCurrency(viewingOrder.tax_amount ?? 0, currency)}</span>
+                            </div>
+                            {viewingOrder.discount_amount > 0 && (
+                                <div className="flex justify-between text-rose-600">
+                                    <span>Discount</span>
+                                    <span>-{formatCurrency(viewingOrder.discount_amount, currency)}</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between border-t border-slate-300 pt-2 text-sm font-black">
+                                <span>Total Paid</span>
+                                <span>{formatCurrency(viewingOrder.total_amount, currency)}</span>
+                            </div>
+                            <div className="pt-1 text-center text-[10px] text-slate-500">
+                                Payment Method: {viewingOrder.payment_method.toUpperCase()}
+                            </div>
+                            {viewingOrder.notes && (
+                                <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/50 p-2 text-center text-[10px] text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                                    <span className="font-bold">Note:</span> {viewingOrder.notes}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex justify-between gap-3 pt-2 text-center print:hidden">
+                            <button
+                                onClick={() => setViewingOrder(null)}
+                                className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700"
+                            >
+                                Close
+                            </button>
+                            <button
+                                onClick={printReceipt}
+                                className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-xs font-bold text-slate-950"
+                            >
+                                <Printer className="h-4 w-4" /> Print Receipt
+                            </button>
                         </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </AppLayout>
     );
 }

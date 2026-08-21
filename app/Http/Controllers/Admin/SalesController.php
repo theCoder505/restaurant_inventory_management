@@ -168,6 +168,9 @@ class SalesController extends Controller
 
         // Calculate total sales sum for the current filtered query
         $totalSalesAmount = (float)$query->sum('total_amount');
+        $totalSubtotal = (float)$query->sum('subtotal');
+        $totalDiscount = (float)$query->sum('discount_amount');
+        $totalTax = (float)$query->sum('tax_amount');
 
         $perPage = $request->input('per_page', 20);
         $orders = $query->orderByDesc('created_at')->paginate($perPage)->withQueryString();
@@ -176,6 +179,9 @@ class SalesController extends Controller
         return Inertia::render('admin/sales/log', [
             'orders' => $orders,
             'totalSalesAmount' => $totalSalesAmount,
+            'totalSubtotal' => $totalSubtotal,
+            'totalDiscount' => $totalDiscount,
+            'totalTax' => $totalTax,
             'currency' => $currency,
             'filters' => array_merge([
                 'from_date' => $fromDate,

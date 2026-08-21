@@ -394,14 +394,14 @@ export default function ReportsIndex({
                                             cx="50%"
                                             cy="50%"
                                             outerRadius={70}
-                                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                            label={({ name, percent = 0 }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                                         >
                                             {financialDistribution.map((item, index) => (
                                                 <Cell key={`cell-${index}`} fill={item.color || COLORS[index % COLORS.length]} />
                                             ))}
                                         </Pie>
                                         <Tooltip
-                                            formatter={(val: number) => formatCurrency(val, currency)}
+                                            formatter={(val: any) => formatCurrency(Number(val || 0), currency)}
                                             contentStyle={{
                                                 backgroundColor: '#0f172a',
                                                 borderColor: '#1e293b',
