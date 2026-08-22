@@ -32,7 +32,9 @@ import { useEffect, useState } from 'react';
 interface Settings {
     brand_name: string;
     brand_logo?: string;
+    brand_logo_dark?: string;
     brand_icon?: string;
+    header_white_logo?: boolean | string;
     tagline: string;
     about_text: string;
     phone: string;
@@ -395,11 +397,10 @@ export default function Welcome({ settings, menuCategories, featuredItems, revie
                     <div className="flex items-center gap-2 mb-10 overflow-x-auto pb-2 scrollbar-none flex-wrap" data-aos="fade-up" data-aos-delay="100">
                         <button
                             onClick={() => setActiveTab('all')}
-                            className={`rounded-full px-5 py-2.5 font-montserrat text-xs font-bold transition-all uppercase tracking-wider shrink-0 ${
-                                activeTab === 'all'
+                            className={`rounded-full px-5 py-2.5 font-montserrat text-xs font-bold transition-all uppercase tracking-wider shrink-0 ${activeTab === 'all'
                                     ? 'bg-orange-600 text-white shadow-md shadow-orange-500/25 neon-glow'
                                     : 'border border-slate-300 bg-white text-slate-800 hover:bg-slate-100 hover:border-orange-400 dark:border-white/10 dark:bg-[#1c1b1b] dark:text-slate-200 dark:hover:bg-white/10'
-                            }`}
+                                }`}
                         >
                             All Featured ({allDishes.length})
                         </button>
@@ -407,11 +408,10 @@ export default function Welcome({ settings, menuCategories, featuredItems, revie
                             <button
                                 key={cat.id}
                                 onClick={() => setActiveTab(cat.id)}
-                                className={`rounded-full px-5 py-2.5 font-montserrat text-xs font-bold transition-all uppercase tracking-wider shrink-0 ${
-                                    activeTab === cat.id
+                                className={`rounded-full px-5 py-2.5 font-montserrat text-xs font-bold transition-all uppercase tracking-wider shrink-0 ${activeTab === cat.id
                                         ? 'bg-orange-600 text-white shadow-md shadow-orange-500/25 neon-glow'
                                         : 'border border-slate-300 bg-white text-slate-800 hover:bg-slate-100 hover:border-orange-400 dark:border-white/10 dark:bg-[#1c1b1b] dark:text-slate-200 dark:hover:bg-white/10'
-                                }`}
+                                    }`}
                             >
                                 {cat.name} ({cat.menu_items.length})
                             </button>
@@ -534,9 +534,8 @@ export default function Welcome({ settings, menuCategories, featuredItems, revie
                                     href={getRecipeUrl(dish)}
                                     data-aos="zoom-in"
                                     data-aos-delay={idx * 120}
-                                    className={`relative h-72 sm:h-80 rounded-2xl overflow-hidden group shadow-lg ${
-                                        idx === 2 ? 'sm:col-span-2' : ''
-                                    }`}
+                                    className={`relative h-72 sm:h-80 rounded-2xl overflow-hidden group shadow-lg ${idx === 2 ? 'sm:col-span-2' : ''
+                                        }`}
                                 >
                                     <img
                                         src={getDishImage(dish, idx + 3)}
@@ -910,17 +909,16 @@ export default function Welcome({ settings, menuCategories, featuredItems, revie
                                         <div className="glass-panel p-8 rounded-2xl relative shadow-md border border-slate-200/90 dark:border-white/10 h-full flex flex-col justify-between">
                                             <div>
                                                 <Quote className="absolute top-6 right-6 h-8 w-8 text-orange-500/20" />
-                                                
+
                                                 {/* Star Rating Display (5 or 4 stars) */}
                                                 <div className="flex items-center gap-1 text-amber-500 mb-4">
                                                     {[...Array(5)].map((_, starIdx) => (
                                                         <Star
                                                             key={starIdx}
-                                                            className={`h-4 w-4 ${
-                                                                starIdx < rev.rating
+                                                            className={`h-4 w-4 ${starIdx < rev.rating
                                                                     ? 'fill-current text-amber-500'
                                                                     : 'text-slate-300 dark:text-slate-700'
-                                                            }`}
+                                                                }`}
                                                         />
                                                     ))}
                                                     <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 ml-1.5">
@@ -991,9 +989,8 @@ export default function Welcome({ settings, menuCategories, featuredItems, revie
                                         {parseOpeningHours(settings.opening_hours).map((schedule, idx, arr) => (
                                             <li
                                                 key={idx}
-                                                className={`flex justify-between ${
-                                                    idx < arr.length - 1 ? 'border-b border-slate-200/80 dark:border-white/5 pb-1' : 'pb-1'
-                                                } ${schedule.isPeak ? 'text-orange-600 dark:text-orange-400 font-bold' : ''}`}
+                                                className={`flex justify-between ${idx < arr.length - 1 ? 'border-b border-slate-200/80 dark:border-white/5 pb-1' : 'pb-1'
+                                                    } ${schedule.isPeak ? 'text-orange-600 dark:text-orange-400 font-bold' : ''}`}
                                             >
                                                 <span>{schedule.day}</span>
                                                 <span className={schedule.isPeak ? 'font-bold' : 'font-bold text-slate-900 dark:text-slate-100'}>

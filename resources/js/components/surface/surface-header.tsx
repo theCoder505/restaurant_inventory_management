@@ -20,7 +20,9 @@ import { useEffect, useState } from 'react';
 export interface SurfaceSettings {
     brand_name: string;
     brand_logo?: string;
+    brand_logo_dark?: string;
     brand_icon?: string;
+    header_white_logo?: boolean | string;
     logo_url?: string;
     phone: string;
     whatsapp_number?: string;
@@ -123,10 +125,28 @@ export default function SurfaceHeader({
         return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
     };
 
-    const brandLogoImage = settings.brand_logo || settings.logo_url;
+    const lightLogo = settings.brand_logo || settings.logo_url;
+    const darkLogo = settings.brand_logo_dark || lightLogo;
 
     // Determine header style: transparent over hero if not scrolled, not subpage, and mobile menu closed
     const isHeaderTransparent = !isScrolled && !isSubpage && !mobileMenuOpen;
+
+    // Logo white inversion setting (if marked, logo is white when not scrolled; otherwise keeps original color)
+    const isWhiteLogoEnabled =
+        settings.header_white_logo !== undefined
+            ? settings.header_white_logo === true ||
+              settings.header_white_logo === '1' ||
+              settings.header_white_logo === 'true'
+            : true;
+
+    const shouldInvertLogo = isHeaderTransparent && isWhiteLogoEnabled;
+
+    // Theme-aware logo selection:
+    // When unscrolled over dark hero photography -> use dark theme logo
+    // When scrolled -> use dark logo in dark mode, light logo in light mode
+    const brandLogoImage = isHeaderTransparent
+        ? (darkLogo || lightLogo)
+        : (isDarkMode ? (darkLogo || lightLogo) : (lightLogo || darkLogo));
 
     const navItems = [
         { id: 'lineup', label: 'The Lineup', href: '/#lineup', isAnchor: true },
@@ -164,7 +184,7 @@ export default function SurfaceHeader({
                                 src={brandLogoImage}
                                 alt={settings.brand_name}
                                 className={`h-9 sm:h-10 w-auto object-contain max-w-[160px] sm:max-w-[200px] transition-all duration-300 ${
-                                    isHeaderTransparent
+                                    shouldInvertLogo
                                         ? 'brightness-0 invert drop-shadow-[0_2px_8px_rgba(255,255,255,0.35)]'
                                         : ''
                                 }`}

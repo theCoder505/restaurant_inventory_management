@@ -21,7 +21,9 @@ class PublicController extends Controller
         return [
             'brand_name' => $settings['brand_name'] ?? 'NOCTURNE',
             'brand_logo' => $settings['brand_logo'] ?? null,
+            'brand_logo_dark' => $settings['brand_logo_dark'] ?? ($settings['brand_logo'] ?? null),
             'brand_icon' => $settings['brand_icon'] ?? null,
+            'header_white_logo' => !isset($settings['header_white_logo']) || in_array($settings['header_white_logo'], ['1', 'true', true, 1], true),
             'tagline' => $settings['tagline'] ?? 'CRAVINGS NEVER SLEEP',
             'about_text' => $settings['about_text'] ?? 'Step into a world where culinary excellence meets nightlife seduction. Nocturne isn\'t just a meal; it\'s a sensory experience designed for those who thrive when the sun goes down.',
             'phone' => $settings['phone'] ?? '+8801712345678',

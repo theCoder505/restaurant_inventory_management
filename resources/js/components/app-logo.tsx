@@ -2,7 +2,7 @@ import { usePage } from '@inertiajs/react';
 import AppLogoIcon from './app-logo-icon';
 
 export default function AppLogo() {
-    const { name, branding } = usePage<{ name?: string; branding?: { brand_name?: string; brand_logo?: string } }>().props;
+    const { name, branding } = usePage<{ name?: string; branding?: { brand_name?: string; brand_logo?: string; brand_logo_dark?: string } }>().props;
 
     const brandName = branding?.brand_name || name || 'Restaurant';
 

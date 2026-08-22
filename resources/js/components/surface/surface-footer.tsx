@@ -18,7 +18,8 @@ export default function SurfaceFooter({ settings }: SurfaceFooterProps) {
         });
     };
 
-    const brandLogoImage = settings.brand_logo || settings.logo_url;
+    const lightLogo = settings.brand_logo || settings.logo_url;
+    const darkLogo = settings.brand_logo_dark || lightLogo;
 
     return (
         <>
@@ -27,14 +28,25 @@ export default function SurfaceFooter({ settings }: SurfaceFooterProps) {
                 <div className="mx-auto flex max-w-7xl flex-col md:flex-row items-center justify-between gap-8 px-4 sm:px-6 lg:px-8">
                     {/* Left: Brand Logo & Tagline */}
                     <div className="flex flex-col items-center md:items-start gap-2">
-                        {brandLogoImage ? (
-                            <img
-                                src={brandLogoImage}
-                                alt={settings.brand_name}
-                                className="h-8 sm:h-9 w-auto object-contain max-w-[150px]"
-                                loading="lazy"
-                                decoding="async"
-                            />
+                        {lightLogo ? (
+                            <>
+                                <img
+                                    src={lightLogo}
+                                    alt={settings.brand_name}
+                                    className={`h-8 sm:h-9 w-auto object-contain max-w-[150px] ${darkLogo && darkLogo !== lightLogo ? 'dark:hidden' : ''}`}
+                                    loading="lazy"
+                                    decoding="async"
+                                />
+                                {darkLogo && darkLogo !== lightLogo && (
+                                    <img
+                                        src={darkLogo}
+                                        alt={settings.brand_name}
+                                        className="h-8 sm:h-9 w-auto object-contain max-w-[150px] hidden dark:block"
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
+                                )}
+                            </>
                         ) : (
                             <span className="font-montserrat text-lg font-extrabold text-slate-900 dark:text-[#ffb59e]">
                                 {settings.brand_name}

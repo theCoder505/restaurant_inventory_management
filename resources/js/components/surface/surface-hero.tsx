@@ -63,10 +63,10 @@ export default function SurfaceHero({
     const orderLink = generateOrderLink
         ? generateOrderLink()
         : whatsappActive
-          ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(
+            ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(
                 `Hello ${settings.brand_name || 'Restaurant'}, I would like to place an inquiry for late-night gourmet dining and delivery.`,
             )}`
-          : `tel:${cleanPhone}`;
+            : `tel:${cleanPhone}`;
 
     // Generates 3-digit zero-padded frame paths (/images/frames/ezgif-frame-001.jpg)
     const getFrameUrl = (index: number) => {
@@ -279,11 +279,10 @@ export default function SurfaceHero({
                 {/* Preloader Spinner & Progress */}
                 {!isLoaderHidden && (
                     <div
-                        className={`absolute inset-0 bg-[#070b19] flex flex-col items-center justify-center transition-opacity duration-700 z-30 pointer-events-none ${
-                            loadPercent >= 100 || loadedCount >= 45
+                        className={`absolute inset-0 bg-[#070b19] flex flex-col items-center justify-center transition-opacity duration-700 z-30 pointer-events-none ${loadPercent >= 100 || loadedCount >= 45
                                 ? 'opacity-0'
                                 : 'opacity-100'
-                        }`}
+                            }`}
                     >
                         <div className="relative w-16 h-16 mb-4">
                             <div className="absolute inset-0 border-4 border-orange-500/20 rounded-full" />
@@ -300,23 +299,11 @@ export default function SurfaceHero({
 
                 {/* Hero Overlay Stage 1: Initial Brand & Live Ordering */}
                 <div
-                    className={`absolute z-20 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-4xl transition-all duration-700 text-center ${
-                        isCard1Visible
+                    className={`absolute z-20 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-4xl transition-all duration-700 text-center ${isCard1Visible
                             ? 'opacity-100 scale-100 pointer-events-auto'
                             : 'opacity-0 scale-95 pointer-events-none'
-                    }`}
+                        }`}
                 >
-                    {/* Live Status Pill */}
-                    <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/40 bg-orange-500/20 px-4 py-1.5 backdrop-blur-md shadow-lg shadow-orange-500/10 mb-5">
-                        <span className="relative flex h-2.5 w-2.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500" />
-                        </span>
-                        <span className="font-montserrat text-xs font-bold uppercase tracking-widest text-orange-200 dark:text-orange-300">
-                            24/7 Late-Night Kitchen Active • Hot &amp; Fresh
-                        </span>
-                    </div>
-
                     {/* Brand Headline */}
                     <h1 className="font-montserrat text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold uppercase tracking-tight text-white leading-tight mb-4 drop-shadow-2xl">
                         Where Gastronomy Meets <br className="hidden sm:inline" />
@@ -375,11 +362,10 @@ export default function SurfaceHero({
 
                 {/* Hero Overlay Stage 2: Appears Mid-Scroll with Recipe & Craftsmanship Story */}
                 <div
-                    className={`absolute z-20 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-4xl transition-all duration-700 text-center ${
-                        isCard2Visible
+                    className={`absolute z-20 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-4xl transition-all duration-700 text-center ${isCard2Visible
                             ? 'opacity-100 scale-100 pointer-events-auto'
                             : 'opacity-0 scale-95 pointer-events-none'
-                    }`}
+                        }`}
                 >
                     {/* Badge */}
                     <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/20 px-4 py-1.5 backdrop-blur-md shadow-lg shadow-amber-500/10 mb-4">
@@ -456,11 +442,10 @@ export default function SurfaceHero({
                 {/* Scroll Indicator Hint */}
                 <div
                     id="scroll-hint"
-                    className={`absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 pointer-events-none transition-all duration-500 ${
-                        isScrollHintVisible
+                    className={`absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 pointer-events-none transition-all duration-500 ${isScrollHintVisible
                             ? 'opacity-100 translate-y-0'
                             : 'opacity-0 translate-y-4'
-                    }`}
+                        }`}
                 >
                     <span className="text-xs uppercase tracking-[0.2em] text-slate-300/80 font-montserrat font-medium drop-shadow-md">
                         Scroll to reveal

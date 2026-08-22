@@ -22,7 +22,9 @@ class SettingController extends Controller
             'settings' => [
                 'brand_name' => $settings['brand_name'] ?? 'NOCTURNE',
                 'brand_logo' => $settings['brand_logo'] ?? '/uploads/branding/logo.svg',
+                'brand_logo_dark' => $settings['brand_logo_dark'] ?? ($settings['brand_logo'] ?? '/uploads/branding/logo.svg'),
                 'brand_icon' => $settings['brand_icon'] ?? '/uploads/branding/icon.svg',
+                'header_white_logo' => $settings['header_white_logo'] ?? '1',
                 'tagline' => $settings['tagline'] ?? 'CRAVINGS NEVER SLEEP',
                 'about_text' => $settings['about_text'] ?? 'Step into a world where culinary excellence meets nightlife seduction. Nocturne isn\'t just a meal; it\'s a sensory experience designed for those who thrive when the sun goes down.',
                 'phone' => $settings['phone'] ?? '+8801700000000',
@@ -61,6 +63,7 @@ class SettingController extends Controller
             'phone' => 'required|string|max:50',
             'whatsapp_number' => 'nullable|string|max:50',
             'enable_whatsapp' => 'nullable|string|in:0,1,true,false',
+            'header_white_logo' => 'nullable|string|in:0,1,true,false',
             'email' => 'required|email|max:255',
             'notification_email' => 'required|email|max:255',
             'address' => 'nullable|string',
@@ -78,6 +81,7 @@ class SettingController extends Controller
             'privacy_policy' => 'nullable|string',
             'footer_text' => 'nullable|string',
             'brand_logo_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:5120',
+            'brand_logo_dark_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:5120',
             'brand_icon_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,ico|max:2048',
             'hero_bg_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:10240',
             'atmosphere_image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:10240',
@@ -89,12 +93,20 @@ class SettingController extends Controller
             File::makeDirectory($uploadPath, 0755, true);
         }
 
-        // Process Brand Logo File Upload
+        // Process Brand Logo (Light Theme) File Upload
         if ($request->hasFile('brand_logo_file')) {
             $file = $request->file('brand_logo_file');
-            $fileName = 'brand_logo_' . time() . '.' . $file->getClientOriginalExtension();
+            $fileName = 'brand_logo_light_' . time() . '.' . $file->getClientOriginalExtension();
             $file->move($uploadPath, $fileName);
             AppSetting::setByKey('brand_logo', '/uploads/branding/' . $fileName);
+        }
+
+        // Process Brand Logo Dark (Dark Theme) File Upload
+        if ($request->hasFile('brand_logo_dark_file')) {
+            $file = $request->file('brand_logo_dark_file');
+            $fileName = 'brand_logo_dark_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move($uploadPath, $fileName);
+            AppSetting::setByKey('brand_logo_dark', '/uploads/branding/' . $fileName);
         }
 
         // Process Brand Icon File Upload
@@ -132,6 +144,7 @@ class SettingController extends Controller
         // Save all other string/numeric settings
         $excludedKeys = [
             'brand_logo_file',
+            'brand_logo_dark_file',
             'brand_icon_file',
             'hero_bg_file',
             'atmosphere_image_file',

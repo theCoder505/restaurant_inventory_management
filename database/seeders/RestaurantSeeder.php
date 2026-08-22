@@ -39,7 +39,9 @@ class RestaurantSeeder extends Seeder
         $settings = [
             'brand_name' => 'Le Gourmet Bistro',
             'brand_logo' => '/uploads/branding/logo.svg',
+            'brand_logo_dark' => '/uploads/branding/logo.svg',
             'brand_icon' => '/uploads/branding/icon.svg',
+            'header_white_logo' => '1',
             'tagline' => 'Exquisite Culinary Excellence & Artisan Cuisine',
             'about_text' => 'Welcome to Le Gourmet Bistro. Founded in 2020, we take pride in serving farm-to-table artisan dishes, freshly prepared by master chefs using premium local ingredients.',
             'phone' => '+8801712345678',

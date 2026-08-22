@@ -54,7 +54,9 @@ class HandleInertiaRequests extends Middleware
             'branding' => [
                 'brand_name' => $brandName,
                 'brand_logo' => AppSetting::getByKey('brand_logo', '/uploads/branding/logo.svg'),
+                'brand_logo_dark' => AppSetting::getByKey('brand_logo_dark', AppSetting::getByKey('brand_logo', '/uploads/branding/logo.svg')),
                 'brand_icon' => AppSetting::getByKey('brand_icon', '/uploads/branding/icon.svg'),
+                'header_white_logo' => AppSetting::getByKey('header_white_logo', '1') === '1',
                 'address' => AppSetting::getByKey('address', '889 Midnight Ave, Suite B, Downtown District'),
                 'phone' => AppSetting::getByKey('phone', '+8801700000000'),
                 'email' => AppSetting::getByKey('email', 'contact@restaurant.com'),

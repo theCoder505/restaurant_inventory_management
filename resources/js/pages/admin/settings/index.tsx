@@ -2,13 +2,15 @@ import AppLayout from '@/layouts/app-layout';
 import { showToast } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
-import { Calendar, Clock, Download, Globe, Image as ImageIcon, Loader2, MessageCircle, Save, Settings, Sparkles, Upload } from 'lucide-react';
+import { Calendar, Clock, Download, Globe, Image as ImageIcon, Loader2, MessageCircle, Moon, Save, Settings, Sparkles, Sun, Upload } from 'lucide-react';
 import { useState } from 'react';
 
 interface SettingsData {
     brand_name: string;
     brand_logo?: string;
+    brand_logo_dark?: string;
     brand_icon?: string;
+    header_white_logo?: string;
     tagline: string;
     about_text: string;
     phone: string;
@@ -46,6 +48,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function SettingsIndex({ settings }: Props) {
     const [logoPreview, setLogoPreview] = useState<string | null>(settings.brand_logo || null);
+    const [darkLogoPreview, setDarkLogoPreview] = useState<string | null>(settings.brand_logo_dark || settings.brand_logo || null);
     const [iconPreview, setIconPreview] = useState<string | null>(settings.brand_icon || null);
     const [heroBgPreview, setHeroBgPreview] = useState<string | null>(settings.hero_bg_image || null);
     const [atmospherePreview, setAtmospherePreview] = useState<string | null>(settings.atmosphere_image || null);
@@ -54,8 +57,11 @@ export default function SettingsIndex({ settings }: Props) {
     const form = useForm({
         brand_name: settings.brand_name || 'NOCTURNE',
         brand_logo: settings.brand_logo || '/uploads/branding/logo.svg',
+        brand_logo_dark: settings.brand_logo_dark || settings.brand_logo || '/uploads/branding/logo.svg',
         brand_icon: settings.brand_icon || '/uploads/branding/icon.svg',
+        header_white_logo: settings.header_white_logo ?? '1',
         brand_logo_file: null as File | null,
+        brand_logo_dark_file: null as File | null,
         brand_icon_file: null as File | null,
         hero_bg_file: null as File | null,
         atmosphere_image_file: null as File | null,
@@ -88,6 +94,14 @@ export default function SettingsIndex({ settings }: Props) {
         if (file) {
             form.setData('brand_logo_file', file);
             setLogoPreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleDarkLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            form.setData('brand_logo_dark_file', file);
+            setDarkLogoPreview(URL.createObjectURL(file));
         }
     };
 
@@ -127,7 +141,7 @@ export default function SettingsIndex({ settings }: Props) {
         e.preventDefault();
         form.post('/administration-control/settings', {
             forceFormData: true,
-            onSuccess: () => showToast('App settings, week start day & operating hours saved successfully!', 'success'),
+            onSuccess: () => showToast('App settings, logos & configurations saved successfully!', 'success'),
         });
     };
 
@@ -143,7 +157,7 @@ export default function SettingsIndex({ settings }: Props) {
                             <Settings className="h-6 w-6 text-amber-500" /> App Branding, Calendar & Configuration
                         </h1>
                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            Configure branding, logos, background photography, operating hours, week start day, and financial rules.
+                            Configure light and dark branding logos, background photography, operating hours, week start day, and financial rules.
                         </p>
                     </div>
 
@@ -166,56 +180,156 @@ export default function SettingsIndex({ settings }: Props) {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6 text-xs">
-                    {/* Visual Brand Assets & Logos */}
+                    {/* Visual Brand Assets & Logos (Light & Dark) */}
                     <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                        <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-100">
-                            <ImageIcon className="h-4 w-4 text-amber-500" /> Brand Identity & Logo Uploads
-                        </h3>
+                        <div>
+                            <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                                <ImageIcon className="h-4 w-4 text-amber-500" /> Brand Identity & Logo Uploads (Light & Dark Theme)
+                            </h3>
+                            <p className="text-[11px] text-slate-500 mt-1">
+                                Upload separate logos tailored for light backgrounds and dark nightlife backgrounds.
+                            </p>
+                        </div>
 
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                            {/* Logo Upload Card with Preview */}
-                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-                                <label className="mb-2 block font-bold text-slate-800 dark:text-slate-200">Main Restaurant Brand Logo</label>
-                                <p className="mb-3 text-[11px] text-slate-500">Displayed in surface header, invoice receipts, and admin sidebar.</p>
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                            {/* 1. Light Theme Logo Upload Card */}
+                            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 dark:border-amber-500/20 flex flex-col justify-between">
+                                <div>
+                                    <label className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200 mb-1">
+                                        <Sun className="h-4 w-4 text-amber-500" /> Light Theme Logo
+                                    </label>
+                                    <p className="mb-3 text-[11px] text-slate-500">
+                                        Active in Light Mode, printed POS receipts, and light headers.
+                                    </p>
 
-                                <div className="mb-4 flex items-center gap-4">
-                                    <div className="flex h-20 w-44 items-center justify-center rounded-xl border border-slate-300 bg-slate-900 p-2 shadow-inner dark:border-slate-800">
+                                    <div className="mb-4 flex items-center justify-center h-20 w-full rounded-xl border border-slate-300 bg-white p-2 shadow-inner dark:border-slate-700">
                                         {logoPreview ? (
-                                            <img src={logoPreview} alt="Logo Preview" className="max-h-full max-w-full object-contain" />
+                                            <img src={logoPreview} alt="Light Logo Preview" className="max-h-full max-w-full object-contain" />
                                         ) : (
-                                            <span className="text-[10px] text-slate-400">No Logo Loaded</span>
+                                            <span className="text-[10px] text-slate-400">No Light Logo</span>
                                         )}
                                     </div>
-                                    <div className="space-y-1">
-                                        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-slate-200 px-3.5 py-2 font-bold text-slate-800 transition-all hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">
-                                            <Upload className="h-3.5 w-3.5" /> Upload Logo File
-                                            <input type="file" accept="image/*" onChange={handleLogoFileChange} className="hidden" />
-                                        </label>
-                                        <p className="text-[10px] text-slate-400">PNG, SVG, JPG, WEBP (Max 5MB)</p>
-                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="inline-flex cursor-pointer items-center justify-center w-full gap-1.5 rounded-xl bg-white px-3.5 py-2 font-bold text-slate-800 border border-slate-300 shadow-sm transition-all hover:bg-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-700">
+                                        <Upload className="h-3.5 w-3.5 text-amber-500" /> Upload Light Logo
+                                        <input type="file" accept="image/*" onChange={handleLogoFileChange} className="hidden" />
+                                    </label>
+                                    <p className="text-[10px] text-slate-400 text-center">PNG, SVG, JPG, WEBP (Max 5MB)</p>
                                 </div>
                             </div>
 
-                            {/* Favicon / Icon Card with Preview */}
-                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-                                <label className="mb-2 block font-bold text-slate-800 dark:text-slate-200">App Favicon / Square Icon</label>
-                                <p className="mb-3 text-[11px] text-slate-500">Browser tab icon and mobile shortcut icon.</p>
+                            {/* 2. Dark Theme Logo Upload Card */}
+                            <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/5 p-4 dark:border-indigo-500/20 flex flex-col justify-between">
+                                <div>
+                                    <label className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200 mb-1">
+                                        <Moon className="h-4 w-4 text-indigo-400" /> Dark Theme Logo
+                                    </label>
+                                    <p className="mb-3 text-[11px] text-slate-500">
+                                        Active in Dark Mode, dark navigation bars, and nightlife hero sections.
+                                    </p>
 
-                                <div className="mb-4 flex items-center gap-4">
-                                    <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-slate-300 bg-slate-900 p-2 shadow-inner dark:border-slate-800">
+                                    <div className="mb-4 flex items-center justify-center h-20 w-full rounded-xl border border-slate-800 bg-slate-950 p-2 shadow-inner">
+                                        {darkLogoPreview ? (
+                                            <img src={darkLogoPreview} alt="Dark Logo Preview" className="max-h-full max-w-full object-contain" />
+                                        ) : (
+                                            <span className="text-[10px] text-slate-500">No Dark Logo</span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="inline-flex cursor-pointer items-center justify-center w-full gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 font-bold text-white border border-slate-700 shadow-sm transition-all hover:bg-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-700">
+                                        <Upload className="h-3.5 w-3.5 text-indigo-400" /> Upload Dark Logo
+                                        <input type="file" accept="image/*" onChange={handleDarkLogoFileChange} className="hidden" />
+                                    </label>
+                                    <p className="text-[10px] text-slate-400 text-center">PNG, SVG, JPG, WEBP (Max 5MB)</p>
+                                </div>
+                            </div>
+
+                            {/* 3. Favicon / Icon Card with Preview */}
+                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950 flex flex-col justify-between">
+                                <div>
+                                    <label className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200 mb-1">
+                                        <ImageIcon className="h-4 w-4 text-amber-500" /> App Favicon / Square Icon
+                                    </label>
+                                    <p className="mb-3 text-[11px] text-slate-500">Browser tab icon, sidebar brandmark, and mobile shortcut.</p>
+
+                                    <div className="mb-4 flex items-center justify-center h-20 w-full rounded-xl border border-slate-300 bg-slate-900 p-2 shadow-inner dark:border-slate-800">
                                         {iconPreview ? (
-                                            <img src={iconPreview} alt="Icon Preview" className="max-h-full max-w-full object-contain" />
+                                            <img src={iconPreview} alt="Icon Preview" className="max-h-12 max-w-12 object-contain" />
                                         ) : (
                                             <span className="text-[10px] text-slate-400">No Icon</span>
                                         )}
                                     </div>
-                                    <div className="space-y-1">
-                                        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-slate-200 px-3.5 py-2 font-bold text-slate-800 transition-all hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">
-                                            <Upload className="h-3.5 w-3.5" /> Upload Icon File
-                                            <input type="file" accept="image/*" onChange={handleIconFileChange} className="hidden" />
-                                        </label>
-                                        <p className="text-[10px] text-slate-400">Square SVG, PNG or ICO (Max 2MB)</p>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="inline-flex cursor-pointer items-center justify-center w-full gap-1.5 rounded-xl bg-slate-200 px-3.5 py-2 font-bold text-slate-800 transition-all hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">
+                                        <Upload className="h-3.5 w-3.5" /> Upload Icon File
+                                        <input type="file" accept="image/*" onChange={handleIconFileChange} className="hidden" />
+                                    </label>
+                                    <p className="text-[10px] text-slate-400 text-center">Square SVG, PNG or ICO (Max 2MB)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Header White Logo Color Setting */}
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="space-y-1">
+                                    <label className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200 text-xs">
+                                        <Sparkles className="h-4 w-4 text-amber-500" /> Header White Logo Color (When Unscrolled)
+                                    </label>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed">
+                                        If marked, the surface header logo will be displayed in white (inverted filter) when the page is not scrolled over the hero banner. When unmarked, it displays in its theme-appropriate logo colors (e.g. Dark Theme Logo).
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-3 shrink-0">
+                                    <label className="inline-flex items-center cursor-pointer gap-2.5 bg-white dark:bg-slate-900 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 shadow-sm transition-all hover:border-amber-400">
+                                        <input
+                                            type="checkbox"
+                                            checked={form.data.header_white_logo === '1' || form.data.header_white_logo === 'true'}
+                                            onChange={(e) => form.setData('header_white_logo', e.target.checked ? '1' : '0')}
+                                            className="h-4 w-4 rounded border-amber-400 text-amber-500 focus:ring-amber-500 cursor-pointer"
+                                        />
+                                        <span className={`text-xs font-bold ${
+                                            form.data.header_white_logo === '1' || form.data.header_white_logo === 'true'
+                                                ? 'text-amber-600 dark:text-amber-400'
+                                                : 'text-slate-500 dark:text-slate-400'
+                                        }`}>
+                                            {form.data.header_white_logo === '1' || form.data.header_white_logo === 'true' ? 'White Color (Marked)' : 'Original Colors (Unmarked)'}
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Live Visual Demonstration Preview */}
+                            <div className="mt-3.5 pt-3.5 border-t border-slate-200 dark:border-slate-800/80 flex flex-wrap items-center gap-6 text-[11px]">
+                                <span className="font-semibold text-slate-500 dark:text-slate-400">Preview on Surface Unscrolled Header:</span>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex h-10 items-center justify-center rounded-lg bg-black/80 px-4 border border-white/20 shadow-sm">
+                                        {darkLogoPreview || logoPreview ? (
+                                            <img
+                                                src={darkLogoPreview || logoPreview || ''}
+                                                alt="Logo Mode Preview"
+                                                className={`h-6 w-auto object-contain transition-all duration-300 ${
+                                                    form.data.header_white_logo === '1' || form.data.header_white_logo === 'true'
+                                                        ? 'brightness-0 invert drop-shadow-[0_1px_4px_rgba(255,255,255,0.4)]'
+                                                        : ''
+                                                }`}
+                                            />
+                                        ) : (
+                                            <span className="text-[10px] text-white">No Logo</span>
+                                        )}
                                     </div>
+                                    <span className="text-[11px] text-slate-600 dark:text-slate-300">
+                                        {form.data.header_white_logo === '1' || form.data.header_white_logo === 'true'
+                                            ? '✨ Inverted Pure White (High contrast over dark photo background)'
+                                            : '🎨 Dark Theme Logo (Original colors over hero background)'
+                                        }
+                                    </span>
                                 </div>
                             </div>
                         </div>
