@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\SalesController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SupplierController;
+use App\Http\Controllers\KotController;
 use App\Http\Controllers\PublicController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -23,6 +24,26 @@ Route::get('/recipi/{menuItem}/{slug?}', [PublicController::class, 'recipeDetail
 Route::get('/recipe/{menuItem}/{slug?}', [PublicController::class, 'recipeDetail']);
 Route::get('/recipes/{menuItem}/{slug?}', [PublicController::class, 'recipeDetail']);
 
+// Kitchen Display System (KOT) Authentication Routes
+Route::get('/kitchen/login', [KotController::class, 'showLogin'])->name('kot.login');
+Route::post('/kitchen/login', [KotController::class, 'login'])->name('kot.login.submit');
+Route::get('/kot/login', function () {
+    return redirect()->route('kot.login');
+});
+
+// Kitchen Display System (KOT) Routes - accessible to kitchen manager & admin
+Route::middleware(['auth'])->group(function () {
+    Route::get('/kitchen', [KotController::class, 'index'])->name('kot.index');
+    Route::post('/kitchen/logout', [KotController::class, 'logout'])->name('kot.logout');
+    Route::post('/kitchen/profile', [KotController::class, 'updateProfile'])->name('kot.profile.update');
+    Route::match(['get', 'post'], '/kitchen/orders', [KotController::class, 'getOrders'])->name('kot.orders');
+    Route::post('/kitchen/orders/{order}/status', [KotController::class, 'updateStatus'])->name('kot.update-status');
+    Route::post('/kitchen/orders/{order}/item/{item}/status', [KotController::class, 'updateItemStatus'])->name('kot.update-item-status');
+    Route::get('/kot', function () {
+        return redirect()->route('kot.index');
+    });
+});
+
 // Authenticated Admin Panel
 Route::middleware(['auth'])->prefix('administration-control')->name('admin.')->group(function () {
     // Root Admin redirect
@@ -32,6 +53,9 @@ Route::middleware(['auth'])->prefix('administration-control')->name('admin.')->g
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // KOT Panel shortcut
+    Route::get('/kot', [KotController::class, 'index'])->name('kot');
 
     // Category Management
     Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
@@ -57,6 +81,10 @@ Route::middleware(['auth'])->prefix('administration-control')->name('admin.')->g
     // Sales & POS Billing
     Route::get('/sales', [SalesController::class, 'index'])->name('sales.index');
     Route::post('/sales', [SalesController::class, 'store'])->name('sales.store');
+    Route::post('/sales/{order}/complete', [SalesController::class, 'completeOrder'])->name('sales.complete');
+    Route::post('/sales/{order}/update-order-status', [SalesController::class, 'updateOrderStatus'])->name('sales.update-status');
+    Route::delete('/sales/{order}/cancel', [SalesController::class, 'cancelOrder'])->name('sales.cancel');
+    Route::post('/sales/{order}/add-items', [SalesController::class, 'addItems'])->name('sales.add-items');
     Route::get('/sales/log', [SalesController::class, 'ordersLog'])->name('sales.log');
     Route::get('/sales/export-excel', [SalesController::class, 'exportExcel'])->name('sales.export-excel');
 

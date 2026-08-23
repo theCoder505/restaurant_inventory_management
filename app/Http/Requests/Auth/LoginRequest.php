@@ -27,7 +27,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
+            'email' => ['required', 'string'],
             'password' => ['required', 'string'],
         ];
     }
@@ -41,7 +41,29 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $loginInput = trim($this->input('email'));
+        $password = $this->input('password');
+
+        $credentials = ['password' => $password];
+
+        if (filter_var($loginInput, FILTER_VALIDATE_EMAIL)) {
+            $credentials['email'] = $loginInput;
+        } else {
+            // Find by matching name, email, or KOT username
+            $adminUser = \App\Models\Admin::where('email', $loginInput)->first();
+
+            if (!$adminUser) {
+                $kotUsername = \App\Models\AppSetting::getByKey('kot_username', 'kitchen');
+                if (strtolower($loginInput) === strtolower($kotUsername)) {
+                    $kotEmail = \App\Models\AppSetting::getByKey('kot_email', 'kitchen@restaurant.com');
+                    $adminUser = \App\Models\Admin::where('email', $kotEmail)->first();
+                }
+            }
+
+            $credentials['email'] = $adminUser ? $adminUser->email : $loginInput;
+        }
+
+        if (! Auth::attempt($credentials, $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([

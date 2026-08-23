@@ -37,6 +37,11 @@ class SalesController extends Controller
 
         $recentOrders = Order::with(['items', 'creator'])->orderByDesc('created_at')->limit(10)->get();
 
+        $activeOrders = Order::with(['items.menuItem', 'creator'])
+            ->whereIn('order_status', ['processing', 'ready', 'served'])
+            ->orderByDesc('created_at')
+            ->get();
+
         $settings = [
             'brand_name' => AppSetting::getByKey('brand_name', config('app.name', 'Restaurant')),
             'brand_logo' => AppSetting::getByKey('brand_logo', '/uploads/branding/logo.svg'),
@@ -54,6 +59,7 @@ class SalesController extends Controller
             'currency' => $currency,
             'taxPercentage' => $taxPercentage,
             'recentOrders' => $recentOrders,
+            'activeOrders' => $activeOrders,
             'settings' => $settings,
         ]);
     }
@@ -69,12 +75,15 @@ class SalesController extends Controller
             'payment_method' => 'required|in:cash,card,bkash,nagad,other',
             'transaction_id' => 'nullable|string|max:100',
             'notes' => 'nullable|string',
+            'action' => 'nullable|in:send_to_kitchen,quick_pay',
             'items' => 'required|array|min:1',
             'items.*.menu_item_id' => 'required|exists:menu_items,id',
             'items.*.quantity' => 'required|integer|min:1',
         ]);
 
-        $order = DB::transaction(function () use ($validated) {
+        $isSendToKitchen = ($validated['action'] ?? 'send_to_kitchen') === 'send_to_kitchen';
+
+        $order = DB::transaction(function () use ($validated, $isSendToKitchen) {
             $orderNumber = 'INV-' . date('Ymd') . '-' . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
             $subtotal = 0;
             $orderItemsData = [];
@@ -90,7 +99,6 @@ class SalesController extends Controller
                     'quantity' => $item['quantity'],
                     'unit_price' => $menuItem->price,
                     'total_price' => $linePrice,
-                    'recipes' => $menuItem->recipes,
                 ];
             }
 
@@ -99,9 +107,13 @@ class SalesController extends Controller
             $discount = (float)($validated['discount_amount'] ?? 0);
             $totalAmount = max(0, $subtotal + $taxAmount - $discount);
 
+            $orderStatus = $isSendToKitchen ? 'processing' : 'completed';
+            $paymentStatus = $isSendToKitchen ? 'pending' : 'paid';
+
             $newOrder = Order::create([
                 'order_number' => $orderNumber,
                 'order_type' => $validated['order_type'],
+                'order_status' => $orderStatus,
                 'table_number' => $validated['table_number'] ?? null,
                 'customer_name' => $validated['customer_name'] ?? null,
                 'customer_phone' => $validated['customer_phone'] ?? null,
@@ -110,7 +122,7 @@ class SalesController extends Controller
                 'discount_amount' => $discount,
                 'total_amount' => $totalAmount,
                 'payment_method' => $validated['payment_method'],
-                'payment_status' => 'paid',
+                'payment_status' => $paymentStatus,
                 'transaction_id' => $validated['transaction_id'] ?? null,
                 'notes' => $validated['notes'] ?? null,
                 'created_by' => Auth::id(),
@@ -122,20 +134,229 @@ class SalesController extends Controller
                     'menu_item_id' => $itemData['menu_item_id'],
                     'item_name' => $itemData['item_name'],
                     'quantity' => $itemData['quantity'],
+                    'item_status' => 'processing',
                     'unit_price' => $itemData['unit_price'],
                     'total_price' => $itemData['total_price'],
                 ]);
             }
 
-            AuditLogService::log("Created sale invoice {$orderNumber} total: {$totalAmount}", "sales");
+            $logAction = $isSendToKitchen ? "Sent KOT Order {$orderNumber} to Kitchen (Processing)" : "Created and paid sale invoice {$orderNumber} total: {$totalAmount}";
+            AuditLogService::log($logAction, "sales");
 
             return $newOrder->load(['items', 'creator']);
         });
 
+        if ($isSendToKitchen) {
+            return redirect()->back()->with([
+                'success' => "Order #{$order->order_number} sent to Kitchen KOT successfully!",
+                'lastKotOrder' => $order,
+            ]);
+        }
+
         return redirect()->back()->with([
-            'success' => 'Order completed successfully.',
+            'success' => 'Order completed & paid successfully.',
             'lastOrder' => $order,
         ]);
+    }
+
+    /**
+     * Settle & complete an active dine-in / takeaway order, generating final full-page bill.
+     */
+    public function completeOrder(Order $order, Request $request)
+    {
+        $validated = $request->validate([
+            'payment_method' => 'required|in:cash,card,bkash,nagad,other',
+            'discount_amount' => 'nullable|numeric|min:0',
+            'transaction_id' => 'nullable|string|max:100',
+            'notes' => 'nullable|string',
+        ]);
+
+        $subtotal = (float)$order->subtotal;
+        $taxRate = (float)AppSetting::getByKey('tax_percentage', '5.0') / 100;
+        $taxAmount = round($subtotal * $taxRate, 2);
+        $discount = isset($validated['discount_amount']) ? (float)$validated['discount_amount'] : (float)$order->discount_amount;
+        $totalAmount = max(0, $subtotal + $taxAmount - $discount);
+
+        $order->update([
+            'discount_amount' => $discount,
+            'tax_amount' => $taxAmount,
+            'total_amount' => $totalAmount,
+            'payment_method' => $validated['payment_method'],
+            'payment_status' => 'paid',
+            'order_status' => 'completed',
+            'transaction_id' => $validated['transaction_id'] ?? $order->transaction_id,
+            'notes' => $validated['notes'] ?? $order->notes,
+        ]);
+
+        $order->items()->update(['item_status' => 'served']);
+
+        AuditLogService::log("Completed and settled sale invoice {$order->order_number} total: {$totalAmount}", "sales");
+
+        $fullOrder = $order->fresh(['items', 'creator']);
+
+        return redirect()->back()->with([
+            'success' => "Bill settled and order #{$order->order_number} marked completed!",
+            'lastOrder' => $fullOrder,
+        ]);
+    }
+
+    /**
+     * Append additional dishes to an ongoing active order.
+     */
+    public function addItems(Order $order, Request $request)
+    {
+        $validated = $request->validate([
+            'items' => 'required|array|min:1',
+            'items.*.menu_item_id' => 'required|exists:menu_items,id',
+            'items.*.quantity' => 'required|integer|min:1',
+        ]);
+
+        $addedSubtotal = 0;
+        foreach ($validated['items'] as $item) {
+            $menuItem = MenuItem::findOrFail($item['menu_item_id']);
+            $linePrice = $menuItem->price * $item['quantity'];
+            $addedSubtotal += $linePrice;
+
+            OrderItem::create([
+                'order_id' => $order->id,
+                'menu_item_id' => $menuItem->id,
+                'item_name' => $menuItem->name,
+                'quantity' => $item['quantity'],
+                'item_status' => 'processing',
+                'unit_price' => $menuItem->price,
+                'total_price' => $linePrice,
+            ]);
+        }
+
+        $newSubtotal = (float)$order->subtotal + $addedSubtotal;
+        $taxRate = (float)AppSetting::getByKey('tax_percentage', '5.0') / 100;
+        $newTax = round($newSubtotal * $taxRate, 2);
+        $newTotal = max(0, $newSubtotal + $newTax - (float)$order->discount_amount);
+
+        $order->update([
+            'subtotal' => $newSubtotal,
+            'tax_amount' => $newTax,
+            'total_amount' => $newTotal,
+            'order_status' => 'processing', // Re-mark processing for kitchen
+        ]);
+
+        AuditLogService::log("Added " . count($validated['items']) . " new items to active order #{$order->order_number}", "sales");
+
+        return redirect()->back()->with('success', "Added items to Order #{$order->order_number} and updated Kitchen KOT.");
+    }
+
+    /**
+     * Cancel and remove an order if it is still in 'processing' status.
+     */
+    public function cancelOrder(Order $order, Request $request)
+    {
+        if ($order->order_status !== 'processing' && $order->order_status !== 'ready') {
+            return redirect()->back()->with('error', "Only processing/unserved orders can be removed.");
+        }
+
+        $orderNum = $order->order_number;
+        DB::transaction(function () use ($order, $orderNum) {
+            $order->items()->delete();
+            $order->delete();
+            AuditLogService::log("Cancelled and removed processing order #{$orderNum}", "sales");
+        });
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Order #{$orderNum} was cancelled and removed.",
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Order #{$orderNum} was cancelled and removed successfully.");
+    }
+
+    /**
+     * Update order type and status (e.g. dine-in, take-away, delivery, completed) and generate bill if completed.
+     */
+    public function updateOrderStatus(Order $order, Request $request)
+    {
+        $validated = $request->validate([
+            'order_type' => 'nullable|in:dine_in,takeaway,delivery',
+            'order_status' => 'nullable|in:processing,ready,served,completed,cancelled',
+            'payment_method' => 'nullable|in:cash,card,bkash,nagad,other',
+            'discount_amount' => 'nullable|numeric|min:0',
+            'table_number' => 'nullable|string|max:50',
+            'customer_name' => 'nullable|string|max:255',
+            'customer_phone' => 'nullable|string|max:50',
+        ]);
+
+        $subtotal = (float)$order->subtotal;
+        $taxRate = (float)AppSetting::getByKey('tax_percentage', '5.0') / 100;
+        $taxAmount = round($subtotal * $taxRate, 2);
+        $discount = isset($validated['discount_amount']) ? (float)$validated['discount_amount'] : (float)$order->discount_amount;
+        $totalAmount = max(0, $subtotal + $taxAmount - $discount);
+
+        $updates = [
+            'discount_amount' => $discount,
+            'tax_amount' => $taxAmount,
+            'total_amount' => $totalAmount,
+        ];
+
+        if (!empty($validated['order_type'])) {
+            $updates['order_type'] = $validated['order_type'];
+        }
+        if (!empty($validated['table_number'])) {
+            $updates['table_number'] = $validated['table_number'];
+        }
+        if (!empty($validated['customer_name'])) {
+            $updates['customer_name'] = $validated['customer_name'];
+        }
+        if (!empty($validated['customer_phone'])) {
+            $updates['customer_phone'] = $validated['customer_phone'];
+        }
+        if (!empty($validated['payment_method'])) {
+            $updates['payment_method'] = $validated['payment_method'];
+        }
+
+        $isCompleting = false;
+        if (!empty($validated['order_status'])) {
+            $updates['order_status'] = $validated['order_status'];
+            if ($validated['order_status'] === 'completed') {
+                $updates['payment_status'] = 'paid';
+                $isCompleting = true;
+            }
+        }
+
+        // If order_type is delivery or takeaway and marked complete
+        if (($order->order_type === 'delivery' || ($validated['order_type'] ?? '') === 'delivery') && ($validated['order_status'] ?? '') === 'completed') {
+            $updates['payment_status'] = 'paid';
+            $isCompleting = true;
+        }
+
+        $order->update($updates);
+
+        if ($isCompleting) {
+            $order->items()->update(['item_status' => 'served']);
+        }
+
+        AuditLogService::log("Updated order #{$order->order_number} to type: {$order->order_type}, status: {$order->order_status}", "sales");
+
+        $fullOrder = $order->fresh(['items', 'creator']);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Order #{$order->order_number} updated successfully.",
+                'order' => $fullOrder,
+                'generate_bill' => $isCompleting,
+            ]);
+        }
+
+        $flash = [
+            'success' => "Order #{$order->order_number} updated.",
+        ];
+
+        if ($isCompleting) {
+            $flash['lastOrder'] = $fullOrder;
+        }
+
+        return redirect()->back()->with($flash);
     }
 
     public function ordersLog(Request $request): Response
@@ -148,7 +369,8 @@ class SalesController extends Controller
                 $q->where('order_number', 'like', "%{$search}%")
                   ->orWhere('customer_name', 'like', "%{$search}%")
                   ->orWhere('customer_phone', 'like', "%{$search}%")
-                  ->orWhere('transaction_id', 'like', "%{$search}%");
+                  ->orWhere('transaction_id', 'like', "%{$search}%")
+                  ->orWhere('table_number', 'like', "%{$search}%");
             });
         }
 
@@ -156,8 +378,16 @@ class SalesController extends Controller
             $query->where('order_type', $request->order_type);
         }
 
+        if ($request->filled('order_status')) {
+            $query->where('order_status', $request->order_status);
+        }
+
         if ($request->filled('payment_method')) {
             $query->where('payment_method', $request->payment_method);
+        }
+
+        if ($request->filled('payment_status')) {
+            $query->where('payment_status', $request->payment_status);
         }
 
         $fromDate = $request->input('from_date');

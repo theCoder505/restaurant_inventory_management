@@ -18,6 +18,26 @@ class SettingController extends Controller
     {
         $settings = AppSetting::getAllSettings();
 
+        // Ensure default KOT credentials exist if not set
+        $kotEmail = $settings['kot_email'] ?? 'kitchen@restaurant.com';
+        $kotUsername = $settings['kot_username'] ?? 'kitchen';
+        $kotPassword = $settings['kot_password'] ?? 'kitchen123';
+
+        // Check if kitchen admin user exists, create if not
+        $kitchenAdmin = \App\Models\Admin::where('role', 'kitchen')->first();
+        if (!$kitchenAdmin) {
+            \App\Models\Admin::create([
+                'name' => 'Kitchen Manager',
+                'email' => $kotEmail,
+                'password' => \Illuminate\Support\Facades\Hash::make($kotPassword),
+                'role' => 'kitchen',
+                'phone' => '+8801700000000',
+            ]);
+            AppSetting::setByKey('kot_email', $kotEmail);
+            AppSetting::setByKey('kot_username', $kotUsername);
+            AppSetting::setByKey('kot_password', $kotPassword);
+        }
+
         return Inertia::render('admin/settings/index', [
             'settings' => [
                 'brand_name' => $settings['brand_name'] ?? 'NOCTURNE',
@@ -50,6 +70,11 @@ class SettingController extends Controller
                 'hero_bg_image' => $settings['hero_bg_image'] ?? null,
                 'atmosphere_image' => $settings['atmosphere_image'] ?? null,
                 'vip_lounge_image' => $settings['vip_lounge_image'] ?? null,
+                // KOT Kitchen Manager Profile & Credentials
+                'kot_name' => $settings['kot_name'] ?? 'Kitchen Manager',
+                'kot_username' => $settings['kot_username'] ?? 'kitchen',
+                'kot_email' => $settings['kot_email'] ?? 'kitchen@restaurant.com',
+                'kot_password' => $settings['kot_password'] ?? 'kitchen123',
             ],
         ]);
     }
@@ -80,6 +105,10 @@ class SettingController extends Controller
             'terms_conditions' => 'nullable|string',
             'privacy_policy' => 'nullable|string',
             'footer_text' => 'nullable|string',
+            'kot_name' => 'nullable|string|max:100',
+            'kot_username' => 'nullable|string|max:100',
+            'kot_email' => 'nullable|email|max:255',
+            'kot_password' => 'nullable|string|min:4|max:100',
             'brand_logo_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:5120',
             'brand_logo_dark_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:5120',
             'brand_icon_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,ico|max:2048',
@@ -141,6 +170,37 @@ class SettingController extends Controller
             AppSetting::setByKey('vip_lounge_image', '/uploads/branding/' . $fileName);
         }
 
+        // Synchronize KOT Kitchen Manager credentials in Admins table
+        if (!empty($validated['kot_email']) || !empty($validated['kot_username']) || !empty($validated['kot_password']) || !empty($validated['kot_name'])) {
+            $kotEmail = $validated['kot_email'] ?? 'kitchen@restaurant.com';
+            $kotUsername = $validated['kot_username'] ?? 'kitchen';
+            $kotPassword = $validated['kot_password'] ?? 'kitchen123';
+            $kotName = $validated['kot_name'] ?? ('Kitchen Manager (' . $kotUsername . ')');
+
+            $kitchenAdmin = \App\Models\Admin::where('role', 'kitchen')->first();
+            if ($kitchenAdmin) {
+                $kitchenAdmin->email = $kotEmail;
+                if (!empty($validated['kot_password'])) {
+                    $kitchenAdmin->password = \Illuminate\Support\Facades\Hash::make($kotPassword);
+                }
+                $kitchenAdmin->name = $kotName;
+                $kitchenAdmin->save();
+            } else {
+                \App\Models\Admin::create([
+                    'name' => $kotName,
+                    'email' => $kotEmail,
+                    'password' => \Illuminate\Support\Facades\Hash::make($kotPassword),
+                    'role' => 'kitchen',
+                    'phone' => '+8801700000000',
+                ]);
+            }
+
+            AppSetting::setByKey('kot_email', $kotEmail);
+            AppSetting::setByKey('kot_username', $kotUsername);
+            AppSetting::setByKey('kot_password', $kotPassword);
+            AppSetting::setByKey('kot_name', $kotName);
+        }
+
         // Save all other string/numeric settings
         $excludedKeys = [
             'brand_logo_file',
@@ -157,7 +217,7 @@ class SettingController extends Controller
             }
         }
 
-        AuditLogService::log("Updated application settings, week start day ({$request->week_start_day}) and operating hours", "settings");
+        AuditLogService::log("Updated application settings and KOT kitchen credentials", "settings");
 
         return redirect()->back()->with('success', 'App settings, week start day & operating hours saved successfully.');
     }

@@ -35,6 +35,17 @@ class RestaurantSeeder extends Seeder
             ]
         );
 
+        // 1.1 Kitchen Manager User (KOT)
+        $kitchenAdmin = Admin::firstOrCreate(
+            ['email' => 'kitchen@restaurant.com'],
+            [
+                'name' => 'Kitchen Manager (kitchen)',
+                'password' => Hash::make('kitchen123'),
+                'role' => 'kitchen',
+                'phone' => '+8801700000000',
+            ]
+        );
+
         // 2. App Settings
         $settings = [
             'brand_name' => 'Le Gourmet Bistro',
@@ -54,6 +65,9 @@ class RestaurantSeeder extends Seeder
             'default_currency' => '৳',
             'tax_percentage' => '5.0',
             'low_stock_threshold_default' => '5',
+            'kot_username' => 'kitchen',
+            'kot_email' => 'kitchen@restaurant.com',
+            'kot_password' => 'kitchen123',
             'google_maps_embed' => '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3651.045610815777!2d90.4132!3d23.7915!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjPCsDQ3JzI5LjQiTiA5MMKwMjQnNDcuNSJF!5e0!3m2!1sen!2sbd!4v1620000000000!5m2!1sen!2sbd" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy"></iframe>',
             'social_facebook' => 'https://facebook.com',
             'social_instagram' => 'https://instagram.com',

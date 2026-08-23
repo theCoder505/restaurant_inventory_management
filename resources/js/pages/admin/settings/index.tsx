@@ -2,7 +2,7 @@ import AppLayout from '@/layouts/app-layout';
 import { showToast } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
-import { Calendar, Clock, Download, Globe, Image as ImageIcon, Loader2, MessageCircle, Moon, Save, Settings, Sparkles, Sun, Upload } from 'lucide-react';
+import { Calendar, Check, ChefHat, Clock, Copy, Download, ExternalLink, Eye, EyeOff, Globe, Image as ImageIcon, Key, Loader2, MessageCircle, Moon, Save, Settings, Sparkles, Sun, Upload } from 'lucide-react';
 import { useState } from 'react';
 
 interface SettingsData {
@@ -35,6 +35,10 @@ interface SettingsData {
     hero_bg_image?: string;
     atmosphere_image?: string;
     vip_lounge_image?: string;
+    kot_name?: string;
+    kot_username?: string;
+    kot_email?: string;
+    kot_password?: string;
 }
 
 interface Props {
@@ -53,6 +57,8 @@ export default function SettingsIndex({ settings }: Props) {
     const [heroBgPreview, setHeroBgPreview] = useState<string | null>(settings.hero_bg_image || null);
     const [atmospherePreview, setAtmospherePreview] = useState<string | null>(settings.atmosphere_image || null);
     const [vipLoungePreview, setVipLoungePreview] = useState<string | null>(settings.vip_lounge_image || null);
+    const [showKotPassword, setShowKotPassword] = useState(false);
+    const [copiedKotUrl, setCopiedKotUrl] = useState(false);
 
     const form = useForm({
         brand_name: settings.brand_name || 'NOCTURNE',
@@ -87,6 +93,10 @@ export default function SettingsIndex({ settings }: Props) {
         terms_conditions: settings.terms_conditions || '',
         privacy_policy: settings.privacy_policy || '',
         footer_text: settings.footer_text || '',
+        kot_name: settings.kot_name || 'Kitchen Manager',
+        kot_username: settings.kot_username || 'kitchen',
+        kot_email: settings.kot_email || 'kitchen@restaurant.com',
+        kot_password: settings.kot_password || 'kitchen123',
     });
 
     const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -606,6 +616,153 @@ export default function SettingsIndex({ settings }: Props) {
                                 onChange={(e) => form.setData('about_text', e.target.value)}
                                 className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
                             />
+                        </div>
+                    </div>
+
+                    {/* Kitchen Order Ticket (KOT) Dedicated Profile & Credentials */}
+                    <div className="space-y-5 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6 shadow-sm dark:border-amber-500/20 dark:bg-slate-900">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-500/20 pb-4">
+                            <div>
+                                <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                                    <ChefHat className="h-5 w-5 text-amber-500" /> Kitchen Display & Staff Portal (KOT) Credentials
+                                </h3>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                    Manage the dedicated credentials for the kitchen display system. Kitchen staff can log in using the portal URL below with their User ID & Password.
+                                </p>
+                            </div>
+
+                            <a
+                                href="/kitchen"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-xl bg-amber-500 px-3.5 py-2 text-xs font-bold text-slate-950 shadow-sm hover:bg-amber-400 transition-all cursor-pointer"
+                            >
+                                <ExternalLink className="h-3.5 w-3.5" /> Open Kitchen Display
+                            </a>
+                        </div>
+
+                        {/* Dedicated Kitchen Login URL Box */}
+                        <div className="rounded-2xl border border-amber-500/30 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                            <label className="mb-1.5 flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+                                <span className="flex items-center gap-1.5">
+                                    <Globe className="h-3.5 w-3.5 text-amber-500" />
+                                    <span>Kitchen Staff Dedicated Login URL</span>
+                                </span>
+                                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">Share with Kitchen Staff</span>
+                            </label>
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                <input
+                                    type="text"
+                                    readOnly
+                                    value={typeof window !== 'undefined' ? `${window.location.origin}/kitchen/login` : '/kitchen/login'}
+                                    className="flex-1 rounded-xl border border-slate-300 bg-slate-100 px-3.5 py-2 font-mono text-xs font-bold text-slate-800 select-all dark:border-slate-800 dark:bg-slate-900 dark:text-amber-400"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const loginUrl = `${window.location.origin}/kitchen/login`;
+                                        navigator.clipboard.writeText(loginUrl);
+                                        setCopiedKotUrl(true);
+                                        showToast('Kitchen Login URL copied to clipboard!', 'success');
+                                        setTimeout(() => setCopiedKotUrl(false), 2500);
+                                    }}
+                                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-xs font-bold text-amber-700 hover:bg-amber-500/20 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-300 dark:hover:bg-amber-500/25 transition-all cursor-pointer shadow-sm"
+                                >
+                                    {copiedKotUrl ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                                    <span>{copiedKotUrl ? 'Copied to Clipboard!' : 'Copy Login URL'}</span>
+                                </button>
+                                <a
+                                    href="/kitchen/login"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-slate-100 px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer"
+                                >
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                    <span>Preview Login Page</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        {/* 4-Field Grid for Kitchen Staff Credentials */}
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                            {/* Station Display Name */}
+                            <div>
+                                <label className="mb-1 block font-bold text-slate-700 dark:text-slate-300">
+                                    Station / Chef Name
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Kitchen Head Chef"
+                                    value={form.data.kot_name}
+                                    onChange={(e) => form.setData('kot_name', e.target.value)}
+                                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                                />
+                                <p className="mt-1 text-[10px] text-slate-500">
+                                    Display name shown on the KOT terminal screen.
+                                </p>
+                            </div>
+
+                            {/* User ID / Username */}
+                            <div>
+                                <label className="mb-1 block font-bold text-slate-700 dark:text-slate-300">
+                                    Kitchen User ID *
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="e.g. kitchen"
+                                    value={form.data.kot_username}
+                                    onChange={(e) => form.setData('kot_username', e.target.value)}
+                                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 font-mono font-bold text-amber-600 dark:border-slate-700 dark:bg-slate-950 dark:text-amber-400"
+                                />
+                                <p className="mt-1 text-[10px] text-slate-500">
+                                    Kitchen staff can enter this User ID to log in.
+                                </p>
+                            </div>
+
+                            {/* Account Email */}
+                            <div>
+                                <label className="mb-1 block font-bold text-slate-700 dark:text-slate-300">
+                                    Kitchen Account Email *
+                                </label>
+                                <input
+                                    type="email"
+                                    required
+                                    value={form.data.kot_email}
+                                    onChange={(e) => form.setData('kot_email', e.target.value)}
+                                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 font-semibold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                                />
+                                <p className="mt-1 text-[10px] text-slate-500">
+                                    Account email associated with kitchen user.
+                                </p>
+                            </div>
+
+                            {/* Password */}
+                            <div>
+                                <label className="mb-1 block font-bold text-slate-700 dark:text-slate-300">
+                                    Kitchen Password *
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type={showKotPassword ? 'text' : 'password'}
+                                        required
+                                        value={form.data.kot_password}
+                                        onChange={(e) => form.setData('kot_password', e.target.value)}
+                                        className="w-full rounded-xl border border-slate-300 bg-white py-2 pr-10 pl-3.5 font-mono text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowKotPassword(!showKotPassword)}
+                                        className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-lg p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                                        title={showKotPassword ? 'Hide password' : 'Show password'}
+                                    >
+                                        {showKotPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4 text-amber-500" />}
+                                    </button>
+                                </div>
+                                <p className="mt-1 text-[10px] text-slate-500">
+                                    Toggle eye icon to view or edit kitchen password.
+                                </p>
+                            </div>
                         </div>
                     </div>
 

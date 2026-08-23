@@ -1,11 +1,11 @@
 import AppLayout from '@/layouts/app-layout';
 import Pagination from '@/components/pagination';
-import PosReceipt from '@/components/receipt/pos-receipt';
-import { printReceipt } from '@/lib/print-receipt';
+import FullPageBill from '@/components/receipt/full-page-bill';
+import { printFullPageBill } from '@/lib/print-full-page-bill';
 import { formatCurrency, formatDateTime } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
-import { Download, Eye, Filter, Printer, Receipt, Search } from 'lucide-react';
+import { Download, Eye, Filter, Printer, Receipt, Search, FileText } from 'lucide-react';
 import { useState } from 'react';
 
 interface OrderItem {
@@ -19,6 +19,7 @@ interface Order {
     id: number;
     order_number: string;
     order_type: string;
+    order_status?: 'processing' | 'ready' | 'served' | 'completed' | 'cancelled';
     table_number?: string;
     customer_name?: string;
     customer_phone?: string;
@@ -31,6 +32,9 @@ interface Order {
     notes?: string;
     created_at: string;
     items: OrderItem[];
+    creator?: {
+        name?: string;
+    };
 }
 
 interface Props {
@@ -49,6 +53,7 @@ interface Props {
     filters: {
         search?: string;
         order_type?: string;
+        order_status?: string;
         payment_method?: string;
         from_date?: string;
         to_date?: string;
@@ -63,7 +68,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal = 0, totalDiscount = 0, totalTax = 0, currency, filters }: Props) {
-    const { branding } = usePage<{ branding?: { brand_name?: string } }>().props;
+    const { branding } = usePage<{ branding?: any }>().props;
     const brandName = branding?.brand_name || 'Restaurant';
     const todayStr = new Date().toISOString().split('T')[0];
 
@@ -72,6 +77,7 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
     const [toDate, setToDate] = useState(filters.to_date ?? todayStr);
     const [paymentMethod, setPaymentMethod] = useState(filters.payment_method || '');
     const [orderType, setOrderType] = useState(filters.order_type || '');
+    const [orderStatus, setOrderStatus] = useState(filters.order_status || '');
     const [activePreset, setActivePreset] = useState<'today' | 'week' | 'month' | 'year' | 'custom' | 'all'>(
         filters.all_time ? 'all' : 'today'
     );
@@ -122,6 +128,7 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
             to_date: toDate,
             payment_method: paymentMethod,
             order_type: orderType,
+            order_status: orderStatus,
             ...overrideParams,
         };
         router.get('/administration-control/sales/log', params, { preserveState: true });
@@ -133,11 +140,10 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
         setToDate(todayStr);
         setPaymentMethod('');
         setOrderType('');
+        setOrderStatus('');
         setActivePreset('today');
         router.get('/administration-control/sales/log', { from_date: todayStr, to_date: todayStr }, { preserveState: true });
     };
-
-    const printReceipt = () => window.print();
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -151,100 +157,70 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
                             <Receipt className="h-6 w-6 text-amber-500" /> Sales Orders Audit Log
                         </h1>
                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            History of all completed POS transactions, receipts, and order billing logs
+                            History of all KOT order lifecycles, payments, and generated full-page billing receipts
                         </p>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => {
-                                const params = new URLSearchParams();
-                                if (search) params.set('search', search);
-                                if (fromDate) params.set('from_date', fromDate);
-                                if (toDate) params.set('to_date', toDate);
-                                if (paymentMethod) params.set('payment_method', paymentMethod);
-                                if (orderType) params.set('order_type', orderType);
-                                if (activePreset === 'all') params.set('all_time', '1');
-                                window.location.href = `/administration-control/sales/export-excel?${params.toString()}`;
+                                const exportUrl = `/administration-control/sales/export-excel?${new URLSearchParams({
+                                    search,
+                                    from_date: fromDate,
+                                    to_date: toDate,
+                                    payment_method: paymentMethod,
+                                    order_type: orderType,
+                                    order_status: orderStatus,
+                                    all_time: activePreset === 'all' ? '1' : '',
+                                }).toString()}`;
+                                window.location.href = exportUrl;
                             }}
-                            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-200 px-4 py-2 text-xs font-bold text-slate-800 transition-all hover:bg-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50 active:scale-95 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
                         >
-                            <Download className="h-4 w-4" /> Export Excel (.xlsx)
+                            <Download className="h-4 w-4 text-amber-500" /> Export Excel
                         </button>
                     </div>
                 </div>
 
-                {/* Filter and Search Bar */}
-                <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 text-xs shadow-sm dark:border-slate-800 dark:bg-slate-900 print:hidden">
-                    {/* Date Preset Buttons */}
-                    <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-bold text-slate-700 dark:text-slate-300">Quick Range:</span>
-                        <button
-                            onClick={() => setPresetRange('today')}
-                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${activePreset === 'today'
-                                ? 'bg-amber-500 text-slate-950 shadow-sm'
-                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                {/* Filters & Presets Bar */}
+                <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 text-xs">
+                    {/* Presets Row */}
+                    <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-200 pb-3 dark:border-slate-800">
+                        <span className="text-[11px] font-bold text-slate-500 mr-2">Quick Date:</span>
+                        {['today', 'week', 'month', 'year', 'all'].map((preset) => (
+                            <button
+                                key={preset}
+                                onClick={() => setPresetRange(preset as any)}
+                                className={`rounded-xl px-3 py-1.5 font-bold transition-all cursor-pointer ${
+                                    activePreset === preset
+                                        ? 'bg-amber-500 text-slate-950 shadow-sm'
+                                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
                                 }`}
-                        >
-                            Today
-                        </button>
-                        <button
-                            onClick={() => setPresetRange('week')}
-                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${activePreset === 'week'
-                                ? 'bg-amber-500 text-slate-950 shadow-sm'
-                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
-                                }`}
-                        >
-                            This Week
-                        </button>
-                        <button
-                            onClick={() => setPresetRange('month')}
-                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${activePreset === 'month'
-                                ? 'bg-amber-500 text-slate-950 shadow-sm'
-                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
-                                }`}
-                        >
-                            This Month
-                        </button>
-                        <button
-                            onClick={() => setPresetRange('year')}
-                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${activePreset === 'year'
-                                ? 'bg-amber-500 text-slate-950 shadow-sm'
-                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
-                                }`}
-                        >
-                            This Year
-                        </button>
-                        <button
-                            onClick={() => setPresetRange('all')}
-                            className={`rounded-xl px-3 py-1.5 font-bold transition-all ${activePreset === 'all'
-                                ? 'bg-amber-500 text-slate-950 shadow-sm'
-                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
-                                }`}
-                        >
-                            All Time
-                        </button>
+                            >
+                                {preset === 'today' ? 'Today' : preset === 'week' ? 'This Week' : preset === 'month' ? 'This Month' : preset === 'year' ? 'This Year' : 'All Time'}
+                            </button>
+                        ))}
                     </div>
 
                     {/* Inputs Grid Row */}
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
                         <div>
-                            <label className="mb-0.5 block text-[10px] text-slate-500">Search</label>
+                            <label className="mb-0.5 block text-[10px] text-slate-500 font-bold">Search</label>
                             <div className="relative">
-                                <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                                 <input
                                     type="text"
-                                    placeholder="Search with order"
+                                    placeholder="Search order #, customer..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-                                    className="w-full rounded-xl border border-slate-300 bg-slate-100 py-1.5 pr-3 pl-10 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                    className="w-full rounded-xl border border-slate-300 bg-slate-100 py-1.5 pr-3 pl-8 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="mb-0.5 block text-[10px] text-slate-500">From Date</label>
+                            <label className="mb-0.5 block text-[10px] text-slate-500 font-bold">From Date</label>
                             <input
                                 type="date"
                                 value={fromDate}
@@ -257,7 +233,7 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
                         </div>
 
                         <div>
-                            <label className="mb-0.5 block text-[10px] text-slate-500">To Date</label>
+                            <label className="mb-0.5 block text-[10px] text-slate-500 font-bold">To Date</label>
                             <input
                                 type="date"
                                 value={toDate}
@@ -270,7 +246,22 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
                         </div>
 
                         <div>
-                            <label className="mb-0.5 block text-[10px] text-slate-500">Payment Method</label>
+                            <label className="mb-0.5 block text-[10px] text-slate-500 font-bold">Status</label>
+                            <select
+                                value={orderStatus}
+                                onChange={(e) => setOrderStatus(e.target.value)}
+                                className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                            >
+                                <option value="">All Statuses</option>
+                                <option value="completed">Completed & Billed</option>
+                                <option value="processing">Processing in Kitchen</option>
+                                <option value="ready">Ready to Serve</option>
+                                <option value="served">Served to Table</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="mb-0.5 block text-[10px] text-slate-500 font-bold">Payment Method</label>
                             <select
                                 value={paymentMethod}
                                 onChange={(e) => setPaymentMethod(e.target.value)}
@@ -286,7 +277,7 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
                         </div>
 
                         <div>
-                            <label className="mb-0.5 block text-[10px] text-slate-500">Order Type</label>
+                            <label className="mb-0.5 block text-[10px] text-slate-500 font-bold">Order Type</label>
                             <select
                                 value={orderType}
                                 onChange={(e) => setOrderType(e.target.value)}
@@ -303,15 +294,15 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
                     <div className="flex items-center justify-end gap-2 pt-1">
                         <button
                             onClick={resetFilters}
-                            className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-200 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300"
+                            className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-200 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300 cursor-pointer"
                         >
                             Reset Filters
                         </button>
                         <button
                             onClick={() => applyFilters()}
-                            className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-1.5 font-bold text-slate-950 hover:bg-amber-400"
+                            className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-1.5 font-bold text-slate-950 hover:bg-amber-400 cursor-pointer"
                         >
-                            <Filter className="h-3.5 w-3.5" /> Search
+                            <Filter className="h-3.5 w-3.5" /> Filter Results
                         </button>
                     </div>
                 </div>
@@ -319,64 +310,96 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
                 {/* Sales Log Table */}
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 print:border-none print:shadow-none">
                     <div className="overflow-x-auto">
-                        <table className="w-full min-w-[750px] text-left text-xs text-slate-700 dark:text-slate-300">
+                        <table className="w-full min-w-[800px] text-left text-xs text-slate-700 dark:text-slate-300">
                             <thead className="bg-slate-100 text-[10px] font-semibold uppercase text-slate-500 dark:bg-slate-950 dark:text-slate-400">
                                 <tr>
                                     <th className="p-3.5">Order Number</th>
                                     <th className="p-3.5">Type & Table</th>
+                                    <th className="p-3.5">Status</th>
                                     <th className="p-3.5">Date & Time</th>
-                                    <th className="p-3.5">Payment Method</th>
+                                    <th className="p-3.5">Payment</th>
                                     <th className="p-3.5 text-right">Subtotal</th>
                                     <th className="p-3.5 text-right">Discount</th>
                                     <th className="p-3.5 text-right">Tax</th>
                                     <th className="p-3.5 text-right">Total Paid</th>
-                                    <th className="p-3.5 text-right print:hidden">Receipt</th>
+                                    <th className="p-3.5 text-right print:hidden">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                                 {orders.data.length === 0 ? (
                                     <tr>
-                                        <td colSpan={9} className="py-8 text-center text-slate-500">
+                                        <td colSpan={10} className="py-12 text-center text-slate-500">
                                             No sales order records found matching your date range or filters.
                                         </td>
                                     </tr>
                                 ) : (
-                                    orders.data.map((order) => (
-                                        <tr key={order.id} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                                            <td className="p-3.5 font-mono font-bold text-amber-600 dark:text-amber-400">#{order.order_number}</td>
-                                            <td className="p-3.5 capitalize">
-                                                {order.order_type.replace('_', ' ')}
-                                                {order.table_number ? ` (${order.table_number})` : ''}
-                                            </td>
-                                            <td className="p-3.5 text-slate-500 dark:text-slate-400">{formatDateTime(order.created_at)}</td>
-                                            <td className="p-3.5 font-bold uppercase text-slate-800 dark:text-slate-200">{order.payment_method}</td>
-                                            <td className="p-3.5 text-right font-medium text-slate-600 dark:text-slate-400">
-                                                {formatCurrency(order.subtotal ?? 0, currency)}
-                                            </td>
-                                            <td className="p-3.5 text-right font-medium text-rose-600 dark:text-rose-400">
-                                                {order.discount_amount > 0 ? `-${formatCurrency(order.discount_amount, currency)}` : formatCurrency(0, currency)}
-                                            </td>
-                                            <td className="p-3.5 text-right font-medium text-slate-600 dark:text-slate-400">
-                                                {formatCurrency(order.tax_amount ?? 0, currency)}
-                                            </td>
-                                            <td className="p-3.5 text-right font-extrabold text-slate-900 dark:text-slate-100">
-                                                {formatCurrency(order.total_amount, currency)}
-                                            </td>
-                                            <td className="p-3.5 text-right print:hidden">
-                                                <button
-                                                    onClick={() => setViewingOrder(order)}
-                                                    className="rounded-lg bg-slate-100 p-1.5 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                                                >
-                                                    <Eye className="h-3.5 w-3.5" />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
+                                    orders.data.map((order) => {
+                                        const isCompleted = (order.order_status || 'completed') === 'completed';
+                                        const isReady = order.order_status === 'ready';
+                                        const isServed = order.order_status === 'served';
+                                        const isProcessing = order.order_status === 'processing';
+
+                                        return (
+                                            <tr key={order.id} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                                                <td className="p-3.5 font-mono font-bold text-amber-600 dark:text-amber-400">
+                                                    #{order.order_number}
+                                                </td>
+                                                <td className="p-3.5 capitalize">
+                                                    {order.order_type.replace('_', ' ')}
+                                                    {order.table_number ? ` (${order.table_number})` : ''}
+                                                </td>
+                                                <td className="p-3.5">
+                                                    <span
+                                                        className={`inline-block rounded-md px-2 py-0.5 text-[10px] font-black uppercase ${
+                                                            isCompleted
+                                                                ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                                                                : isReady
+                                                                ? 'bg-emerald-500 text-white'
+                                                                : isServed
+                                                                ? 'bg-blue-500 text-white'
+                                                                : 'bg-amber-500 text-slate-950'
+                                                        }`}
+                                                    >
+                                                        {order.order_status || 'completed'}
+                                                    </span>
+                                                </td>
+                                                <td className="p-3.5 text-slate-500 dark:text-slate-400">
+                                                    {formatDateTime(order.created_at)}
+                                                </td>
+                                                <td className="p-3.5 font-bold uppercase text-slate-800 dark:text-slate-200">
+                                                    {order.payment_method}
+                                                </td>
+                                                <td className="p-3.5 text-right font-medium text-slate-600 dark:text-slate-400">
+                                                    {formatCurrency(order.subtotal ?? 0, currency)}
+                                                </td>
+                                                <td className="p-3.5 text-right font-medium text-rose-600 dark:text-rose-400">
+                                                    {order.discount_amount > 0 ? `-${formatCurrency(order.discount_amount, currency)}` : formatCurrency(0, currency)}
+                                                </td>
+                                                <td className="p-3.5 text-right font-medium text-slate-600 dark:text-slate-400">
+                                                    {formatCurrency(order.tax_amount ?? 0, currency)}
+                                                </td>
+                                                <td className="p-3.5 text-right font-extrabold text-slate-900 dark:text-slate-100">
+                                                    {formatCurrency(order.total_amount, currency)}
+                                                </td>
+                                                <td className="p-3.5 text-right print:hidden">
+                                                    <div className="flex items-center justify-end gap-1.5">
+                                                        <button
+                                                            onClick={() => setViewingOrder(order)}
+                                                            className="flex items-center gap-1 rounded-lg bg-amber-500 px-2 py-1 text-[11px] font-bold text-slate-950 shadow hover:bg-amber-400 cursor-pointer"
+                                                            title="View Full Bill & Print"
+                                                        >
+                                                            <FileText className="h-3 w-3" /> Bill
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
                                 )}
                             </tbody>
                             <tfoot className="border-t-2 border-slate-200 bg-amber-50/50 dark:border-slate-800 dark:bg-amber-950/20">
                                 <tr>
-                                    <td colSpan={4} className="p-3.5 text-right text-xs font-bold text-slate-700 dark:text-slate-300">
+                                    <td colSpan={5} className="p-3.5 text-right text-xs font-bold text-slate-700 dark:text-slate-300">
                                         Total Sales (Filtered Search Range):
                                     </td>
                                     <td className="p-3.5 text-right text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -404,11 +427,11 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
                 </div>
             </div>
 
-            {/* Receipt Preview Modal */}
+            {/* Full-Page Bill Preview Modal */}
             {viewingOrder && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                    <div className="relative max-h-[95vh] overflow-y-auto w-full max-w-[360px]">
-                        <PosReceipt
+                    <div className="relative max-h-[95vh] overflow-y-auto w-full max-w-2xl">
+                        <FullPageBill
                             order={viewingOrder as any}
                             branding={branding as any}
                             currency={currency}

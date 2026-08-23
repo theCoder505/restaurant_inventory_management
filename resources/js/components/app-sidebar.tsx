@@ -3,6 +3,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import {
+    ChefHat,
     DollarSign,
     FolderTree,
     Globe,
@@ -62,6 +63,11 @@ const mainNavItems: NavItem[] = [
         title: 'POS Billing',
         url: '/administration-control/sales',
         icon: ShoppingCart,
+    },
+    {
+        title: 'KOT Panel (Kitchen)',
+        url: '/kitchen',
+        icon: ChefHat,
     },
     {
         title: 'Sales Log',

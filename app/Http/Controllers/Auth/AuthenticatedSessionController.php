@@ -33,6 +33,11 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        $user = Auth::user();
+        if ($user && $user->role === 'kitchen') {
+            return redirect()->intended(route('kot.index', absolute: false));
+        }
+
         return redirect()->intended(route('admin.dashboard', absolute: false));
     }
 
