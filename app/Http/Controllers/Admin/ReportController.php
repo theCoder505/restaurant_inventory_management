@@ -51,7 +51,7 @@ class ReportController extends Controller
         // Financial Aggregation with Apportionment for Purchases, Expenses/Bills, & Salaries
         $totalSales = self::getSalesForRange($startDate, $endDate);
         $orderCount = Order::whereBetween('created_at', [$startDate, $endDate])
-            ->where('payment_status', 'paid')
+            ->paidOrCompleted()
             ->count();
 
         $totalPurchases = self::calculatePurchaseForRange($startDate, $endDate);
@@ -111,7 +111,7 @@ class ReportController extends Controller
         // Top & Bottom Dishes (Dish Performance Insights)
         $dishInsights = OrderItem::select('item_name as name', DB::raw('SUM(quantity) as qty'), DB::raw('SUM(total_price) as revenue'))
             ->whereHas('order', function ($q) use ($startDate, $endDate) {
-                $q->whereBetween('created_at', [$startDate, $endDate])->where('payment_status', 'paid');
+                $q->whereBetween('created_at', [$startDate, $endDate])->paidOrCompleted();
             })
             ->groupBy('item_name')
             ->orderByDesc('qty')
@@ -127,6 +127,47 @@ class ReportController extends Controller
                     'revenue' => (float)$item->revenue,
                     'cost' => $totalCost,
                     'profit' => $profit,
+                ];
+            });
+
+        // Sales Breakdown by Order Type (Dine-in, Takeaway, Delivery)
+        $salesByOrderType = Order::select('order_type', DB::raw('COUNT(*) as count'), DB::raw('SUM(total_amount) as total'))
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->paidOrCompleted()
+            ->groupBy('order_type')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'type' => $item->order_type,
+                    'label' => match ($item->order_type) {
+                        'dine_in' => 'Dine-In',
+                        'takeaway' => 'Takeaway',
+                        'delivery' => 'Delivery',
+                        default => ucfirst((string)$item->order_type),
+                    },
+                    'count' => (int)$item->count,
+                    'total' => (float)$item->total,
+                ];
+            });
+
+        // Sales Breakdown by Payment Method (Cash, Card, bKash, Nagad, etc.)
+        $salesByPaymentMethod = Order::select('payment_method', DB::raw('COUNT(*) as count'), DB::raw('SUM(total_amount) as total'))
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->paidOrCompleted()
+            ->groupBy('payment_method')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'method' => $item->payment_method,
+                    'label' => match ($item->payment_method) {
+                        'cash' => 'Cash',
+                        'card' => 'Card',
+                        'bkash' => 'bKash',
+                        'nagad' => 'Nagad',
+                        default => ucfirst((string)$item->payment_method),
+                    },
+                    'count' => (int)$item->count,
+                    'total' => (float)$item->total,
                 ];
             });
 
@@ -151,12 +192,14 @@ class ReportController extends Controller
             'financialDistribution' => $financialDistribution,
             'expenseDistribution' => $expenseDistribution,
             'dishInsights' => $dishInsights,
+            'salesByOrderType' => $salesByOrderType,
+            'salesByPaymentMethod' => $salesByPaymentMethod,
         ]);
     }
 
     public static function getSalesForRange(?Carbon $startDate = null, ?Carbon $endDate = null): float
     {
-        $salesQuery = Order::where('payment_status', 'paid');
+        $salesQuery = Order::paidOrCompleted();
         if ($startDate && $endDate) {
             $salesQuery->whereBetween('created_at', [$startDate, $endDate]);
         }
@@ -301,8 +344,8 @@ class ReportController extends Controller
         $startOfDay = now()->startOfDay();
         $endOfDay = now()->endOfDay();
 
-        $salesToday = (float) Order::whereDate('created_at', $today)->where('payment_status', 'paid')->sum('total_amount');
-        $orderCount = (int) Order::whereDate('created_at', $today)->where('payment_status', 'paid')->count();
+        $salesToday = (float) Order::whereDate('created_at', $today)->paidOrCompleted()->sum('total_amount');
+        $orderCount = (int) Order::whereDate('created_at', $today)->paidOrCompleted()->count();
         $purchasesToday = self::calculatePurchaseForRange($startOfDay, $endOfDay);
         $expensesToday = self::calculateExpenseForRange($startOfDay, $endOfDay);
         $salaryToday = self::calculateSalaryForRange($startOfDay, $endOfDay);
@@ -311,7 +354,7 @@ class ReportController extends Controller
         // Top 5 dishes sold today
         $topDishes = OrderItem::select('item_name as name', DB::raw('SUM(quantity) as qty'), DB::raw('SUM(total_price) as revenue'))
             ->whereHas('order', function ($q) use ($startOfDay, $endOfDay) {
-                $q->whereBetween('created_at', [$startOfDay, $endOfDay])->where('payment_status', 'paid');
+                $q->whereBetween('created_at', [$startOfDay, $endOfDay])->paidOrCompleted();
             })
             ->groupBy('item_name')
             ->orderByDesc('qty')

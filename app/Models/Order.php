@@ -83,4 +83,15 @@ class Order extends Model
     {
         return $query->where('order_status', 'completed');
     }
+
+    /**
+     * Scope for paid or completed revenue-generating sales orders across any order type and payment method
+     */
+    public function scopePaidOrCompleted($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('order_status', 'completed')
+              ->orWhere('payment_status', 'paid');
+        });
+    }
 }

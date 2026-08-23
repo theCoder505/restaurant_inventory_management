@@ -12,6 +12,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\AuditLogService;
 use App\Services\UnitConverterService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -35,7 +36,11 @@ class SalesController extends Controller
         $currency = AppSetting::getByKey('default_currency', '৳');
         $taxPercentage = (float)AppSetting::getByKey('tax_percentage', '5.0');
 
-        $recentOrders = Order::with(['items', 'creator'])->orderByDesc('created_at')->limit(10)->get();
+        $recentOrders = Order::with(['items.menuItem', 'creator'])
+            ->paidOrCompleted()
+            ->orderByDesc('created_at')
+            ->limit(30)
+            ->get();
 
         $activeOrders = Order::with(['items.menuItem', 'creator'])
             ->whereIn('order_status', ['processing', 'ready', 'served'])
@@ -61,6 +66,30 @@ class SalesController extends Controller
             'recentOrders' => $recentOrders,
             'activeOrders' => $activeOrders,
             'settings' => $settings,
+        ]);
+    }
+
+    /**
+     * Polling endpoint for real-time Active POS & Kitchen Orders sync (e.g. every 30s)
+     */
+    public function getActiveOrders(Request $request): JsonResponse
+    {
+        $activeOrders = Order::with(['items.menuItem', 'creator'])
+            ->whereIn('order_status', ['processing', 'ready', 'served'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        $recentOrders = Order::with(['items.menuItem', 'creator'])
+            ->paidOrCompleted()
+            ->orderByDesc('created_at')
+            ->limit(30)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'activeOrders' => $activeOrders,
+            'recentOrders' => $recentOrders,
+            'timestamp' => now()->toIso8601String(),
         ]);
     }
 
@@ -412,10 +441,10 @@ class SalesController extends Controller
         }
 
         // Calculate total sales sum for the current filtered query
-        $totalSalesAmount = (float)$query->sum('total_amount');
-        $totalSubtotal = (float)$query->sum('subtotal');
-        $totalDiscount = (float)$query->sum('discount_amount');
-        $totalTax = (float)$query->sum('tax_amount');
+        $totalSalesAmount = (float)(clone $query)->sum('total_amount');
+        $totalSubtotal = (float)(clone $query)->sum('subtotal');
+        $totalDiscount = (float)(clone $query)->sum('discount_amount');
+        $totalTax = (float)(clone $query)->sum('tax_amount');
 
         $perPage = $request->input('per_page', 20);
         $orders = $query->orderByDesc('created_at')->paginate($perPage)->withQueryString();

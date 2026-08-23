@@ -28,8 +28,11 @@ import {
     Bike,
     ShoppingBag,
     AlertTriangle,
+    RefreshCw,
+    Volume2,
+    VolumeX,
 } from 'lucide-react';
-import { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface Category {
     id: number;
@@ -115,12 +118,18 @@ export default function SalesPOS({
     allMenuItems,
     currency,
     taxPercentage,
-    recentOrders = [],
-    activeOrders = [],
+    recentOrders: initialRecentOrders = [],
+    activeOrders: initialActiveOrders = [],
     settings = {},
 }: Props) {
     const { branding } = usePage<{ branding?: any }>().props;
     const activeBranding = { ...settings, ...(branding || {}) };
+
+    const [activeOrders, setActiveOrders] = useState<Order[]>(initialActiveOrders);
+    const [recentOrders, setRecentOrders] = useState<Order[]>(initialRecentOrders);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [secondsToNextPoll, setSecondsToNextPoll] = useState(30);
+    const [soundEnabled, setSoundEnabled] = useState(true);
 
     const [selectedCategory, setSelectedCategory] = useState<number | 'all'>('all');
     const [search, setSearch] = useState('');
@@ -140,6 +149,140 @@ export default function SalesPOS({
 
     // Completed Order Modal / Bill Modal
     const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
+
+    const prevActiveOrderIdsRef = useRef<number[]>(initialActiveOrders.map((o) => o.id));
+    const prevReadyOrderIdsRef = useRef<number[]>(
+        initialActiveOrders.filter((o) => o.order_status === 'ready').map((o) => o.id),
+    );
+
+    // Sync state when Inertia navigation or server responses update props
+    useEffect(() => {
+        setActiveOrders(initialActiveOrders);
+    }, [initialActiveOrders]);
+
+    useEffect(() => {
+        setRecentOrders(initialRecentOrders);
+    }, [initialRecentOrders]);
+
+    // Audio chime on new order or when kitchen marks order as 'ready'
+    const playChime = () => {
+        if (!soundEnabled) return;
+        try {
+            const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15); // A5
+            gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.45);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.45);
+        } catch (e) {
+            // Audio context blocked or not available
+        }
+    };
+
+    // Auto-polling & manual fetch function (every 30s)
+    const fetchLatestOrders = async (manual = false) => {
+        if (manual) setIsRefreshing(true);
+        try {
+            const csrfToken = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
+            const res = await fetch('/administration-control/sales/active-orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    Accept: 'application/json',
+                },
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    const newActiveOrders: Order[] = data.activeOrders || [];
+                    const newRecentOrders: Order[] = data.recentOrders || [];
+
+                    const newActiveIds = newActiveOrders.map((o) => o.id);
+                    const newReadyOrders = newActiveOrders.filter((o) => o.order_status === 'ready');
+                    const newReadyIds = newReadyOrders.map((o) => o.id);
+
+                    // Check if any order was just marked 'ready' by kitchen
+                    const newlyReady = newReadyOrders.filter((o) => !prevReadyOrderIdsRef.current.includes(o.id));
+                    if (newlyReady.length > 0 && prevReadyOrderIdsRef.current.length >= 0) {
+                        playChime();
+                        newlyReady.forEach((ro) => {
+                            showToast(
+                                `Order #${ro.order_number} (${ro.table_number || ro.order_type.toUpperCase()}) is READY to serve!`,
+                                'info',
+                            );
+                        });
+                    }
+
+                    // Check if a new active order arrived from another terminal
+                    const hasNewOrders = newActiveOrders.some((o) => !prevActiveOrderIdsRef.current.includes(o.id));
+                    if (hasNewOrders && prevActiveOrderIdsRef.current.length > 0 && newlyReady.length === 0) {
+                        playChime();
+                        showToast('New Active Order received in POS queue!', 'info');
+                    }
+
+                    prevActiveOrderIdsRef.current = newActiveIds;
+                    prevReadyOrderIdsRef.current = newReadyIds;
+                    setActiveOrders(newActiveOrders);
+                    setRecentOrders(newRecentOrders);
+
+                    // Keep active modal in sync if open
+                    setSettlingOrder((current) => {
+                        if (!current) return null;
+                        const matching = newActiveOrders.find((o) => o.id === current.id);
+                        return matching ? { ...current, ...matching } : current;
+                    });
+
+                    if (manual) {
+                        showToast('Active orders & status refreshed!', 'success');
+                    }
+                }
+            } else if (manual) {
+                router.reload({
+                    only: ['activeOrders', 'recentOrders'],
+                    preserveScroll: true,
+                    preserveState: true,
+                    onSuccess: () => showToast('Orders reloaded successfully.', 'success'),
+                });
+            }
+        } catch (err) {
+            console.error('POS active orders polling error', err);
+            if (manual) {
+                router.reload({
+                    only: ['activeOrders', 'recentOrders'],
+                    preserveScroll: true,
+                    preserveState: true,
+                });
+            }
+        } finally {
+            setSecondsToNextPoll(30);
+            if (manual) setTimeout(() => setIsRefreshing(false), 400);
+        }
+    };
+
+    // 30s Interval + 1s countdown timer
+    useEffect(() => {
+        const countdownTimer = setInterval(() => {
+            setSecondsToNextPoll((prev) => {
+                if (prev <= 1) {
+                    fetchLatestOrders(false);
+                    return 30;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(countdownTimer);
+    }, [soundEnabled]);
 
     // POS Checkout Form
     const orderForm = useForm({
@@ -166,7 +309,9 @@ export default function SalesPOS({
             const existing = prev.find((i) => i.menu_item_id === dish.id);
             if (existing) {
                 return prev.map((i) =>
-                    i.menu_item_id === dish.id ? { ...i, quantity: i.quantity + 1, total_price: (i.quantity + 1) * i.unit_price } : i,
+                    i.menu_item_id === dish.id
+                        ? { ...i, quantity: i.quantity + 1, total_price: (i.quantity + 1) * i.unit_price }
+                        : i,
                 );
             }
             return [
@@ -241,9 +386,11 @@ export default function SalesPOS({
 
                 if (action === 'send_to_kitchen') {
                     showToast('Order Sent to Kitchen KOT (Status: Processing)', 'success');
+                    fetchLatestOrders(false);
                 } else if (latestOrder) {
                     showToast('Order Completed & Paid!', 'success');
                     setCompletedOrder(latestOrder);
+                    fetchLatestOrders(false);
                     setTimeout(() => {
                         printFullPageBill(latestOrder, activeBranding, currency);
                     }, 250);
@@ -263,7 +410,7 @@ export default function SalesPOS({
         const confirmed = await showConfirm(
             `Cancel Order #${orderNumber}?`,
             'This will permanently remove the order from both Kitchen and POS queues.',
-            'Yes, cancel order'
+            'Yes, cancel order',
         );
 
         if (confirmed) {
@@ -273,6 +420,7 @@ export default function SalesPOS({
                     if (settlingOrder?.id === orderId) {
                         setSettlingOrder(null);
                     }
+                    fetchLatestOrders(false);
                 },
                 onError: () => {
                     showToast('Failed to cancel order.', 'error');
@@ -311,6 +459,7 @@ export default function SalesPOS({
                 const latestOrder = (page.props as any).flash?.lastOrder || settlingOrder;
                 setSettlingOrder(null);
                 setCompletedOrder(latestOrder);
+                fetchLatestOrders(false);
                 setTimeout(() => {
                     printFullPageBill(latestOrder, activeBranding, currency);
                 }, 250);
@@ -338,9 +487,10 @@ export default function SalesPOS({
                 onSuccess: () => {
                     showToast(`Status updated to ${newStatus.toUpperCase()}`, 'success');
                     setSettleOrderStatus(newStatus);
+                    fetchLatestOrders(false);
                 },
                 onFinish: () => setIsSettling(false),
-            }
+            },
         );
     };
 
@@ -361,6 +511,38 @@ export default function SalesPOS({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
+                        {/* Auto-sync countdown and manual reload button */}
+                        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
+                            <button
+                                type="button"
+                                onClick={() => fetchLatestOrders(true)}
+                                disabled={isRefreshing}
+                                className="flex items-center gap-1.5 font-bold hover:text-amber-500 transition-colors cursor-pointer disabled:opacity-50"
+                                title="Click to manually refresh active and recent orders"
+                            >
+                                <RefreshCw className={`h-3.5 w-3.5 text-amber-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+                                <span>{isRefreshing ? 'Syncing...' : 'Reload'}</span>
+                            </button>
+                            <span className="text-slate-300 dark:text-slate-700">|</span>
+                            <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400" title="Auto-refreshes every 30 seconds">
+                                Auto-sync in <strong className="text-amber-500 font-bold">{secondsToNextPoll}s</strong>
+                            </span>
+                        </div>
+
+                        {/* Sound Alert Toggle */}
+                        <button
+                            type="button"
+                            onClick={() => setSoundEnabled(!soundEnabled)}
+                            className="rounded-xl border border-slate-200 bg-white p-2 text-slate-700 shadow-sm transition-all hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
+                            title={soundEnabled ? 'Order Audio Chime Enabled' : 'Audio Muted'}
+                        >
+                            {soundEnabled ? (
+                                <Volume2 className="h-4 w-4 text-amber-500" />
+                            ) : (
+                                <VolumeX className="h-4 w-4 text-slate-400" />
+                            )}
+                        </button>
+
                         {/* Active KOT Tables Drawer Button */}
                         <button
                             type="button"
@@ -368,7 +550,7 @@ export default function SalesPOS({
                             className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2 text-xs font-bold text-amber-600 dark:text-amber-400 shadow-sm transition-all hover:bg-amber-500/20 cursor-pointer"
                         >
                             <ChefHat className="h-4 w-4 text-amber-500" />
-                            <span>Active KOT Orders ({activeOrders.length})</span>
+                            <span>Active Orders ({activeOrders.length})</span>
                             {activeOrders.some((o) => o.order_status === 'ready') && (
                                 <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
                             )}
@@ -401,9 +583,16 @@ export default function SalesPOS({
                 {activeOrders.length > 0 && (
                     <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-3.5 dark:border-amber-500/20">
                         <div className="flex items-center justify-between mb-2">
-                            <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400">
-                                <Clock className="h-3.5 w-3.5" /> Live Active Orders & Tables ({activeOrders.length}):
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400">
+                                    <Clock className="h-3.5 w-3.5" /> Live Active Orders & Tables ({activeOrders.length}):
+                                </span>
+                                {activeOrders.some((o) => o.order_status === 'ready') && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-black text-emerald-600 dark:text-emerald-400 animate-pulse">
+                                        🔔 Dishes Ready to Serve!
+                                    </span>
+                                )}
+                            </div>
                             <span className="text-[11px] text-slate-500">
                                 Click order to change status or Settle & Print Full Bill
                             </span>
@@ -1021,13 +1210,18 @@ export default function SalesPOS({
                 {/* Recent Completed Orders Modal */}
                 {showRecentOrders && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                        <div className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                        <div className="w-full max-w-xl max-h-[85vh] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
                             <div className="flex items-center justify-between border-b border-slate-200 p-4 dark:border-slate-800">
                                 <div className="flex items-center gap-2">
                                     <History className="h-5 w-5 text-amber-500" />
-                                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                                        Recent Completed POS Sales
-                                    </h3>
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                                            Recent Completed POS & Kitchen Sales ({recentOrders.length})
+                                        </h3>
+                                        <p className="text-[10px] text-slate-500">
+                                            Completed Dine-In, Takeaway & Delivery receipts
+                                        </p>
+                                    </div>
                                 </div>
                                 <button
                                     onClick={() => setShowRecentOrders(false)}
@@ -1040,46 +1234,84 @@ export default function SalesPOS({
                             <div className="flex-1 overflow-y-auto p-4 space-y-3">
                                 {recentOrders.length === 0 ? (
                                     <p className="py-8 text-center text-xs text-slate-500">
-                                        No recent completed orders found.
+                                        No completed orders recorded yet.
                                     </p>
                                 ) : (
-                                    recentOrders.map((ro) => (
-                                        <div
-                                            key={ro.id}
-                                            className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-800 dark:bg-slate-950"
-                                        >
-                                            <div className="space-y-0.5">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
-                                                        {ro.order_number}
-                                                    </span>
-                                                    <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                                                        {ro.table_number || ro.order_type.toUpperCase()}
-                                                    </span>
-                                                </div>
-                                                <p className="text-[10px] text-slate-500">
-                                                    {formatDateTime(ro.created_at)} • {ro.items?.length || 0} items
-                                                </p>
-                                            </div>
+                                    recentOrders.map((ro) => {
+                                        const typeLabel =
+                                            ro.order_type === 'delivery'
+                                                ? '🚴 Delivery'
+                                                : ro.order_type === 'takeaway'
+                                                ? '🛍️ Takeaway'
+                                                : `🍴 ${ro.table_number || 'Dine-In'}`;
 
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xs font-black text-slate-900 dark:text-slate-100">
-                                                    {formatCurrency(ro.total_amount ?? ro.grand_total ?? 0, currency)}
-                                                </span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setShowRecentOrders(false);
-                                                        setCompletedOrder(ro);
-                                                    }}
-                                                    className="flex items-center gap-1 rounded-lg bg-amber-500 px-2.5 py-1 text-[11px] font-bold text-slate-950 shadow hover:bg-amber-400 cursor-pointer"
-                                                >
-                                                    <Printer className="h-3.5 w-3.5" /> Full Bill
-                                                </button>
+                                        const payBadge =
+                                            ro.payment_method === 'bkash'
+                                                ? 'bg-pink-500/10 text-pink-600 border-pink-500/20'
+                                                : ro.payment_method === 'nagad'
+                                                ? 'bg-orange-500/10 text-orange-600 border-orange-500/20'
+                                                : ro.payment_method === 'card'
+                                                ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                                                : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
+
+                                        return (
+                                            <div
+                                                key={ro.id}
+                                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-800 dark:bg-slate-950"
+                                            >
+                                                <div className="space-y-1">
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                                                            {ro.order_number}
+                                                        </span>
+                                                        <span className="rounded-md bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                                            {typeLabel}
+                                                        </span>
+                                                        <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase ${payBadge}`}>
+                                                            {ro.payment_method || 'Cash'}
+                                                        </span>
+                                                        <span className="rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 text-[9px] font-black uppercase">
+                                                            Paid / Done
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-[10px] text-slate-500">
+                                                        {formatDateTime(ro.created_at)} • {ro.items?.length || 0} items
+                                                        {ro.customer_name ? ` • Customer: ${ro.customer_name}` : ''}
+                                                        {ro.customer_phone ? ` (${ro.customer_phone})` : ''}
+                                                    </p>
+                                                </div>
+
+                                                <div className="flex items-center gap-2 self-end sm:self-auto">
+                                                    <span className="text-sm font-black text-amber-600 dark:text-amber-400">
+                                                        {formatCurrency(ro.total_amount ?? ro.grand_total ?? 0, currency)}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setShowRecentOrders(false);
+                                                            setCompletedOrder(ro);
+                                                        }}
+                                                        className="flex items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-slate-950 shadow hover:bg-amber-400 cursor-pointer"
+                                                    >
+                                                        <Printer className="h-3.5 w-3.5" /> Full Bill
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )}
+                            </div>
+
+                            {/* Footer link to full historical log */}
+                            <div className="flex items-center justify-between border-t border-slate-200 p-3 bg-slate-50 text-xs dark:border-slate-800 dark:bg-slate-950/80 rounded-b-2xl">
+                                <span className="text-[11px] text-slate-500">Showing last {recentOrders.length} completed receipts</span>
+                                <a
+                                    href="/administration-control/sales/log"
+                                    className="font-bold text-amber-600 hover:text-amber-500 dark:text-amber-400 text-xs flex items-center gap-1"
+                                >
+                                    <span>View Complete Sales Log</span>
+                                    <span>&rarr;</span>
+                                </a>
                             </div>
                         </div>
                     </div>

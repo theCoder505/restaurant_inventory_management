@@ -5,16 +5,22 @@ import { Head, router, useForm } from '@inertiajs/react';
 import {
     ArrowDownRight,
     ArrowUpRight,
+    Bike,
     Calendar,
     ChevronLeft,
     ChevronRight,
+    CreditCard,
+    DollarSign,
     Download,
     Loader2,
     Mail,
     PieChart as PieChartIcon,
+    Receipt,
     Search,
+    ShoppingBag,
     TrendingDown,
     TrendingUp,
+    Utensils,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
@@ -67,6 +73,20 @@ interface DishInsight {
     profit: number;
 }
 
+interface SalesByOrderTypeItem {
+    type: string;
+    label: string;
+    count: number;
+    total: number;
+}
+
+interface SalesByPaymentMethodItem {
+    method: string;
+    label: string;
+    count: number;
+    total: number;
+}
+
 interface Props {
     currency: string;
     period: string;
@@ -77,6 +97,8 @@ interface Props {
     financialDistribution?: FinancialPieItem[];
     expenseDistribution: ExpensePieItem[];
     dishInsights: DishInsight[];
+    salesByOrderType?: SalesByOrderTypeItem[];
+    salesByPaymentMethod?: SalesByPaymentMethodItem[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -103,7 +125,10 @@ export default function ReportsIndex({
     },
     profitBreakdown,
     financialDistribution = [],
+    expenseDistribution = [],
     dishInsights = [],
+    salesByOrderType = [],
+    salesByPaymentMethod = [],
 }: Props) {
     const filterForm = useForm({
         period: period || 'month',
@@ -402,7 +427,122 @@ export default function ReportsIndex({
                     </div>
                 </div>
 
-                               {/* Financial Distribution Chart & Dish Profitability */}
+                {/* Sales Channels (Dine-in, Takeaway, Delivery) & Payment Methods (Cash, Card, bKash, Nagad) Breakdowns */}
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    {/* Sales by Order Channel */}
+                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                                <Utensils className="h-4 w-4 text-amber-500" /> Sales by Order Channel
+                            </h3>
+                            <span className="text-[11px] text-slate-500">Dine-In • Takeaway • Delivery</span>
+                        </div>
+
+                        <div className="space-y-2.5">
+                            {(!salesByOrderType || salesByOrderType.length === 0) ? (
+                                <p className="py-4 text-center text-xs text-slate-500">No completed orders for selected range.</p>
+                            ) : (
+                                salesByOrderType.map((channel, idx) => {
+                                    const percent = summary.salesRevenue > 0 ? ((channel.total / summary.salesRevenue) * 100).toFixed(1) : '0';
+                                    const channelIcon =
+                                        channel.type === 'delivery' ? (
+                                            <Bike className="h-4 w-4 text-amber-500" />
+                                        ) : channel.type === 'takeaway' ? (
+                                            <ShoppingBag className="h-4 w-4 text-blue-500" />
+                                        ) : (
+                                            <Utensils className="h-4 w-4 text-emerald-500" />
+                                        );
+
+                                    return (
+                                        <div key={idx} className="rounded-xl border border-slate-200/70 bg-slate-50 p-3 text-xs dark:border-slate-800 dark:bg-slate-950/60">
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-slate-100">
+                                                    {channelIcon}
+                                                    <span>{channel.label}</span>
+                                                    <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
+                                                        {channel.count} Orders
+                                                    </span>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="font-extrabold text-slate-900 dark:text-slate-100">
+                                                        {formatCurrency(channel.total, currency)}
+                                                    </span>
+                                                    <span className="ml-1.5 text-[10px] text-slate-500">({percent}%)</span>
+                                                </div>
+                                            </div>
+                                            {/* Progress bar */}
+                                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                                                <div
+                                                    className="h-full bg-amber-500 transition-all duration-500"
+                                                    style={{ width: `${Math.min(100, Math.max(0, Number(percent)))}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Sales by Payment Method */}
+                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                                <CreditCard className="h-4 w-4 text-emerald-500" /> Sales by Payment Method
+                            </h3>
+                            <span className="text-[11px] text-slate-500">Cash • Card • bKash • Nagad</span>
+                        </div>
+
+                        <div className="space-y-2.5">
+                            {(!salesByPaymentMethod || salesByPaymentMethod.length === 0) ? (
+                                <p className="py-4 text-center text-xs text-slate-500">No payment transaction records for selected range.</p>
+                            ) : (
+                                salesByPaymentMethod.map((pm, idx) => {
+                                    const percent = summary.salesRevenue > 0 ? ((pm.total / summary.salesRevenue) * 100).toFixed(1) : '0';
+                                    const pmIcon =
+                                        pm.method === 'card' ? (
+                                            <CreditCard className="h-4 w-4 text-blue-500" />
+                                        ) : pm.method === 'bkash' ? (
+                                            <Receipt className="h-4 w-4 text-pink-500" />
+                                        ) : pm.method === 'nagad' ? (
+                                            <Receipt className="h-4 w-4 text-orange-500" />
+                                        ) : (
+                                            <DollarSign className="h-4 w-4 text-emerald-500" />
+                                        );
+
+                                    return (
+                                        <div key={idx} className="rounded-xl border border-slate-200/70 bg-slate-50 p-3 text-xs dark:border-slate-800 dark:bg-slate-950/60">
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-slate-100">
+                                                    {pmIcon}
+                                                    <span>{pm.label}</span>
+                                                    <span className="rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                                                        {pm.count} Bills
+                                                    </span>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="font-extrabold text-slate-900 dark:text-slate-100">
+                                                        {formatCurrency(pm.total, currency)}
+                                                    </span>
+                                                    <span className="ml-1.5 text-[10px] text-slate-500">({percent}%)</span>
+                                                </div>
+                                            </div>
+                                            {/* Progress bar */}
+                                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                                                <div
+                                                    className="h-full bg-emerald-500 transition-all duration-500"
+                                                    style={{ width: `${Math.min(100, Math.max(0, Number(percent)))}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Financial Distribution Chart & Dish Profitability */}
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     {/* Operational Financial Distribution Chart */}
                     <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">

@@ -79,7 +79,7 @@ class DashboardController extends Controller
                 $monthStart = $monthDate->copy()->startOfMonth();
                 $monthEnd = $monthDate->copy()->endOfMonth();
 
-                $daySales = Order::whereBetween('created_at', [$monthStart, $monthEnd])->where('payment_status', 'paid')->sum('total_amount');
+                $daySales = Order::whereBetween('created_at', [$monthStart, $monthEnd])->paidOrCompleted()->sum('total_amount');
                 $dayPurchases = Purchase::whereBetween('purchase_date', [$monthStart->format('Y-m-d'), $monthEnd->format('Y-m-d')])->sum('total_amount');
 
                 $salesTrend[] = [
@@ -95,7 +95,7 @@ class DashboardController extends Controller
                 $dateStr = $dateObj->format('Y-m-d');
                 $dayLabel = $dateObj->format('D, M j');
 
-                $daySales = Order::whereDate('created_at', $dateStr)->where('payment_status', 'paid')->sum('total_amount');
+                $daySales = Order::whereDate('created_at', $dateStr)->paidOrCompleted()->sum('total_amount');
                 $dayPurchases = Purchase::whereDate('purchase_date', $dateStr)->sum('total_amount');
 
                 $salesTrend[] = [
@@ -110,7 +110,7 @@ class DashboardController extends Controller
                 $dateStr = $dateObj->format('Y-m-d');
                 $dayLabel = $dateObj->format('D, M j');
 
-                $daySales = Order::whereDate('created_at', $dateStr)->where('payment_status', 'paid')->sum('total_amount');
+                $daySales = Order::whereDate('created_at', $dateStr)->paidOrCompleted()->sum('total_amount');
                 $dayPurchases = Purchase::whereDate('purchase_date', $dateStr)->sum('total_amount');
 
                 $salesTrend[] = [
@@ -123,7 +123,7 @@ class DashboardController extends Controller
             $daysInMonth = now()->daysInMonth;
             for ($d = 1; $d <= $daysInMonth; $d++) {
                 $dateStr = now()->format('Y-m-') . str_pad((string)$d, 2, '0', STR_PAD_LEFT);
-                $daySales = Order::whereDate('created_at', $dateStr)->where('payment_status', 'paid')->sum('total_amount');
+                $daySales = Order::whereDate('created_at', $dateStr)->paidOrCompleted()->sum('total_amount');
                 $dayPurchases = Purchase::whereDate('purchase_date', $dateStr)->sum('total_amount');
 
                 $salesTrend[] = [
@@ -142,7 +142,7 @@ class DashboardController extends Controller
                     if ($startDate && $endDate) {
                         $q->whereBetween('created_at', [$startDate, $endDate]);
                     }
-                    $q->where('payment_status', 'paid');
+                    $q->paidOrCompleted();
                 })
                 ->groupBy('item_name')
                 ->orderByDesc('qty')

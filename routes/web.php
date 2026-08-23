@@ -80,6 +80,7 @@ Route::middleware(['auth'])->prefix('administration-control')->name('admin.')->g
 
     // Sales & POS Billing
     Route::get('/sales', [SalesController::class, 'index'])->name('sales.index');
+    Route::match(['get', 'post'], '/sales/active-orders', [SalesController::class, 'getActiveOrders'])->name('sales.active-orders');
     Route::post('/sales', [SalesController::class, 'store'])->name('sales.store');
     Route::post('/sales/{order}/complete', [SalesController::class, 'completeOrder'])->name('sales.complete');
     Route::post('/sales/{order}/update-order-status', [SalesController::class, 'updateOrderStatus'])->name('sales.update-status');

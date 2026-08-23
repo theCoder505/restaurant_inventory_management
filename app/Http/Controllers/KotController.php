@@ -233,6 +233,9 @@ class KotController extends Controller
 
         $oldStatus = $order->order_status;
         $order->order_status = $validated['status'];
+        if ($validated['status'] === 'completed') {
+            $order->payment_status = 'paid';
+        }
         $order->save();
 
         // Update item statuses to match if batch transitioning
