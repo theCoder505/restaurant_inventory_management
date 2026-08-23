@@ -101,50 +101,11 @@ class KotController extends Controller
     }
 
     /**
-     * Update Kitchen Employee Profile and Login Credentials.
+     * Profile update is restricted - Kitchen credentials are read-only and managed by administration.
      */
     public function updateProfile(Request $request): RedirectResponse
     {
-        /** @var Admin $user */
-        $user = Auth::user();
-        if (!$user) {
-            return redirect()->route('kot.login');
-        }
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:100',
-            'kot_username' => 'nullable|string|max:100',
-            'email' => 'required|email|max:255|unique:admins,email,' . $user->id,
-            'phone' => 'nullable|string|max:50',
-            'password' => 'nullable|string|min:4|max:100',
-        ]);
-
-        $user->name = $validated['name'];
-        $user->email = $validated['email'];
-        if (isset($validated['phone'])) {
-            $user->phone = $validated['phone'];
-        }
-
-        if (!empty($validated['password'])) {
-            $user->password = Hash::make($validated['password']);
-        }
-
-        $user->save();
-
-        // If this user is kitchen role or the primary kot account, update AppSettings
-        if ($user->role === 'kitchen' || $user->email === AppSetting::getByKey('kot_email')) {
-            if (!empty($validated['kot_username'])) {
-                AppSetting::setByKey('kot_username', $validated['kot_username']);
-            }
-            AppSetting::setByKey('kot_email', $validated['email']);
-            if (!empty($validated['password'])) {
-                AppSetting::setByKey('kot_password', $validated['password']);
-            }
-        }
-
-        AuditLogService::log("Kitchen staff ({$user->name}) updated portal profile details", "kot");
-
-        return redirect()->back()->with('success', 'Kitchen staff details and credentials updated successfully.');
+        return redirect()->back()->with('error', 'Kitchen login details are read-only and managed exclusively by system administrators in App Settings.');
     }
 
     /**
