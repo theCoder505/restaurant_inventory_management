@@ -4,9 +4,7 @@ import {
     ChefHat,
     Flame,
     Phone,
-    ShieldCheck,
     Sparkles,
-    Timer,
     Utensils,
     Zap,
 } from 'lucide-react';
