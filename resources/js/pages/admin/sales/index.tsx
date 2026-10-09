@@ -1,7 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import FullPageBill from '@/components/receipt/full-page-bill';
-import { printFullPageBill } from '@/lib/print-full-page-bill';
-import { printReceipt } from '@/lib/print-receipt';
+import { printBothReceipts } from '@/lib/print-receipt';
 import { formatCurrency, formatDateTime, showAlert, showConfirm, showToast } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
@@ -20,15 +19,9 @@ import {
     Utensils,
     X,
     ChefHat,
-    Flame,
-    Bell,
     CheckCircle2,
     Clock,
-    Sparkles,
     ArrowRight,
-    Bike,
-    ShoppingBag,
-    AlertTriangle,
     RefreshCw,
     Volume2,
     VolumeX,
@@ -70,6 +63,7 @@ interface Order {
     subtotal: number;
     tax_amount: number;
     discount_amount: number;
+    discount_note?: string;
     total_amount?: number;
     grand_total?: number;
     payment_method: string;
@@ -88,6 +82,7 @@ interface Order {
         item_status?: string;
         unit_price: number;
         total_price: number;
+        kitchen_code?: string;
     }>;
 }
 
@@ -96,7 +91,6 @@ interface Props {
     allMenuItems: MenuItem[];
     currency: string;
     taxPercentage: number;
-    recentOrders?: Order[];
     activeOrders?: Order[];
     settings?: {
         brand_name?: string;
@@ -119,7 +113,6 @@ export default function SalesPOS({
     allMenuItems,
     currency,
     taxPercentage,
-    recentOrders: initialRecentOrders = [],
     activeOrders: initialActiveOrders = [],
     settings = {},
 }: Props) {
@@ -127,7 +120,6 @@ export default function SalesPOS({
     const activeBranding = { ...settings, ...(branding || {}) };
 
     const [activeOrders, setActiveOrders] = useState<Order[]>(initialActiveOrders);
-    const [recentOrders, setRecentOrders] = useState<Order[]>(initialRecentOrders);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [secondsToNextPoll, setSecondsToNextPoll] = useState(30);
     const [soundEnabled, setSoundEnabled] = useState(true);
@@ -136,7 +128,6 @@ export default function SalesPOS({
     const [search, setSearch] = useState('');
     const [cart, setCart] = useState<CartItem[]>([]);
     const [isCheckingOut, setIsCheckingOut] = useState(false);
-    const [showRecentOrders, setShowRecentOrders] = useState(false);
     const [showActiveOrders, setShowActiveOrders] = useState(false);
 
     // Settlement & Manage Modal for Active Dining Orders
@@ -161,9 +152,6 @@ export default function SalesPOS({
         setActiveOrders(initialActiveOrders);
     }, [initialActiveOrders]);
 
-    useEffect(() => {
-        setRecentOrders(initialRecentOrders);
-    }, [initialRecentOrders]);
 
     // Audio chime on new order or when kitchen marks order as 'ready'
     const playChime = () => {
@@ -206,7 +194,6 @@ export default function SalesPOS({
                 const data = await res.json();
                 if (data.success) {
                     const newActiveOrders: Order[] = data.activeOrders || [];
-                    const newRecentOrders: Order[] = data.recentOrders || [];
 
                     const newActiveIds = newActiveOrders.map((o) => o.id);
                     const newReadyOrders = newActiveOrders.filter((o) => o.order_status === 'ready');
@@ -234,7 +221,6 @@ export default function SalesPOS({
                     prevActiveOrderIdsRef.current = newActiveIds;
                     prevReadyOrderIdsRef.current = newReadyIds;
                     setActiveOrders(newActiveOrders);
-                    setRecentOrders(newRecentOrders);
 
                     // Keep active modal in sync if open
                     setSettlingOrder((current) => {
@@ -249,7 +235,6 @@ export default function SalesPOS({
                 }
             } else if (manual) {
                 router.reload({
-                    only: ['activeOrders', 'recentOrders'],
                     preserveScroll: true,
                     preserveState: true,
                     onSuccess: () => showToast('Orders reloaded successfully.', 'success'),
@@ -259,7 +244,6 @@ export default function SalesPOS({
             console.error('POS active orders polling error', err);
             if (manual) {
                 router.reload({
-                    only: ['activeOrders', 'recentOrders'],
                     preserveScroll: true,
                     preserveState: true,
                 });
@@ -293,9 +277,9 @@ export default function SalesPOS({
         customer_phone: '',
         payment_method: 'cash',
         discount_amount: 0,
+        discount_note: '',
         transaction_id: '',
         notes: '',
-        action: 'send_to_kitchen' as 'send_to_kitchen' | 'quick_pay',
         items: [] as { menu_item_id: number; quantity: number; unit_price: number }[],
     });
 
@@ -361,18 +345,25 @@ export default function SalesPOS({
     const discountAmount = parseFloat(orderForm.data.discount_amount as any) || 0;
     const grandTotal = Math.max(0, subtotal + taxAmount - discountAmount);
 
-    // Handle Order Submission (Send to Kitchen OR Quick Pay)
-    const handleOrderSubmit = (action: 'send_to_kitchen' | 'quick_pay') => {
+    // Handle Order Submission -> Generates Dual Bills (Kitchen KOT + Customer Bill)
+    const handleOrderSubmit = () => {
         if (cart.length === 0) {
             showAlert('Cart is Empty!', 'Please select dishes from menu before proceeding.', 'warning');
             return;
         }
 
+        // Snapshot current order details so fallback printing is 100% reliable
+        const currentCart = [...cart];
+        const currentOrderFormData = { ...orderForm.data };
+        const currentSubtotal = subtotal;
+        const currentTaxAmount = taxAmount;
+        const currentDiscountAmount = discountAmount;
+        const currentGrandTotal = grandTotal;
+
         setIsCheckingOut(true);
         const payload = {
-            ...orderForm.data,
-            action: action,
-            items: cart.map((i) => ({
+            ...currentOrderFormData,
+            items: currentCart.map((i) => ({
                 menu_item_id: i.menu_item_id,
                 quantity: i.quantity,
                 unit_price: i.unit_price,
@@ -383,19 +374,39 @@ export default function SalesPOS({
             onSuccess: (page) => {
                 clearCart();
                 orderForm.reset();
-                const latestOrder = (page.props as any).flash?.lastOrder;
 
-                if (action === 'send_to_kitchen') {
-                    showToast('Order Sent to Kitchen KOT (Status: Processing)', 'success');
-                    fetchLatestOrders(false);
-                } else if (latestOrder) {
-                    showToast('Order Completed & Paid!', 'success');
-                    setCompletedOrder(latestOrder);
-                    fetchLatestOrders(false);
-                    setTimeout(() => {
-                        printReceipt(latestOrder, activeBranding, currency);
-                    }, 250);
-                }
+                const flashOrder = (page.props as any)?.flash?.lastPlacedOrder || (page.props as any)?.flash?.lastOrder;
+
+                const orderToPrint = (flashOrder && Array.isArray(flashOrder.items) && flashOrder.items.length > 0)
+                    ? flashOrder
+                    : {
+                        id: flashOrder?.id || Date.now(),
+                        order_number: flashOrder?.order_number || ('INV-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + Math.floor(1000 + Math.random() * 9000)),
+                        order_type: currentOrderFormData.order_type || 'dine_in',
+                        table_number: currentOrderFormData.table_number || '',
+                        customer_name: currentOrderFormData.customer_name || 'Walk-in Customer',
+                        customer_phone: currentOrderFormData.customer_phone || '',
+                        subtotal: currentSubtotal,
+                        tax_amount: currentTaxAmount,
+                        discount_amount: currentDiscountAmount,
+                        discount_note: currentOrderFormData.discount_note || '',
+                        total_amount: currentGrandTotal,
+                        payment_method: currentOrderFormData.payment_method || 'cash',
+                        payment_status: ((settings as any)?.billing_payment_system === 'pay_first' ? 'paid' : 'unpaid'),
+                        items: currentCart.map((c) => ({
+                            item_name: c.menu_item.name,
+                            name: c.menu_item.name,
+                            kitchen_code: (c.menu_item as any).kitchen_code || '',
+                            quantity: c.quantity,
+                            unit_price: c.unit_price,
+                            total_price: c.total_price,
+                        })),
+                        created_at: new Date().toISOString(),
+                    };
+
+                showToast('Order Placed! Printing 2 Slips: 1 KOT & 1 Customer...', 'success');
+                printBothReceipts(orderToPrint, activeBranding, currency);
+                fetchLatestOrders(false);
             },
             onError: () => {
                 showToast('Failed to process order. Please verify details.', 'error');
@@ -430,43 +441,35 @@ export default function SalesPOS({
         }
     };
 
-    // Open Modal for Settlement & Status Modification
+    // Open Modal for Kitchen & Serving Status Update
     const openSettlementModal = (order: Order) => {
         setSettlingOrder(order);
-        setSettleOrderType(order.order_type || 'dine_in');
         setSettleOrderStatus(order.order_status || 'processing');
         setSettlePaymentMethod(order.payment_method || 'cash');
         setSettleDiscount((order.discount_amount as any) || 0);
         setSettleTransactionId(order.transaction_id || '');
     };
 
-    // Settle & Complete Active Table Order -> Generates Bill
+    // Complete Active Order (No bill generated here, just marks Complete)
     const handleSettleComplete = (e: React.FormEvent) => {
         e.preventDefault();
         if (!settlingOrder) return;
 
         setIsSettling(true);
         const payload = {
-            order_type: settleOrderType,
             order_status: 'completed', // Explicitly complete
             payment_method: settlePaymentMethod,
-            discount_amount: settleDiscount,
             transaction_id: settleTransactionId,
         };
 
         router.post(`/administration-control/sales/${settlingOrder.id}/update-order-status`, payload, {
-            onSuccess: (page) => {
-                showToast('Order Completed & Bill Generated!', 'success');
-                const latestOrder = (page.props as any).flash?.lastOrder || settlingOrder;
+            onSuccess: () => {
+                showToast(`Order #${settlingOrder.order_number} marked Complete!`, 'success');
                 setSettlingOrder(null);
-                setCompletedOrder(latestOrder);
                 fetchLatestOrders(false);
-                setTimeout(() => {
-                    printReceipt(latestOrder, activeBranding, currency);
-                }, 250);
             },
             onError: () => {
-                showToast('Failed to complete order bill.', 'error');
+                showToast('Failed to complete order.', 'error');
             },
             onFinish: () => {
                 setIsSettling(false);
@@ -474,19 +477,18 @@ export default function SalesPOS({
         });
     };
 
-    // Quick Status Update (Without completing)
+    // Quick Status Update (Kitchen & Serving Status)
     const handleQuickStatusChange = (newStatus: 'processing' | 'ready' | 'served') => {
         if (!settlingOrder) return;
         setIsSettling(true);
         router.post(
             `/administration-control/sales/${settlingOrder.id}/update-order-status`,
             {
-                order_type: settleOrderType,
                 order_status: newStatus,
             },
             {
                 onSuccess: () => {
-                    showToast(`Status updated to ${newStatus.toUpperCase()}`, 'success');
+                    showToast(`Kitchen status updated to ${newStatus.toUpperCase()}`, 'success');
                     setSettleOrderStatus(newStatus);
                     fetchLatestOrders(false);
                 },
@@ -506,9 +508,15 @@ export default function SalesPOS({
                         <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                             <ShoppingCart className="h-6 w-6 text-amber-500" /> POS Billing Terminal
                         </h1>
-                        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                            Order Routing $\rightarrow$ Kitchen KOT (`Processing`) $\rightarrow$ Dine-In / Takeaway $\rightarrow$ Completed Full-Page Billing
-                        </p>
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                            <span className="font-semibold text-slate-700 dark:text-slate-300">Order Routing</span>
+                            <ArrowRight className="h-3 w-3 text-amber-500 shrink-0" />
+                            <span className="rounded bg-amber-500/10 px-1.5 py-0.5 font-bold text-amber-600 dark:text-amber-400">Kitchen KOT (Processing)</span>
+                            <ArrowRight className="h-3 w-3 text-amber-500 shrink-0" />
+                            <span>Dine-In / Takeaway</span>
+                            <ArrowRight className="h-3 w-3 text-amber-500 shrink-0" />
+                            <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 font-bold text-emerald-600 dark:text-emerald-400">Complete</span>
+                        </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -556,18 +564,6 @@ export default function SalesPOS({
                                 <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
                             )}
                         </button>
-
-                        {/* Recent Completed Receipts */}
-                        {recentOrders.length > 0 && (
-                            <button
-                                type="button"
-                                onClick={() => setShowRecentOrders(true)}
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm transition-all hover:border-amber-500/50 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
-                            >
-                                <History className="h-4 w-4 text-amber-500" /> History ({recentOrders.length})
-                            </button>
-                        )}
-
                         {/* Direct Link to KOT Display */}
                         <a
                             href="/kitchen"
@@ -857,6 +853,7 @@ export default function SalesPOS({
                         </div>
 
                         {/* Financial Totals & Action Buttons */}
+                        {/* Financial Totals, Discount Note & Action Button */}
                         <div className="space-y-3 border-t border-slate-200 pt-3 text-xs dark:border-slate-800">
                             <div className="space-y-1.5 text-slate-600 dark:text-slate-400">
                                 <div className="flex justify-between">
@@ -867,79 +864,96 @@ export default function SalesPOS({
                                     <span>VAT / Tax ({taxPercentage}%)</span>
                                     <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(taxAmount, currency)}</span>
                                 </div>
+
+                                {/* Discount & Discount Note */}
+                                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200 dark:border-slate-800">
+                                    <div>
+                                        <label className="block text-[10px] text-slate-500 font-bold mb-0.5">Discount ({currency})</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="1"
+                                            placeholder="0"
+                                            value={orderForm.data.discount_amount}
+                                            onChange={(e) => orderForm.setData('discount_amount', parseFloat(e.target.value) || 0)}
+                                            className="w-full rounded-xl border border-slate-200 bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] text-slate-500 font-bold mb-0.5">Discount Note</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. VIP, Staff Promo"
+                                            value={orderForm.data.discount_note}
+                                            onChange={(e) => orderForm.setData('discount_note', e.target.value)}
+                                            className="w-full rounded-xl border border-slate-200 bg-slate-100 px-2.5 py-1.5 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="flex justify-between border-t border-slate-200 pt-1.5 text-sm font-black text-slate-900 dark:border-slate-800 dark:text-slate-100">
                                     <span>Total Amount</span>
                                     <span className="text-amber-600 dark:text-amber-400">{formatCurrency(grandTotal, currency)}</span>
                                 </div>
                             </div>
 
-                            {/* Dual Flow Buttons: Configured by App Settings ('Pay First' vs 'Pay After Service') */}
-                            <div className="space-y-2 pt-1">
-                                {((settings as any)?.billing_payment_system === 'pay_first') ? (
-                                    <>
-                                        <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 text-center">
-                                            Policy: 'Pay First' System Active
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleOrderSubmit('quick_pay')}
-                                            disabled={cart.length === 0 || isCheckingOut}
-                                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-black text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400 active:scale-95 disabled:opacity-50 cursor-pointer"
-                                        >
-                                            {isCheckingOut ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            ) : (
-                                                <Printer className="h-4 w-4" />
-                                            )}
-                                            <span>Quick Pay & Print POS Bill (Pay First)</span>
-                                        </button>
+                            {/* Payment Configuration (Pay First vs Pay After Service) */}
+                            {((settings as any)?.billing_payment_system === 'pay_first') ? (
+                                <div className="space-y-2 pt-1 border-t border-slate-200 dark:border-slate-800">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Payment Method</label>
+                                        <span className="text-[9px] font-bold text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">Pay First Policy</span>
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-1.5">
+                                        {[
+                                            { id: 'cash', label: 'Cash', icon: DollarSign },
+                                            { id: 'card', label: 'Card', icon: CreditCard },
+                                            { id: 'bkash', label: 'bKash', icon: Receipt },
+                                            { id: 'nagad', label: 'Nagad', icon: Receipt },
+                                        ].map((pm) => (
+                                            <button
+                                                type="button"
+                                                key={pm.id}
+                                                onClick={() => orderForm.setData('payment_method', pm.id)}
+                                                className={`flex flex-col items-center gap-1 rounded-xl border p-1.5 text-[11px] font-bold transition-all cursor-pointer ${
+                                                    orderForm.data.payment_method === pm.id
+                                                        ? 'border-amber-500 bg-amber-500 text-slate-950 shadow'
+                                                        : 'border-slate-200 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
+                                                }`}
+                                            >
+                                                <pm.icon className="h-3.5 w-3.5" />
+                                                {pm.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2 text-center text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                    Policy: 'Pay After Service' (Payment settled upon order completion)
+                                </div>
+                            )}
 
-                                        <button
-                                            type="button"
-                                            onClick={() => handleOrderSubmit('send_to_kitchen')}
-                                            disabled={cart.length === 0 || isCheckingOut}
-                                            className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white py-2 text-xs font-bold text-slate-800 shadow-sm transition-all hover:bg-slate-50 active:scale-95 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 cursor-pointer"
-                                        >
-                                            <ChefHat className="h-3.5 w-3.5 text-amber-500" />
-                                            <span>Send to Kitchen (KOT Only)</span>
-                                        </button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 text-center">
-                                            Policy: 'Pay After Service' System Active
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleOrderSubmit('send_to_kitchen')}
-                                            disabled={cart.length === 0 || isCheckingOut}
-                                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-black text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400 active:scale-95 disabled:opacity-50 cursor-pointer"
-                                        >
-                                            {isCheckingOut ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            ) : (
-                                                <ChefHat className="h-4 w-4" />
-                                            )}
-                                            <span>Send to Kitchen (KOT Processing)</span>
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => handleOrderSubmit('quick_pay')}
-                                            disabled={cart.length === 0 || isCheckingOut}
-                                            className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white py-2 text-xs font-bold text-slate-800 shadow-sm transition-all hover:bg-slate-50 active:scale-95 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 cursor-pointer"
-                                        >
-                                            <Printer className="h-3.5 w-3.5 text-emerald-500" />
-                                            <span>Quick Pay & Print POS Bill</span>
-                                        </button>
-                                    </>
-                                )}
+                            {/* Order Submission Button */}
+                            <div className="pt-1">
+                                <button
+                                    type="button"
+                                    onClick={handleOrderSubmit}
+                                    disabled={cart.length === 0 || isCheckingOut}
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-black text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400 active:scale-95 disabled:opacity-50 cursor-pointer"
+                                >
+                                    {isCheckingOut ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Printer className="h-4 w-4" />
+                                    )}
+                                    <span>Place Order & Print 2 Slips (KOT & Customer)</span>
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Settle & Manage Order Modal (Status changing, Dine-In/Takeaway/Delivery & Bill Generation) */}
+                {/* Settle & Manage Order Modal (Status changing & Mark Complete, no bill re-generation) */}
                 {settlingOrder && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
                         <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 p-5 space-y-4">
@@ -964,42 +978,16 @@ export default function SalesPOS({
                                 </button>
                             </div>
 
-                            {/* Order Type Selector */}
-                            <div className="space-y-1 text-xs">
-                                <label className="block text-[10px] text-slate-500 font-bold">Order Type</label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {[
-                                        { id: 'dine_in', label: 'Dine-In', icon: Utensils },
-                                        { id: 'takeaway', label: 'Takeaway', icon: ShoppingBag },
-                                        { id: 'delivery', label: 'Delivery', icon: Bike },
-                                    ].map((t) => (
-                                        <button
-                                            type="button"
-                                            key={t.id}
-                                            onClick={() => setSettleOrderType(t.id as any)}
-                                            className={`flex items-center justify-center gap-1.5 rounded-xl border py-2 text-xs font-bold transition-all cursor-pointer ${
-                                                settleOrderType === t.id
-                                                    ? 'border-amber-500 bg-amber-500/15 text-amber-600 dark:text-amber-400'
-                                                    : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
-                                            }`}
-                                        >
-                                            <t.icon className="h-3.5 w-3.5" />
-                                            {t.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Order Status Selector */}
+                            {/* Kitchen & Serving Status Selector */}
                             <div className="space-y-1 text-xs">
                                 <label className="block text-[10px] text-slate-500 font-bold">Kitchen & Serving Status</label>
                                 <div className="grid grid-cols-3 gap-2">
                                     <button
                                         type="button"
                                         onClick={() => handleQuickStatusChange('processing')}
-                                        className={`rounded-xl border py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                                        className={`rounded-xl border py-2 text-xs font-bold transition-all cursor-pointer ${
                                             settleOrderStatus === 'processing'
-                                                ? 'border-amber-500 bg-amber-500 text-slate-950'
+                                                ? 'border-amber-500 bg-amber-500 text-slate-950 shadow'
                                                 : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
                                         }`}
                                     >
@@ -1008,9 +996,9 @@ export default function SalesPOS({
                                     <button
                                         type="button"
                                         onClick={() => handleQuickStatusChange('ready')}
-                                        className={`rounded-xl border py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                                        className={`rounded-xl border py-2 text-xs font-bold transition-all cursor-pointer ${
                                             settleOrderStatus === 'ready'
-                                                ? 'border-emerald-500 bg-emerald-500 text-white'
+                                                ? 'border-emerald-500 bg-emerald-500 text-white shadow'
                                                 : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
                                         }`}
                                     >
@@ -1019,9 +1007,9 @@ export default function SalesPOS({
                                     <button
                                         type="button"
                                         onClick={() => handleQuickStatusChange('served')}
-                                        className={`rounded-xl border py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                                        className={`rounded-xl border py-2 text-xs font-bold transition-all cursor-pointer ${
                                             settleOrderStatus === 'served'
-                                                ? 'border-blue-500 bg-blue-500 text-white'
+                                                ? 'border-blue-500 bg-blue-500 text-white shadow'
                                                 : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
                                         }`}
                                     >
@@ -1040,66 +1028,49 @@ export default function SalesPOS({
                                 ))}
                             </div>
 
-                            {/* Billing & Settlement Form */}
+                            {/* Completion Form (Payment collection if Pay After Service) */}
                             <form onSubmit={handleSettleComplete} className="space-y-3 text-xs">
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="block text-[10px] text-slate-500 mb-1 font-bold">Discount ({currency})</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="1"
-                                            value={settleDiscount}
-                                            onChange={(e) => setSettleDiscount(parseFloat(e.target.value) || 0)}
-                                            className="w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-bold dark:border-slate-800 dark:bg-slate-950"
-                                        />
+                                {((settings as any)?.billing_payment_system === 'pay_after_service') ? (
+                                    <div className="space-y-2 border-t border-slate-200 pt-2 dark:border-slate-800">
+                                        <label className="block text-[10px] text-slate-500 font-bold">Select Payment Method (To Complete)</label>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {[
+                                                { id: 'cash', label: 'Cash', icon: DollarSign },
+                                                { id: 'card', label: 'Card', icon: CreditCard },
+                                                { id: 'bkash', label: 'bKash', icon: Receipt },
+                                                { id: 'nagad', label: 'Nagad', icon: Receipt },
+                                            ].map((pm) => (
+                                                <button
+                                                    type="button"
+                                                    key={pm.id}
+                                                    onClick={() => setSettlePaymentMethod(pm.id)}
+                                                    className={`flex flex-col items-center gap-1 rounded-xl border p-2 text-xs font-bold transition-all cursor-pointer ${
+                                                        settlePaymentMethod === pm.id
+                                                            ? 'border-amber-500 bg-amber-500 text-slate-950 shadow'
+                                                            : 'border-slate-200 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
+                                                    }`}
+                                                >
+                                                    <pm.icon className="h-4 w-4" />
+                                                    {pm.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] text-slate-500 font-bold mb-1">Transaction Ref (Optional)</label>
+                                            <input
+                                                type="text"
+                                                placeholder="Optional"
+                                                value={settleTransactionId}
+                                                onChange={(e) => setSettleTransactionId(e.target.value)}
+                                                className="w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs dark:border-slate-800 dark:bg-slate-950"
+                                            />
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-[10px] text-slate-500 mb-1 font-bold">Transaction ID / Ref</label>
-                                        <input
-                                            type="text"
-                                            placeholder="Optional"
-                                            value={settleTransactionId}
-                                            onChange={(e) => setSettleTransactionId(e.target.value)}
-                                            className="w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-xs dark:border-slate-800 dark:bg-slate-950"
-                                        />
+                                ) : (
+                                    <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-2 text-center text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                        Payment Settled upon Ordering ({settlingOrder.payment_method?.toUpperCase() || 'PAID'})
                                     </div>
-                                </div>
-
-                                {/* Payment Method Selection */}
-                                <div>
-                                    <label className="block text-[10px] text-slate-500 mb-1.5 font-bold">Payment Method</label>
-                                    <div className="grid grid-cols-4 gap-2">
-                                        {[
-                                            { id: 'cash', label: 'Cash', icon: DollarSign },
-                                            { id: 'card', label: 'Card', icon: CreditCard },
-                                            { id: 'bkash', label: 'bKash', icon: Receipt },
-                                            { id: 'nagad', label: 'Nagad', icon: Receipt },
-                                        ].map((pm) => (
-                                            <button
-                                                type="button"
-                                                key={pm.id}
-                                                onClick={() => setSettlePaymentMethod(pm.id)}
-                                                className={`flex flex-col items-center gap-1 rounded-xl border p-2 text-xs font-bold transition-all cursor-pointer ${
-                                                    settlePaymentMethod === pm.id
-                                                        ? 'border-amber-500 bg-amber-500 text-slate-950 shadow'
-                                                        : 'border-slate-200 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
-                                                }`}
-                                            >
-                                                <pm.icon className="h-4 w-4" />
-                                                {pm.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Net Payable */}
-                                <div className="flex justify-between items-center rounded-xl bg-amber-500/10 border border-amber-500/20 p-3">
-                                    <span className="font-bold text-slate-700 dark:text-slate-300">Final Bill Amount:</span>
-                                    <span className="text-base font-black text-amber-600 dark:text-amber-400">
-                                        {formatCurrency(Math.max(0, (settlingOrder.subtotal || 0) + (settlingOrder.tax_amount || 0) - settleDiscount), currency)}
-                                    </span>
-                                </div>
+                                )}
 
                                 <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                                     {/* Cancel Processing Order Button */}
@@ -1117,6 +1088,15 @@ export default function SalesPOS({
                                     <div className="flex items-center gap-2">
                                         <button
                                             type="button"
+                                            onClick={() => setCompletedOrder(settlingOrder)}
+                                            className="flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 cursor-pointer"
+                                            title="Preview and print 80mm dual slips"
+                                        >
+                                            <Printer className="h-3.5 w-3.5" />
+                                            <span>Preview Slips</span>
+                                        </button>
+                                        <button
+                                            type="button"
                                             onClick={() => setSettlingOrder(null)}
                                             className="rounded-xl bg-slate-100 px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 cursor-pointer"
                                         >
@@ -1125,14 +1105,14 @@ export default function SalesPOS({
                                         <button
                                             type="submit"
                                             disabled={isSettling}
-                                            className="flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2 text-xs font-black text-slate-950 shadow-md hover:bg-amber-400 cursor-pointer"
+                                            className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-5 py-2 text-xs font-black text-slate-950 shadow-md hover:bg-amber-400 active:scale-95 cursor-pointer"
                                         >
                                             {isSettling ? (
                                                 <Loader2 className="h-4 w-4 animate-spin" />
                                             ) : (
-                                                <Printer className="h-4 w-4" />
+                                                <CheckCircle2 className="h-4 w-4" />
                                             )}
-                                            <span>Complete & Print Full Bill</span>
+                                            <span>Complete Order</span>
                                         </button>
                                     </div>
                                 </div>
@@ -1143,12 +1123,13 @@ export default function SalesPOS({
 
                 {/* POS Bill Modal (Shown after completion or reprint) */}
                 {completedOrder && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                        <div className="relative max-h-[95vh] overflow-y-auto w-full flex justify-center">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm overflow-y-auto">
+                        <div className="relative my-auto flex w-full max-w-[480px] items-center justify-center">
                             <FullPageBill
                                 order={completedOrder as any}
                                 branding={activeBranding}
                                 currency={currency}
+                                initialTab="both"
                                 onClose={() => setCompletedOrder(null)}
                             />
                         </div>
@@ -1239,116 +1220,6 @@ export default function SalesPOS({
                                         </div>
                                     ))
                                 )}
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Recent Completed Orders Modal */}
-                {showRecentOrders && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                        <div className="w-full max-w-xl max-h-[85vh] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-                            <div className="flex items-center justify-between border-b border-slate-200 p-4 dark:border-slate-800">
-                                <div className="flex items-center gap-2">
-                                    <History className="h-5 w-5 text-amber-500" />
-                                    <div>
-                                        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                                            Recent Completed POS & Kitchen Sales ({recentOrders.length})
-                                        </h3>
-                                        <p className="text-[10px] text-slate-500">
-                                            Completed Dine-In, Takeaway & Delivery receipts
-                                        </p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setShowRecentOrders(false)}
-                                    className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-                                >
-                                    <X className="h-4 w-4" />
-                                </button>
-                            </div>
-
-                            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                                {recentOrders.length === 0 ? (
-                                    <p className="py-8 text-center text-xs text-slate-500">
-                                        No completed orders recorded yet.
-                                    </p>
-                                ) : (
-                                    recentOrders.map((ro) => {
-                                        const typeLabel =
-                                            ro.order_type === 'delivery'
-                                                ? '🚴 Delivery'
-                                                : ro.order_type === 'takeaway'
-                                                ? '🛍️ Takeaway'
-                                                : `🍴 ${ro.table_number || 'Dine-In'}`;
-
-                                        const payBadge =
-                                            ro.payment_method === 'bkash'
-                                                ? 'bg-pink-500/10 text-pink-600 border-pink-500/20'
-                                                : ro.payment_method === 'nagad'
-                                                ? 'bg-orange-500/10 text-orange-600 border-orange-500/20'
-                                                : ro.payment_method === 'card'
-                                                ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
-                                                : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
-
-                                        return (
-                                            <div
-                                                key={ro.id}
-                                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-800 dark:bg-slate-950"
-                                            >
-                                                <div className="space-y-1">
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
-                                                            {ro.order_number}
-                                                        </span>
-                                                        <span className="rounded-md bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                                                            {typeLabel}
-                                                        </span>
-                                                        <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase ${payBadge}`}>
-                                                            {ro.payment_method || 'Cash'}
-                                                        </span>
-                                                        <span className="rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 text-[9px] font-black uppercase">
-                                                            Paid / Done
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-[10px] text-slate-500">
-                                                        {formatDateTime(ro.created_at)} • {ro.items?.length || 0} items
-                                                        {ro.customer_name ? ` • Customer: ${ro.customer_name}` : ''}
-                                                        {ro.customer_phone ? ` (${ro.customer_phone})` : ''}
-                                                    </p>
-                                                </div>
-
-                                                <div className="flex items-center gap-2 self-end sm:self-auto">
-                                                    <span className="text-sm font-black text-amber-600 dark:text-amber-400">
-                                                        {formatCurrency(ro.total_amount ?? ro.grand_total ?? 0, currency)}
-                                                    </span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setShowRecentOrders(false);
-                                                            setCompletedOrder(ro);
-                                                        }}
-                                                        className="flex items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-slate-950 shadow hover:bg-amber-400 cursor-pointer"
-                                                    >
-                                                        <Printer className="h-3.5 w-3.5" /> POS Bill
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })
-                                )}
-                            </div>
-
-                            {/* Footer link to full historical log */}
-                            <div className="flex items-center justify-between border-t border-slate-200 p-3 bg-slate-50 text-xs dark:border-slate-800 dark:bg-slate-950/80 rounded-b-2xl">
-                                <span className="text-[11px] text-slate-500">Showing last {recentOrders.length} completed receipts</span>
-                                <a
-                                    href="/administration-control/sales/log"
-                                    className="font-bold text-amber-600 hover:text-amber-500 dark:text-amber-400 text-xs flex items-center gap-1"
-                                >
-                                    <span>View Complete Sales Log</span>
-                                    <span>&rarr;</span>
-                                </a>
                             </div>
                         </div>
                     </div>

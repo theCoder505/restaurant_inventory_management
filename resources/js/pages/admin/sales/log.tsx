@@ -1,11 +1,9 @@
 import AppLayout from '@/layouts/app-layout';
 import Pagination from '@/components/pagination';
-import FullPageBill from '@/components/receipt/full-page-bill';
-import { printFullPageBill } from '@/lib/print-full-page-bill';
 import { formatCurrency, formatDateTime } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
-import { Download, Eye, Filter, Printer, Receipt, Search, FileText } from 'lucide-react';
+import { Download, Eye, Filter, Receipt, Search, X, Tag, Hash, User, Calendar, Clock, Utensils, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
 
 interface OrderItem {
@@ -13,6 +11,7 @@ interface OrderItem {
     quantity: number;
     unit_price: number;
     total_price: number;
+    kitchen_code?: string;
 }
 
 interface Order {
@@ -26,9 +25,11 @@ interface Order {
     subtotal: number;
     tax_amount: number;
     discount_amount: number;
+    discount_note?: string;
     total_amount: number;
     payment_method: string;
     payment_status: string;
+    transaction_id?: string;
     notes?: string;
     created_at: string;
     items: OrderItem[];
@@ -385,10 +386,10 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
                                                     <div className="flex items-center justify-end gap-1.5">
                                                         <button
                                                             onClick={() => setViewingOrder(order)}
-                                                            className="flex items-center gap-1 rounded-lg bg-amber-500 px-2 py-1 text-[11px] font-bold text-slate-950 shadow hover:bg-amber-400 cursor-pointer"
-                                                            title="View Full Bill & Print"
+                                                            className="flex items-center gap-1.5 rounded-lg bg-amber-500/10 px-2.5 py-1.5 text-xs font-bold text-amber-600 border border-amber-500/20 hover:bg-amber-500 hover:text-slate-950 transition cursor-pointer"
+                                                            title="View Order Details"
                                                         >
-                                                            <FileText className="h-3 w-3" /> Bill
+                                                            <Eye className="h-3.5 w-3.5" /> Details
                                                         </button>
                                                     </div>
                                                 </td>
@@ -427,16 +428,205 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
                 </div>
             </div>
 
-            {/* Full-Page / POS Bill Preview Modal */}
+            {/* Clean Order Details Modal (No Thermal Bill, No Print Option) */}
             {viewingOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                    <div className="relative max-h-[95vh] overflow-y-auto w-full flex justify-center">
-                        <FullPageBill
-                            order={viewingOrder as any}
-                            branding={branding as any}
-                            currency={currency}
-                            onClose={() => setViewingOrder(null)}
-                        />
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm animate-in fade-in duration-150">
+                    <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-slate-200 dark:bg-slate-900 dark:border-slate-800 overflow-hidden flex flex-col max-h-[92vh]">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-base font-black text-slate-900 dark:text-slate-100">
+                                        Order #{viewingOrder.order_number}
+                                    </h3>
+                                    <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-amber-600 border border-amber-500/20">
+                                        {viewingOrder.order_type.replace('_', ' ')}
+                                    </span>
+                                    <span
+                                        className={`rounded-md px-2 py-0.5 text-[11px] font-bold uppercase ${
+                                            viewingOrder.order_status === 'completed'
+                                                ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                                                : viewingOrder.order_status === 'ready'
+                                                ? 'bg-emerald-500 text-white'
+                                                : viewingOrder.order_status === 'served'
+                                                ? 'bg-blue-500 text-white'
+                                                : 'bg-amber-500 text-slate-950'
+                                        }`}
+                                    >
+                                        {viewingOrder.order_status || 'completed'}
+                                    </span>
+                                    <span
+                                        className={`rounded-md px-2 py-0.5 text-[11px] font-bold uppercase ${
+                                            viewingOrder.payment_status === 'paid'
+                                                ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                                                : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                                        }`}
+                                    >
+                                        {viewingOrder.payment_status}
+                                    </span>
+                                </div>
+                                <div className="mt-1 flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                                    <span className="flex items-center gap-1">
+                                        <Calendar className="h-3 w-3 text-slate-400" />
+                                        {formatDateTime(viewingOrder.created_at)}
+                                    </span>
+                                    {viewingOrder.creator?.name && (
+                                        <span className="flex items-center gap-1">
+                                            <User className="h-3 w-3 text-slate-400" />
+                                            Staff: {viewingOrder.creator.name}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setViewingOrder(null)}
+                                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition cursor-pointer"
+                                aria-label="Close"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="overflow-y-auto p-5 sm:p-6 space-y-5 text-sm">
+                            {/* Order Attributes Grid */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 dark:border-slate-800 dark:bg-slate-950/40">
+                                <div>
+                                    <div className="text-[11px] font-bold uppercase text-slate-400">Table</div>
+                                    <div className="font-semibold text-slate-800 dark:text-slate-200">
+                                        {viewingOrder.table_number || 'None'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-[11px] font-bold uppercase text-slate-400">Customer</div>
+                                    <div className="font-semibold text-slate-800 dark:text-slate-200">
+                                        {viewingOrder.customer_name || 'Walk-in'}
+                                        {viewingOrder.customer_phone && (
+                                            <span className="block text-xs text-slate-500">
+                                                {viewingOrder.customer_phone}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-[11px] font-bold uppercase text-slate-400">Payment</div>
+                                    <div className="font-semibold uppercase text-slate-800 dark:text-slate-200">
+                                        {viewingOrder.payment_method}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-[11px] font-bold uppercase text-slate-400">Trx / Ref ID</div>
+                                    <div className="font-mono text-xs text-slate-700 dark:text-slate-300">
+                                        {viewingOrder.transaction_id || 'N/A'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Order Items Table */}
+                            <div>
+                                <h4 className="mb-2 text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                    Ordered Dishes ({viewingOrder.items?.length || 0})
+                                </h4>
+                                <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
+                                    <table className="w-full text-left text-xs">
+                                        <thead className="border-b border-slate-200 bg-slate-100 font-bold uppercase text-slate-600 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300">
+                                            <tr>
+                                                <th className="p-2.5">Item</th>
+                                                <th className="p-2.5 text-center">Kitchen Code</th>
+                                                <th className="p-2.5 text-center">Qty</th>
+                                                <th className="p-2.5 text-right">Price</th>
+                                                <th className="p-2.5 text-right">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                            {viewingOrder.items?.map((item, idx) => (
+                                                <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                                    <td className="p-2.5 font-semibold text-slate-900 dark:text-slate-100">
+                                                        {item.item_name}
+                                                    </td>
+                                                    <td className="p-2.5 text-center">
+                                                        {item.kitchen_code ? (
+                                                            <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-mono font-bold text-amber-600 border border-amber-500/20">
+                                                                {item.kitchen_code}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-slate-400">-</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-2.5 text-center font-bold text-slate-800 dark:text-slate-200">
+                                                        {item.quantity}
+                                                    </td>
+                                                    <td className="p-2.5 text-right text-slate-600 dark:text-slate-400">
+                                                        {formatCurrency(item.unit_price, currency)}
+                                                    </td>
+                                                    <td className="p-2.5 text-right font-bold text-slate-900 dark:text-slate-100">
+                                                        {formatCurrency(item.total_price, currency)}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Financial Breakdown Card */}
+                            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+                                <div className="space-y-2 text-xs">
+                                    <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                                        <span>Subtotal:</span>
+                                        <span className="font-medium">{formatCurrency(viewingOrder.subtotal ?? 0, currency)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                                        <span>Tax / VAT:</span>
+                                        <span className="font-medium">{formatCurrency(viewingOrder.tax_amount ?? 0, currency)}</span>
+                                    </div>
+
+                                    {/* Discount & Discount Note */}
+                                    {viewingOrder.discount_amount > 0 && (
+                                        <div className="rounded-lg bg-rose-50 border border-rose-200/60 p-2.5 dark:bg-rose-950/30 dark:border-rose-900/40">
+                                            <div className="flex justify-between font-bold text-rose-600 dark:text-rose-400">
+                                                <span className="flex items-center gap-1">
+                                                    <Tag className="h-3.5 w-3.5" /> Discount:
+                                                </span>
+                                                <span>-{formatCurrency(viewingOrder.discount_amount, currency)}</span>
+                                            </div>
+                                            {viewingOrder.discount_note && (
+                                                <div className="mt-1 text-[11px] font-medium text-rose-700 dark:text-rose-300">
+                                                    <span className="font-bold">Discount Note:</span> {viewingOrder.discount_note}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <div className="border-t border-slate-200 pt-2 dark:border-slate-800">
+                                        <div className="flex justify-between text-base font-black text-slate-900 dark:text-slate-100">
+                                            <span>Total Amount:</span>
+                                            <span className="text-amber-600 dark:text-amber-400">
+                                                {formatCurrency(viewingOrder.total_amount, currency)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Customer / Order Notes */}
+                            {viewingOrder.notes && (
+                                <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                                    <span className="font-bold">Order / Kitchen Instructions: </span>
+                                    {viewingOrder.notes}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Modal Footer (Strictly Close only - no print, no thermal) */}
+                        <div className="border-t border-slate-200 px-5 py-3.5 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex justify-end">
+                            <button
+                                onClick={() => setViewingOrder(null)}
+                                className="rounded-xl bg-slate-800 px-5 py-2 text-xs font-bold text-white shadow hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 transition cursor-pointer"
+                            >
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

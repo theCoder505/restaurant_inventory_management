@@ -85,7 +85,6 @@ export function generateFullPageBillHtml(order: ReceiptOrder, branding: ReceiptB
     const tagline = branding.tagline || 'CRAVINGS NEVER SLEEP';
     const address = branding.address || '889 Midnight Ave, Suite B, Downtown District';
     const phone = branding.phone || '+8801700000000';
-    const email = branding.email || 'contact@restaurant.com';
 
     const { formattedDate, formattedTime } = formatDate(order.created_at);
 
@@ -335,7 +334,7 @@ export function generateFullPageBillHtml(order: ReceiptOrder, branding: ReceiptB
                     <div class="brand-tagline">${tagline}</div>
                     <div class="brand-info">
                         ${address}<br/>
-                        Phone: <strong>${phone}</strong> | Email: <strong>${email}</strong>
+                        Phone: <strong>${phone}</strong>
                     </div>
                 </td>
                 <td style="width: 45%; vertical-align: top; text-align: right;">
@@ -487,7 +486,17 @@ export function printFullPageBill(order: ReceiptOrder, branding: ReceiptBranding
     doc.write(html);
     doc.close();
 
+    let hasTriggered = false;
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+    let readyTimer: ReturnType<typeof setTimeout> | null = null;
+
     const triggerPrint = () => {
+        if (hasTriggered) return;
+        hasTriggered = true;
+
+        if (fallbackTimer) clearTimeout(fallbackTimer);
+        if (readyTimer) clearTimeout(readyTimer);
+
         try {
             iframe.contentWindow?.focus();
             iframe.contentWindow?.print();
@@ -496,7 +505,11 @@ export function printFullPageBill(order: ReceiptOrder, branding: ReceiptBranding
             window.print();
         } finally {
             setTimeout(() => {
-                iframe.remove();
+                try {
+                    iframe.remove();
+                } catch {
+                    // Ignore removal error
+                }
             }, 3000);
         }
     };
@@ -506,8 +519,9 @@ export function printFullPageBill(order: ReceiptOrder, branding: ReceiptBranding
         let loadedCount = 0;
         const checkDone = () => {
             loadedCount++;
-            if (loadedCount >= imgElements.length) {
-                setTimeout(triggerPrint, 150);
+            if (loadedCount >= imgElements.length && !hasTriggered) {
+                if (fallbackTimer) clearTimeout(fallbackTimer);
+                readyTimer = setTimeout(triggerPrint, 150);
             }
         };
 
@@ -521,8 +535,8 @@ export function printFullPageBill(order: ReceiptOrder, branding: ReceiptBranding
             }
         }
 
-        setTimeout(triggerPrint, 600);
+        fallbackTimer = setTimeout(triggerPrint, 800);
     } else {
-        setTimeout(triggerPrint, 150);
+        readyTimer = setTimeout(triggerPrint, 150);
     }
 }

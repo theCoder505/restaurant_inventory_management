@@ -70,6 +70,7 @@ class HandleInertiaRequests extends Middleware
                 'warning' => fn () => $request->session()->get('warning'),
                 'info' => fn () => $request->session()->get('info'),
                 'lastOrder' => fn () => $request->session()->get('lastOrder'),
+                'lastPlacedOrder' => fn () => $request->session()->get('lastPlacedOrder') ?: $request->session()->get('lastOrder'),
             ],
         ]);
     }

@@ -44,6 +44,7 @@ class MenuController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'kitchen_code' => 'nullable|string|max:50',
             'category_id' => 'required|exists:categories,id',
             'description' => 'nullable|string',
             'details' => 'nullable|string',
@@ -74,6 +75,7 @@ class MenuController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'kitchen_code' => 'nullable|string|max:50',
             'category_id' => 'required|exists:categories,id',
             'description' => 'nullable|string',
             'details' => 'nullable|string',

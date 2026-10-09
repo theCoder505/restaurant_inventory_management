@@ -19,6 +19,7 @@ class Order extends Model
         'subtotal',
         'tax_amount',
         'discount_amount',
+        'discount_note',
         'total_amount',
         'payment_method',
         'payment_status',

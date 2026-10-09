@@ -21,7 +21,6 @@ export default function PosReceipt({
     const brandLogo = branding.brand_logo || '/uploads/branding/logo.svg';
     const address = branding.address || '123 Culinary Avenue, Downtown District';
     const phone = branding.phone || '(555) 123-4567';
-    const emailOrWebsite = branding.email ? branding.email.toUpperCase() : 'WWW.RESTAURANT.COM';
 
     // Format date and time in AM/PM format
     const rawDate = order.created_at ? new Date(order.created_at) : new Date();
@@ -112,9 +111,6 @@ export default function PosReceipt({
                     </p>
                     <p className="text-[10.5px] uppercase text-slate-800 leading-tight">
                         PHONE: {phone}
-                    </p>
-                    <p className="text-[10.5px] uppercase text-slate-800 leading-tight">
-                        {emailOrWebsite}
                     </p>
                 </div>
 

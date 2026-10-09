@@ -97,6 +97,12 @@ class PublicController extends Controller
             ]);
         }
 
+        // Conceal kitchen codes from surface web visitors
+        $menuCategories->each(function ($cat) {
+            $cat->menuItems->makeHidden(['kitchen_code']);
+        });
+        $featuredItems->makeHidden(['kitchen_code']);
+
         return Inertia::render('welcome', [
             'settings' => $this->getSettingsPayload(),
             'menuCategories' => $menuCategories,
@@ -121,6 +127,12 @@ class PublicController extends Controller
             ->orderBy('id', 'desc')
             ->get();
 
+        // Conceal kitchen codes from surface web visitors
+        $menuCategories->each(function ($cat) {
+            $cat->menuItems->makeHidden(['kitchen_code']);
+        });
+        $allDishes->makeHidden(['kitchen_code']);
+
         return Inertia::render('recipes', [
             'settings' => $this->getSettingsPayload(),
             'menuCategories' => $menuCategories,
@@ -135,6 +147,7 @@ class PublicController extends Controller
     {
         // Eager load category and recipe ingredients with inventory items
         $menuItem->load(['category', 'recipes.inventoryItem']);
+        $menuItem->makeHidden(['kitchen_code']);
 
         // Fetch related dishes from the same category or general available dishes
         $relatedItems = MenuItem::where('category_id', $menuItem->category_id)
@@ -151,6 +164,8 @@ class PublicController extends Controller
                 ->take(3)
                 ->get();
         }
+
+        $relatedItems->makeHidden(['kitchen_code']);
 
         return Inertia::render('recipe-detail', [
             'item' => $menuItem,

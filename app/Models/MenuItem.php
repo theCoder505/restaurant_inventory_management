@@ -11,6 +11,7 @@ class MenuItem extends Model
 
     protected $fillable = [
         'name',
+        'kitchen_code',
         'category_id',
         'description',
         'details',

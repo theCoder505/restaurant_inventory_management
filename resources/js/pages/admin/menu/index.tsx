@@ -27,6 +27,7 @@ interface Category {
 interface MenuItem {
     id: number;
     name: string;
+    kitchen_code?: string;
     category_id: number;
     description?: string;
     details?: string;
@@ -74,6 +75,7 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
     // Dish Form
     const dishForm = useForm<{
         name: string;
+        kitchen_code: string;
         category_id: number | string;
         description: string;
         details: string;
@@ -84,6 +86,7 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
         is_featured: boolean;
     }>({
         name: '',
+        kitchen_code: '',
         category_id: categories[0]?.id || '',
         description: '',
         details: '',
@@ -113,6 +116,7 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
         dishForm.reset();
         dishForm.setData({
             name: '',
+            kitchen_code: '',
             category_id: categories[0]?.id || '',
             description: '',
             details: '',
@@ -130,6 +134,7 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
         setEditingDish(dish);
         dishForm.setData({
             name: dish.name,
+            kitchen_code: dish.kitchen_code || '',
             category_id: dish.category_id,
             description: dish.description || '',
             details: dish.details || '',
@@ -323,6 +328,11 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
                                                         <div>
                                                             <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-slate-100">
                                                                 {dish.name}
+                                                                {dish.kitchen_code && (
+                                                                    <span className="rounded bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.5 text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400" title="Private Kitchen Code (Admin & Kitchen only)">
+                                                                        KOT: {dish.kitchen_code}
+                                                                    </span>
+                                                                )}
                                                                 {dish.is_featured && (
                                                                     <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">
                                                                         Featured
@@ -441,16 +451,31 @@ export default function MenuIndex({ menuItems, categories, currency, filters }: 
                             </div>
 
                             <form onSubmit={submitDishForm} className="space-y-4 text-xs">
-                                <div>
-                                    <label className="mb-1 block font-medium text-slate-600 dark:text-slate-400">Dish Name *</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        placeholder="e.g. Grilled Ribeye Steak"
-                                        value={dishForm.data.name}
-                                        onChange={(e) => dishForm.setData('name', e.target.value)}
-                                        className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
-                                    />
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                    <div className="sm:col-span-2">
+                                        <label className="mb-1 block font-medium text-slate-600 dark:text-slate-400">Dish Name *</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            placeholder="e.g. Grilled Ribeye Steak"
+                                            value={dishForm.data.name}
+                                            onChange={(e) => dishForm.setData('name', e.target.value)}
+                                            className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1 block font-medium text-slate-600 dark:text-slate-400 flex items-center justify-between">
+                                            <span>Kitchen Code</span>
+                                            <span className="text-[9px] text-indigo-500 font-bold">Admin/Kitchen</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. K-101, BURG-1"
+                                            value={dishForm.data.kitchen_code}
+                                            onChange={(e) => dishForm.setData('kitchen_code', e.target.value)}
+                                            className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 font-mono font-bold text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
