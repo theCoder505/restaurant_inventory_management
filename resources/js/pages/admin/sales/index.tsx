@@ -1,6 +1,7 @@
 import AppLayout from '@/layouts/app-layout';
 import FullPageBill from '@/components/receipt/full-page-bill';
 import { printFullPageBill } from '@/lib/print-full-page-bill';
+import { printReceipt } from '@/lib/print-receipt';
 import { formatCurrency, formatDateTime, showAlert, showConfirm, showToast } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
@@ -392,7 +393,7 @@ export default function SalesPOS({
                     setCompletedOrder(latestOrder);
                     fetchLatestOrders(false);
                     setTimeout(() => {
-                        printFullPageBill(latestOrder, activeBranding, currency);
+                        printReceipt(latestOrder, activeBranding, currency);
                     }, 250);
                 }
             },
@@ -461,7 +462,7 @@ export default function SalesPOS({
                 setCompletedOrder(latestOrder);
                 fetchLatestOrders(false);
                 setTimeout(() => {
-                    printFullPageBill(latestOrder, activeBranding, currency);
+                    printReceipt(latestOrder, activeBranding, currency);
                 }, 250);
             },
             onError: () => {
@@ -872,31 +873,67 @@ export default function SalesPOS({
                                 </div>
                             </div>
 
-                            {/* Dual Flow Buttons: Send to Kitchen KOT vs Quick Pay */}
+                            {/* Dual Flow Buttons: Configured by App Settings ('Pay First' vs 'Pay After Service') */}
                             <div className="space-y-2 pt-1">
-                                <button
-                                    type="button"
-                                    onClick={() => handleOrderSubmit('send_to_kitchen')}
-                                    disabled={cart.length === 0 || isCheckingOut}
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-black text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400 active:scale-95 disabled:opacity-50 cursor-pointer"
-                                >
-                                    {isCheckingOut ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <ChefHat className="h-4 w-4" />
-                                    )}
-                                    <span>Send to Kitchen (KOT Processing)</span>
-                                </button>
+                                {((settings as any)?.billing_payment_system === 'pay_first') ? (
+                                    <>
+                                        <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 text-center">
+                                            Policy: 'Pay First' System Active
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleOrderSubmit('quick_pay')}
+                                            disabled={cart.length === 0 || isCheckingOut}
+                                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-black text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400 active:scale-95 disabled:opacity-50 cursor-pointer"
+                                        >
+                                            {isCheckingOut ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Printer className="h-4 w-4" />
+                                            )}
+                                            <span>Quick Pay & Print POS Bill (Pay First)</span>
+                                        </button>
 
-                                <button
-                                    type="button"
-                                    onClick={() => handleOrderSubmit('quick_pay')}
-                                    disabled={cart.length === 0 || isCheckingOut}
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white py-2 text-xs font-bold text-slate-800 shadow-sm transition-all hover:bg-slate-50 active:scale-95 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 cursor-pointer"
-                                >
-                                    <Printer className="h-3.5 w-3.5 text-emerald-500" />
-                                    <span>Quick Pay & Print Full Bill</span>
-                                </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleOrderSubmit('send_to_kitchen')}
+                                            disabled={cart.length === 0 || isCheckingOut}
+                                            className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white py-2 text-xs font-bold text-slate-800 shadow-sm transition-all hover:bg-slate-50 active:scale-95 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+                                        >
+                                            <ChefHat className="h-3.5 w-3.5 text-amber-500" />
+                                            <span>Send to Kitchen (KOT Only)</span>
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 text-center">
+                                            Policy: 'Pay After Service' System Active
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleOrderSubmit('send_to_kitchen')}
+                                            disabled={cart.length === 0 || isCheckingOut}
+                                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-black text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400 active:scale-95 disabled:opacity-50 cursor-pointer"
+                                        >
+                                            {isCheckingOut ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <ChefHat className="h-4 w-4" />
+                                            )}
+                                            <span>Send to Kitchen (KOT Processing)</span>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleOrderSubmit('quick_pay')}
+                                            disabled={cart.length === 0 || isCheckingOut}
+                                            className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white py-2 text-xs font-bold text-slate-800 shadow-sm transition-all hover:bg-slate-50 active:scale-95 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+                                        >
+                                            <Printer className="h-3.5 w-3.5 text-emerald-500" />
+                                            <span>Quick Pay & Print POS Bill</span>
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -1104,10 +1141,10 @@ export default function SalesPOS({
                     </div>
                 )}
 
-                {/* Full-Page Bill Modal (Shown after completion or reprint) */}
+                {/* POS Bill Modal (Shown after completion or reprint) */}
                 {completedOrder && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                        <div className="relative max-h-[95vh] overflow-y-auto w-full max-w-2xl">
+                        <div className="relative max-h-[95vh] overflow-y-auto w-full flex justify-center">
                             <FullPageBill
                                 order={completedOrder as any}
                                 branding={activeBranding}
@@ -1293,7 +1330,7 @@ export default function SalesPOS({
                                                         }}
                                                         className="flex items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-slate-950 shadow hover:bg-amber-400 cursor-pointer"
                                                     >
-                                                        <Printer className="h-3.5 w-3.5" /> Full Bill
+                                                        <Printer className="h-3.5 w-3.5" /> POS Bill
                                                     </button>
                                                 </div>
                                             </div>

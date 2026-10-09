@@ -2,7 +2,7 @@ import AppLayout from '@/layouts/app-layout';
 import { showToast } from '@/lib/swal';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
-import { Calendar, Check, ChefHat, Clock, Copy, Download, ExternalLink, Eye, EyeOff, Globe, Image as ImageIcon, Key, Loader2, MessageCircle, Moon, Save, Settings, Sparkles, Sun, Upload } from 'lucide-react';
+import { Calendar, Check, ChefHat, Clock, Copy, CreditCard, Download, ExternalLink, Eye, EyeOff, Globe, Image as ImageIcon, Key, Loader2, MessageCircle, Moon, Save, Settings, Sparkles, Sun, Upload } from 'lucide-react';
 import { useState } from 'react';
 
 interface SettingsData {
@@ -16,6 +16,7 @@ interface SettingsData {
     phone: string;
     whatsapp_number?: string;
     enable_whatsapp?: string;
+    billing_payment_system?: string;
     email: string;
     notification_email: string;
     address: string;
@@ -66,6 +67,7 @@ export default function SettingsIndex({ settings }: Props) {
         brand_logo_dark: settings.brand_logo_dark || settings.brand_logo || '/uploads/branding/logo.svg',
         brand_icon: settings.brand_icon || '/uploads/branding/icon.svg',
         header_white_logo: settings.header_white_logo ?? '1',
+        billing_payment_system: settings.billing_payment_system || 'pay_after_service',
         brand_logo_file: null as File | null,
         brand_logo_dark_file: null as File | null,
         brand_icon_file: null as File | null,
@@ -484,6 +486,107 @@ export default function SettingsIndex({ settings }: Props) {
                                     onChange={(e) => form.setData('tagline', e.target.value)}
                                     className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
                                 />
+                            </div>
+                        </div>
+
+                        {/* Order & Billing Payment Workflow Mode ('Pay First' vs 'Pay After Service') */}
+                        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 dark:border-amber-500/20 space-y-3">
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 border-b border-amber-500/20 pb-3">
+                                <div>
+                                    <label className="flex items-center gap-2 font-bold text-slate-900 dark:text-slate-100">
+                                        <CreditCard className="h-4 w-4 text-amber-500" /> Order & Billing Payment System
+                                    </label>
+                                    <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                                        Configure whether your restaurant collects payment upfront upon ordering (<strong>'Pay First'</strong> system) or lets customers dine and settle the bill after service (<strong>'Pay After Service'</strong> system).
+                                    </p>
+                                </div>
+                                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider shrink-0 ${
+                                    form.data.billing_payment_system === 'pay_first'
+                                        ? 'bg-amber-500 text-slate-950'
+                                        : 'bg-emerald-500 text-white'
+                                }`}>
+                                    Active: {form.data.billing_payment_system === 'pay_first' ? "'Pay First' System" : "'Pay After Service'"}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 pt-1">
+                                {/* Option 1: Pay First */}
+                                <label
+                                    onClick={() => form.setData('billing_payment_system', 'pay_first')}
+                                    className={`relative flex cursor-pointer flex-col rounded-xl border p-3.5 transition-all ${
+                                        form.data.billing_payment_system === 'pay_first'
+                                            ? 'border-amber-500 bg-white shadow-md ring-2 ring-amber-500/30 dark:border-amber-500 dark:bg-slate-950'
+                                            : 'border-slate-200 bg-white/70 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/60 dark:hover:border-slate-700'
+                                    }`}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${
+                                                form.data.billing_payment_system === 'pay_first'
+                                                    ? 'bg-amber-500 text-slate-950 font-black'
+                                                    : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                                            }`}>
+                                                <CreditCard className="h-4 w-4" />
+                                            </div>
+                                            <span className="text-xs font-black text-slate-900 dark:text-slate-100">
+                                                'Pay First' System
+                                            </span>
+                                        </div>
+                                        <input
+                                            type="radio"
+                                            name="billing_payment_system"
+                                            value="pay_first"
+                                            checked={form.data.billing_payment_system === 'pay_first'}
+                                            onChange={() => form.setData('billing_payment_system', 'pay_first')}
+                                            className="h-4 w-4 border-slate-300 text-amber-500 focus:ring-amber-400"
+                                        />
+                                    </div>
+                                    <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                                        Customers pay at the counter / checkout before food is prepared and served. Ideal for fast-food, cafeteria, self-service counters, and takeaway orders.
+                                    </p>
+                                    <span className="mt-2.5 inline-block text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                        ✓ POS defaults to Quick Pay & Instant Bill
+                                    </span>
+                                </label>
+
+                                {/* Option 2: Pay After Service */}
+                                <label
+                                    onClick={() => form.setData('billing_payment_system', 'pay_after_service')}
+                                    className={`relative flex cursor-pointer flex-col rounded-xl border p-3.5 transition-all ${
+                                        form.data.billing_payment_system === 'pay_after_service'
+                                            ? 'border-emerald-500 bg-white shadow-md ring-2 ring-emerald-500/30 dark:border-emerald-500 dark:bg-slate-950'
+                                            : 'border-slate-200 bg-white/70 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/60 dark:hover:border-slate-700'
+                                    }`}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${
+                                                form.data.billing_payment_system === 'pay_after_service'
+                                                    ? 'bg-emerald-500 text-white font-black'
+                                                    : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                                            }`}>
+                                                <ChefHat className="h-4 w-4" />
+                                            </div>
+                                            <span className="text-xs font-black text-slate-900 dark:text-slate-100">
+                                                'Pay After Service'
+                                            </span>
+                                        </div>
+                                        <input
+                                            type="radio"
+                                            name="billing_payment_system"
+                                            value="pay_after_service"
+                                            checked={form.data.billing_payment_system === 'pay_after_service'}
+                                            onChange={() => form.setData('billing_payment_system', 'pay_after_service')}
+                                            className="h-4 w-4 border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                        />
+                                    </div>
+                                    <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                                        Orders are sent straight to the kitchen KOT, prepared and served to the customer's table. Bill is settled after the dining experience is completed.
+                                    </p>
+                                    <span className="mt-2.5 inline-block text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                        ✓ POS defaults to KOT Kitchen Processing & Table Settle
+                                    </span>
+                                </label>
                             </div>
                         </div>
 

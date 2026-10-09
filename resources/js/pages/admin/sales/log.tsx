@@ -427,10 +427,10 @@ export default function SalesLog({ orders, totalSalesAmount = 0, totalSubtotal =
                 </div>
             </div>
 
-            {/* Full-Page Bill Preview Modal */}
+            {/* Full-Page / POS Bill Preview Modal */}
             {viewingOrder && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                    <div className="relative max-h-[95vh] overflow-y-auto w-full max-w-2xl">
+                    <div className="relative max-h-[95vh] overflow-y-auto w-full flex justify-center">
                         <FullPageBill
                             order={viewingOrder as any}
                             branding={branding as any}

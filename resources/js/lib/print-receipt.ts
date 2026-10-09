@@ -118,22 +118,25 @@ function formatDate(dateStr?: string): { formattedDate: string; formattedTime: s
     };
 }
 
-export function generateReceiptHtml(order: ReceiptOrder, branding: ReceiptBranding = {}, currency: string = '$'): string {
-    const brandName = (branding.brand_name || 'RESTAURANT').toUpperCase();
+export function generateReceiptHtml(order: ReceiptOrder, branding: ReceiptBranding = {}, currency: string = '৳'): string {
+    const brandName = (branding.brand_name || 'NOCTURNE RESTAURANT').toUpperCase();
     const brandLogo = branding.brand_logo || '/uploads/branding/logo.svg';
-    const address = (branding.address || '123 Culinary Avenue\nDowntown District').toUpperCase();
-    const phone = branding.phone || '(555) 123-4567';
-    const emailOrWebsite = (branding.email ? branding.email.toUpperCase() : 'WWW.RESTAURANT.COM');
+    const tagline = (branding.tagline || 'CRAVINGS NEVER SLEEP').toUpperCase();
+    const address = (branding.address || '889 Midnight Ave, Suite B, Downtown District').toUpperCase();
+    const phone = branding.phone || '+8801700000000';
+    const emailOrWebsite = (branding.email ? branding.email.toUpperCase() : 'CONTACT@RESTAURANT.COM');
 
     const { formattedDate, formattedTime } = formatDate(order.created_at);
 
     // Formatted receipt number
-    const receiptNum = order.order_number.replace(/^INV-/, '#R-');
+    const receiptNum = order.order_number;
     const tableNum = order.table_number
         ? order.table_number.replace(/^Table\s*/i, '')
-        : (order.order_type === 'dine_in' ? '12' : (order.order_type?.toUpperCase() || 'TAKEAWAY'));
-    const serverName = (order.creator?.name || 'MARIA G.').toUpperCase();
-    const guestsCount = order.customer_name ? order.customer_name.toUpperCase() : '2';
+        : (order.order_type === 'dine_in' ? 'Table 1' : (order.order_type?.toUpperCase() || 'TAKEAWAY'));
+    const orderTypeLabel = order.order_type ? order.order_type.replace('_', ' ').toUpperCase() : 'DINE IN';
+    const serverName = (order.creator?.name || 'Cashier / Admin').toUpperCase();
+    const customerName = order.customer_name ? order.customer_name.toUpperCase() : null;
+    const customerPhone = order.customer_phone || null;
 
     const items = order.items && order.items.length > 0 ? order.items : [];
     const subtotal = order.subtotal || items.reduce((sum, item) => sum + (item.total_price || 0), 0);
@@ -142,19 +145,23 @@ export function generateReceiptHtml(order: ReceiptOrder, branding: ReceiptBrandi
     const total = order.total_amount || Math.max(0, subtotal + tax - discount);
 
     const paymentMethod = (order.payment_method || 'CASH').toUpperCase();
-    const transactionId = order.transaction_id || `REF: ${String(order.id || '').padStart(8, '0')}`;
+    const transactionId = order.transaction_id || `TXN-${String(order.id || '000001').padStart(6, '0')}`;
     const cardMask = paymentMethod === 'CARD' ? '•••• 9981' : (paymentMethod === 'BKASH' || paymentMethod === 'NAGAD' ? 'MOBILE WALLET' : 'CASH');
 
     const barcodeValue = String(order.order_number || '254720250930').replace(/[^0-9A-Z]/g, '');
 
     const itemsRowsHtml = items.map((item) => {
         const name = (item.item_name || item.name || 'ITEM').toUpperCase();
-        const qtyPrefix = item.quantity > 1 ? `${item.quantity}X ` : '';
+        const qtyPrefix = item.quantity > 1 ? `${item.quantity}X ` : '1X ';
         const lineTotal = formatAmount(item.total_price, currency);
+        const rateNote = item.quantity > 1 ? `<div style="font-size: 9.5px; color: #555;">@ ${formatAmount(item.unit_price, currency)} each</div>` : '';
         return `
             <tr>
-                <td style="padding: 2.5px 0; text-align: left; font-weight: 500;">${qtyPrefix}${name}</td>
-                <td style="padding: 2.5px 0; text-align: right; font-weight: 600; white-space: nowrap;">${lineTotal}</td>
+                <td style="padding: 2.5px 0; text-align: left; vertical-align: top;">
+                    <div style="font-weight: 600;">${qtyPrefix}${name}</div>
+                    ${rateNote}
+                </td>
+                <td style="padding: 2.5px 0; text-align: right; font-weight: 700; white-space: nowrap; vertical-align: top;">${lineTotal}</td>
             </tr>
         `;
     }).join('');
@@ -184,9 +191,9 @@ export function generateReceiptHtml(order: ReceiptOrder, branding: ReceiptBrandi
             margin-right: auto;
             background-color: #ffffff;
             color: #000000;
-            font-family: 'Courier New', Courier, monospace, ui-monospace;
-            font-size: 11.5px;
-            line-height: 1.35;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif, monospace;
+            font-size: 11px;
+            line-height: 1.3;
         }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
@@ -197,10 +204,10 @@ export function generateReceiptHtml(order: ReceiptOrder, branding: ReceiptBrandi
 
         .logo-wrap {
             text-align: center;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .logo-img {
-            max-height: 48px;
+            max-height: 44px;
             max-width: 120px;
             object-fit: contain;
             filter: grayscale(100%) contrast(150%);
@@ -209,21 +216,28 @@ export function generateReceiptHtml(order: ReceiptOrder, branding: ReceiptBrandi
         }
 
         .header-title {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 900;
-            letter-spacing: 1px;
-            margin: 4px 0 2px 0;
+            letter-spacing: 0.5px;
+            margin: 2px 0;
             line-height: 1.2;
         }
+        .header-tagline {
+            font-size: 9.5px;
+            font-weight: 700;
+            color: #333;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
         .header-subtitle {
-            font-size: 10px;
+            font-size: 9.5px;
             margin: 1px 0;
-            color: #111;
+            color: #222;
         }
 
         .divider {
-            border-top: 1px solid #000000;
-            margin: 8px 0;
+            border-top: 1px dashed #333333;
+            margin: 7px 0;
             width: 100%;
         }
 
@@ -234,39 +248,39 @@ export function generateReceiptHtml(order: ReceiptOrder, branding: ReceiptBrandi
 
         .meta-table td {
             padding: 1.5px 0;
-            font-size: 11px;
+            font-size: 10.5px;
         }
 
         .items-table td {
-            font-size: 11.5px;
+            font-size: 11px;
         }
 
         .totals-table td {
             padding: 2px 0;
-            font-size: 11.5px;
+            font-size: 11px;
         }
 
         .totals-table .total-row td {
-            padding-top: 4px;
-            font-size: 14px;
+            padding-top: 3px;
+            font-size: 13.5px;
             font-weight: 900;
         }
 
         .payment-table td {
             padding: 1.5px 0;
-            font-size: 10.5px;
+            font-size: 10px;
         }
 
         .footer-notes {
             margin-top: 8px;
-            font-size: 10.5px;
+            font-size: 10px;
             text-align: center;
-            line-height: 1.4;
+            line-height: 1.35;
         }
 
         .footer-thanks {
-            margin-top: 6px;
-            font-size: 11px;
+            margin-top: 4px;
+            font-size: 10.5px;
             font-weight: bold;
             letter-spacing: 0.5px;
             text-align: center;
@@ -283,6 +297,7 @@ export function generateReceiptHtml(order: ReceiptOrder, branding: ReceiptBrandi
     <!-- Restaurant Header -->
     <div class="text-center">
         <div class="header-title">${brandName}</div>
+        ${tagline ? `<div class="header-tagline">${tagline}</div>` : ''}
         <div class="header-subtitle">${address.replace(/\n/g, '<br/>')}</div>
         <div class="header-subtitle">PHONE: ${phone}</div>
         <div class="header-subtitle">${emailOrWebsite}</div>
@@ -291,9 +306,12 @@ export function generateReceiptHtml(order: ReceiptOrder, branding: ReceiptBrandi
     <!-- Divider 1 -->
     <div class="divider"></div>
 
-    <!-- Meta Details -->
-    <div class="text-center" style="font-size: 11px; margin-bottom: 3px;">
-        ${formattedDate}
+    <!-- Official Tax Bill Badge & Meta Details -->
+    <div style="text-align: center; margin-bottom: 3px;">
+        <span style="display: inline-block; background: #000; color: #fff; font-size: 9px; font-weight: 900; padding: 1.5px 6px; border-radius: 3px; text-transform: uppercase;">Official Tax Bill</span>
+    </div>
+    <div class="text-center" style="font-size: 10.5px; font-weight: 700; margin-bottom: 3px;">
+        ${formattedDate} ${formattedTime}
     </div>
     <table class="meta-table">
         <tr>
@@ -301,9 +319,13 @@ export function generateReceiptHtml(order: ReceiptOrder, branding: ReceiptBrandi
             <td class="text-right"><span class="font-bold">TABLE:</span> ${tableNum}</td>
         </tr>
         <tr>
-            <td class="text-left"><span class="font-bold">SERVER:</span> ${serverName}</td>
-            <td class="text-right"><span class="font-bold">GUESTS:</span> ${guestsCount}</td>
+            <td class="text-left"><span class="font-bold">TYPE:</span> ${orderTypeLabel}</td>
+            <td class="text-right"><span class="font-bold">SERVER:</span> ${serverName}</td>
         </tr>
+        ${customerName ? `
+        <tr>
+            <td colspan="2" class="text-left"><span class="font-bold">CUSTOMER:</span> ${customerName} ${customerPhone ? `(${customerPhone})` : ''}</td>
+        </tr>` : ''}
     </table>
 
     <!-- Divider 2 -->
@@ -311,6 +333,12 @@ export function generateReceiptHtml(order: ReceiptOrder, branding: ReceiptBrandi
 
     <!-- Items List -->
     <table class="items-table">
+        <thead>
+            <tr style="border-bottom: 1px solid #ddd; font-size: 9.5px; color: #555;">
+                <th style="text-align: left; padding-bottom: 2px; font-weight: 700;">QTY & DESCRIPTION</th>
+                <th style="text-align: right; padding-bottom: 2px; font-weight: 700;">PRICE</th>
+            </tr>
+        </thead>
         <tbody>
             ${itemsRowsHtml}
         </tbody>
@@ -326,7 +354,7 @@ export function generateReceiptHtml(order: ReceiptOrder, branding: ReceiptBrandi
             <td class="text-right">${formatAmount(subtotal, currency)}</td>
         </tr>
         <tr>
-            <td class="text-left">TAX:</td>
+            <td class="text-left">TAX / VAT:</td>
             <td class="text-right">${formatAmount(tax, currency)}</td>
         </tr>
         ${discount > 0 ? `
@@ -352,10 +380,6 @@ export function generateReceiptHtml(order: ReceiptOrder, branding: ReceiptBrandi
         <tr>
             <td class="text-left">TYPE:</td>
             <td class="text-right">${paymentMethod}</td>
-        </tr>
-        <tr>
-            <td class="text-left">ENTRY:</td>
-            <td class="text-right">${paymentMethod === 'CARD' ? 'CONTACTLESS' : 'POS TERMINAL'}</td>
         </tr>
         <tr>
             <td class="text-left">TIME:</td>

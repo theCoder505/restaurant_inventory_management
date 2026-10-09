@@ -102,6 +102,11 @@ export default function PosReceipt({
                     <h2 className="text-[15px] font-black tracking-wider uppercase leading-snug">
                         {brandName}
                     </h2>
+                    {branding.tagline && (
+                        <p className="text-[9.5px] font-bold text-amber-600 uppercase tracking-wider">
+                            {branding.tagline}
+                        </p>
+                    )}
                     <p className="text-[10.5px] uppercase text-slate-800 leading-tight">
                         {address}
                     </p>

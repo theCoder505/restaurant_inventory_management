@@ -56,6 +56,7 @@ class SalesController extends Controller
             'email' => AppSetting::getByKey('email', 'contact@restaurant.com'),
             'default_currency' => $currency,
             'tax_percentage' => $taxPercentage,
+            'billing_payment_system' => AppSetting::getByKey('billing_payment_system', 'pay_after_service'),
         ];
 
         return Inertia::render('admin/sales/index', [

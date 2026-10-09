@@ -66,6 +66,8 @@ class SettingController extends Controller
                 'terms_conditions' => $settings['terms_conditions'] ?? 'Standard restaurant policies apply to all dine-in, takeaway, and delivery orders.',
                 'privacy_policy' => $settings['privacy_policy'] ?? 'We respect your privacy and process customer order info strictly for billing and delivery purposes.',
                 'footer_text' => $settings['footer_text'] ?? '© 2026 NOCTURNE AFTER HOURS. All Rights Reserved.',
+                // Order & Billing Payment Workflow: pay_first vs pay_after_service
+                'billing_payment_system' => $settings['billing_payment_system'] ?? 'pay_after_service',
                 // Surface landing background images
                 'hero_bg_image' => $settings['hero_bg_image'] ?? null,
                 'atmosphere_image' => $settings['atmosphere_image'] ?? null,
@@ -89,6 +91,7 @@ class SettingController extends Controller
             'whatsapp_number' => 'nullable|string|max:50',
             'enable_whatsapp' => 'nullable|string|in:0,1,true,false',
             'header_white_logo' => 'nullable|string|in:0,1,true,false',
+            'billing_payment_system' => 'nullable|string|in:pay_first,pay_after_service',
             'email' => 'required|email|max:255',
             'notification_email' => 'required|email|max:255',
             'address' => 'nullable|string',
